@@ -1,0 +1,21 @@
+# Bỏ qua thư mục thư viện của Frontend và Backend (NestJS/React)
+node_modules/
+dist/
+.nest/
+build/
+
+# Bỏ qua môi trường ảo và bộ nhớ đệm của Python (FastAPI)
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Bỏ qua tất cả các file cấu hình bảo mật chứa API Key / Password
+.env
+**/.env
+
+# Bỏ qua file cấu hình riêng của hệ điều hành và IDE
+.DS_Store
+.vscode/
+.idea/
