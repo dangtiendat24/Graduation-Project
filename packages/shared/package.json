@@ -1,0 +1,10 @@
+{
+  "name": "@smart-recruitment/shared",
+  "version": "1.0.0",
+  "description": "Shared constants, types, and schemas for Smart Recruitment Platform",
+  "main": "index.ts",
+  "scripts": {},
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}

@@ -1,8 +1,24 @@
 fastapi==0.110.0
-uvicorn==0.28.0
-langgraph==0.2.0
-openai==1.14.1
+uvicorn[standard]==0.28.0
+python-multipart==0.0.32
+
+# LangGraph + LangChain (agents)
+langgraph==1.2.6
+langchain-core==1.4.8
+langchain-openai==1.3.2
+
+# OpenAI SDK v2
+openai==2.43.0
+
+# Vector DB
 qdrant-client==1.8.0
+
+# Pydantic v2
+pydantic==2.13.4
+pydantic-settings==2.14.1
+
+# HTTP client (callback tới NestJS BE)
+httpx==0.28.1
+
+# Env
 python-dotenv==1.0.1
-pydantic>=2.7.4
-pydantic-settings>=2.2.1

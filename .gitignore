@@ -19,3 +19,19 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+
+# TypeORM incremental build cache
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# Tài liệu / Documents (Word, PDF — not part of the codebase)
+Tài liệu/

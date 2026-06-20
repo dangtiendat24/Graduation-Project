@@ -1,12 +1,40 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { getTypeOrmConfig } from './config/typeorm.config';
+import { BullMQConfigService } from './config/bullmq.config';
 
 @Module({
-  imports: [AuthModule, UsersModule],
+  imports: [
+    // Config toàn cục — đọc từ .env, validate khi khởi động
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+
+    // Database — TypeORM + PostgreSQL
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: getTypeOrmConfig,
+    }),
+
+    // Queue — BullMQ + Redis
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useClass: BullMQConfigService,
+    }),
+
+    // Domain modules
+    AuthModule,
+    UsersModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, BullMQConfigService],
 })
 export class AppModule {}

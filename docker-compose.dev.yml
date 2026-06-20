@@ -1,0 +1,41 @@
+version: '3.8'
+
+# Development override — hot reload, volume mount source code
+# Chạy: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Hoặc đơn giản hơn: chạy infra qua Docker, chạy code trực tiếp trên máy
+
+services:
+  api:
+    build:
+      target: builder
+    command: npm run start:dev
+    volumes:
+      - ./recruitment-be:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      REDIS_HOST: redis
+      AI_SERVICE_URL: http://ai-service:8000
+
+  ai-service:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./ai-service:/app
+    environment:
+      QDRANT_HOST: qdrant
+      DB_HOST: postgres
+
+  frontend:
+    build:
+      context: ./recruitment-fe
+      dockerfile: Dockerfile
+      target: builder
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./recruitment-fe:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://localhost:3000/api
