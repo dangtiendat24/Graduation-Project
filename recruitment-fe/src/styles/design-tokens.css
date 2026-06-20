@@ -1,0 +1,235 @@
+/* ============================================================
+   RecruitAI — Design Tokens  (cập nhật sau auth v2)
+   Áp dụng nhất quán cho mọi màn hình trong dự án
+   ============================================================ */
+
+:root {
+
+  /* ----------------------------------------------------------
+     MÀU CHỦ ĐẠO (Brand Colors)
+     ---------------------------------------------------------- */
+
+  --color-indigo:        #4338CA;   /* primary — button, link, active state   */
+  --color-indigo-hover:  #3730A3;   /* hover của indigo                        */
+  --color-indigo-light:  #EEF2FF;   /* nền khi selected / highlight            */
+
+  --color-teal:          #0D9488;   /* AI đã xử lý xong / success              */
+  --color-teal-light:    #5EEAD4;   /* text/icon teal trên nền tối             */
+
+  --color-amber:         #D97706;   /* cần người dùng hành động / warning      */
+  --color-amber-light:   #FCD34D;   /* text amber trên nền tối                 */
+
+  --color-danger:        #EF4444;   /* lỗi, từ chối, auto-reject               */
+  --color-hired:         #16A34A;   /* đã tuyển — green                        */
+
+
+  /* ----------------------------------------------------------
+     NỀN (Backgrounds)
+     ---------------------------------------------------------- */
+
+  --bg-page:             #F1F5F9;   /* Slate-100 — nền toàn trang              */
+  --bg-surface:          #FFFFFF;   /* nền card, panel, form                   */
+  --bg-subtle:           #F8FAFC;   /* Slate-50 — nền tip, row hover           */
+  --bg-muted:            #F1F5F9;   /* Slate-100 — nền badge, chip, tag        */
+
+  /* Panel trái (brand/sidebar) — dùng gradient, KHÔNG dùng solid color */
+  --bg-brand-gradient:   linear-gradient(150deg, #0C2340 0%, #0F172A 48%, #1E1065 100%);
+  /* Sidebar khi thu hẹp hoặc cần fallback solid */
+  --bg-brand-solid:      #0F172A;
+
+
+  /* ----------------------------------------------------------
+     VIỀN (Borders)
+     ---------------------------------------------------------- */
+
+  --border-default:      #E2E8F0;   /* Slate-200 — viền thường                 */
+  --border-emphasis:     #94A3B8;   /* Slate-400 — viền hover / focus nhẹ      */
+  --border-brand-subtle: rgba(255, 255, 255, 0.08);  /* viền trên nền tối       */
+
+
+  /* ----------------------------------------------------------
+     CHỮ (Text)
+     ---------------------------------------------------------- */
+
+  --text-primary:        #0F172A;   /* Slate-900 — tiêu đề, nội dung chính     */
+  --text-secondary:      #64748B;   /* Slate-500 — nhãn, mô tả phụ             */
+  --text-muted:          #94A3B8;   /* Slate-400 — placeholder, gợi ý          */
+
+  /* Text trên nền tối (brand panel / sidebar) */
+  --text-on-dark:        rgba(255, 255, 255, 0.95);  /* tên, tiêu đề           */
+  --text-on-dark-sub:    rgba(255, 255, 255, 0.42);  /* mô tả phụ, quote       */
+  --text-on-dark-muted:  rgba(255, 255, 255, 0.28);  /* step pending, divider  */
+
+  /* Màu nhấn trên nền tối */
+  --text-teal-on-dark:   #5EEAD4;   /* dùng cho logo .AI, step current border  */
+
+
+  /* ----------------------------------------------------------
+     FONT
+     ---------------------------------------------------------- */
+
+  --font-family:         Arial, sans-serif;   /* font duy nhất toàn hệ thống   */
+
+
+  /* ----------------------------------------------------------
+     CỠ CHỮ (Font Sizes)
+     Quy tắc: mỗi nhóm UI có cỡ cố định — không dùng size ngoài danh sách
+     ---------------------------------------------------------- */
+
+  --fs-xs:       10.5px;  /* label nhỏ, legend, badge, screen tag, step connector */
+  --fs-status:   11.5px;  /* trạng thái agent, strength label, step pending text  */
+  --fs-label:    12.5px;  /* label field, mô tả phụ, forgot, tip, checkbox, quote */
+  --fs-body:     13.5px;  /* mô tả agent, form sub, switch link, table cell       */
+  --fs-input:    14.5px;  /* tab button, input, role card name, card title        */
+  --fs-btn:      16px;    /* nút chính (btn-primary), tip icon                   */
+  --fs-logo:     18px;    /* logo name, password toggle icon, page title          */
+  --fs-heading:  23px;    /* tiêu đề form (form-title), section heading           */
+  --fs-icon-lg:  25px;    /* icon lớn (role card icon)                            */
+
+
+  /* ----------------------------------------------------------
+     ĐỘ DÀY CHỮ (Font Weights)
+     ---------------------------------------------------------- */
+
+  --fw-regular:  400;
+  --fw-bold:     700;   /* heading, label, button, nav active item               */
+
+
+  /* ----------------------------------------------------------
+     BORDER RADIUS
+     ---------------------------------------------------------- */
+
+  --radius-sm:   4px;     /* badge, chip, screen-tag                             */
+  --radius-md:   8px;     /* input, button, card nhỏ, nav item                   */
+  --radius-lg:   12px;    /* card chính, modal, sidebar                          */
+  --radius-full: 9999px;  /* pill, strength bar segment, avatar                  */
+
+
+  /* ----------------------------------------------------------
+     SHADOW
+     ---------------------------------------------------------- */
+
+  --shadow-card:    0 8px 40px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-surface: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-focus:   0 0 0 3px rgba(67, 56, 202, 0.10);  /* focus ring Indigo   */
+
+
+  /* ----------------------------------------------------------
+     KÍCH THƯỚC LAYOUT
+     ---------------------------------------------------------- */
+
+  --card-width:      840px;   /* card auth / modal trung tâm                    */
+  --brand-width:     320px;   /* panel trái brand (auth screen)                 */
+  --sidebar-width:   220px;   /* sidebar navigation (dashboard trở đi)          */
+
+
+  /* ----------------------------------------------------------
+     LOGO & BRAND PANEL
+     ---------------------------------------------------------- */
+
+  /* Logo dot (chấm teal trước tên) */
+  --logo-dot-size:   10px;
+  --logo-dot-color:  #5EEAD4;   /* = --color-teal-light                         */
+
+  /* Step indicators trên brand panel */
+  --step-size:       28px;
+  --step-done-bg:    #0D9488;   /* = --color-teal                               */
+  --step-done-color: #FFFFFF;
+  --step-current-bg: rgba(255, 255, 255, 0.10);
+  --step-current-border: #5EEAD4;
+  --step-current-color:  #5EEAD4;
+  --step-pending-bg: rgba(255, 255, 255, 0.07);
+  --step-pending-border: rgba(255, 255, 255, 0.15);
+  --step-pending-color:  rgba(255, 255, 255, 0.35);
+  --step-connector:  rgba(255, 255, 255, 0.08);  /* đường nối giữa các bước    */
+
+
+  /* ----------------------------------------------------------
+     TRẠNG THÁI PIPELINE — dùng cho stepper & badge xuyên suốt
+     ---------------------------------------------------------- */
+
+  /* Màu dot/badge theo application.status */
+  --status-pending:    #94A3B8;   /* xám    — vừa nộp đơn                      */
+  --status-matched:    #0D9488;   /* teal   — đã chấm điểm                      */
+  --status-interviewed:#4338CA;   /* indigo — đã phỏng vấn AI                   */
+  --status-schedule:   #D97706;   /* amber  — chờ chọn lịch                     */
+  --status-scheduled:  #7C3AED;   /* violet — đã xác nhận lịch                  */
+  --status-completed:  #4338CA;   /* indigo — AI hoàn tất báo cáo               */
+  --status-hired:      #16A34A;   /* green  — đã tuyển (terminal)               */
+  --status-rejected:   #EF4444;   /* red    — từ chối (terminal)                */
+
+  /* Nền badge (dùng kèm màu text tương ứng ở trên) */
+  --status-pending-bg:    #F1F5F9;
+  --status-matched-bg:    #E6FAF8;
+  --status-interviewed-bg:#EEF2FF;
+  --status-schedule-bg:   #FEF3C7;
+  --status-scheduled-bg:  #EDE9FE;
+  --status-completed-bg:  #EEF2FF;
+  --status-hired-bg:      #DCFCE7;
+  --status-rejected-bg:   #FEF2F2;
+
+  /* Điểm match — ngưỡng màu */
+  --score-high-bg:    #E6FAF8;  color: #0D9488;  /* >= 70     */
+  --score-mid-bg:     #EEF2FF;  color: #4338CA;  /* 40 – 69   */
+  --score-low-bg:     #FEF3C7;  color: #D97706;  /* < 40      */
+
+
+  /* ----------------------------------------------------------
+     KHOẢNG CÁCH (Spacing)
+     ---------------------------------------------------------- */
+
+  --space-1:    4px;
+  --space-2:    8px;
+  --space-3:    12px;
+  --space-4:    16px;
+  --space-5:    20px;
+  --space-6:    24px;
+  --space-8:    32px;
+  --space-10:   40px;
+
+}
+
+
+/* ============================================================
+   UTILITY CLASSES — dùng nhanh trong HTML / JSX
+   ============================================================ */
+
+/* Nền */
+.bg-brand    { background: var(--bg-brand-gradient); }
+.bg-page     { background: var(--bg-page); }
+.bg-surface  { background: var(--bg-surface); }
+
+/* Text */
+.text-primary   { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted     { color: var(--text-muted); }
+.text-indigo    { color: var(--color-indigo); }
+.text-teal      { color: var(--color-teal); }
+.text-amber     { color: var(--color-amber); }
+.text-danger    { color: var(--color-danger); }
+.text-hired     { color: var(--color-hired); }
+
+/* Badge trạng thái application */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  font-family: var(--font-family);
+}
+.badge-pending     { background: var(--status-pending-bg);     color: var(--status-pending); }
+.badge-matched     { background: var(--status-matched-bg);     color: var(--status-matched); }
+.badge-interviewed { background: var(--status-interviewed-bg); color: var(--status-interviewed); }
+.badge-schedule    { background: var(--status-schedule-bg);    color: var(--status-schedule); }
+.badge-scheduled   { background: var(--status-scheduled-bg);   color: var(--status-scheduled); }
+.badge-completed   { background: var(--status-completed-bg);   color: var(--status-completed); }
+.badge-hired       { background: var(--status-hired-bg);       color: var(--status-hired); }
+.badge-rejected    { background: var(--status-rejected-bg);    color: var(--status-rejected); }
+
+/* Score badge */
+.score-high { background: var(--status-matched-bg);     color: var(--status-matched); }
+.score-mid  { background: var(--status-interviewed-bg); color: var(--status-interviewed); }
+.score-low  { background: var(--status-schedule-bg);    color: var(--status-schedule); }
