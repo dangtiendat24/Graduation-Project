@@ -12,6 +12,13 @@ import { MailService } from '../mail/mail.service'
 import { RegisterDto } from './dto/register.dto'
 import { LoginDto } from './dto/login.dto'
 
+interface GoogleProfile {
+  email: string | undefined
+  googleId: string
+  fullName: string
+  avatarUrl: string | null
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -88,6 +95,53 @@ export class AuthService {
       role: user.role,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
+    }
+  }
+
+  async googleLogin(profile: GoogleProfile) {
+    const { email, googleId, fullName, avatarUrl } = profile
+
+    // Tài khoản đã liên kết Google trước đó
+    const byGoogleId = await this.usersService.findByGoogleId(googleId)
+    if (byGoogleId) return this.buildTokenResponse(byGoogleId)
+
+    if (email) {
+      const byEmail = await this.usersService.findByEmail(email)
+      if (byEmail) {
+        // Merge: tài khoản email/password cùng email → liên kết googleId
+        await this.usersService.linkGoogleId(byEmail.id, googleId, avatarUrl ?? undefined)
+        byEmail.googleId = googleId
+        if (avatarUrl) byEmail.avatarUrl = avatarUrl
+        byEmail.isActive = true
+        return this.buildTokenResponse(byEmail)
+      }
+    }
+
+    // Tạo mới candidate (Google đã xác thực email nên isActive = true)
+    const newUser = await this.usersService.create({
+      email: email ?? `google_${googleId}@placeholder.local`,
+      passwordHash: null,
+      fullName,
+      role: 'candidate',
+      googleId,
+      avatarUrl,
+      isActive: true,
+    })
+    return this.buildTokenResponse(newUser)
+  }
+
+  private buildTokenResponse(user: { id: string; email: string; role: string; fullName: string; avatarUrl: string | null }) {
+    const payload = { sub: user.id, email: user.email, role: user.role }
+    const accessToken = this.jwtService.sign(payload)
+    return {
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+      },
     }
   }
 }
