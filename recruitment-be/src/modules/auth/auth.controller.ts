@@ -19,10 +19,9 @@ import { LoginDto } from './dto/login.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import { GoogleAuthGuard } from './guards/google-auth.guard'
 
-interface GoogleCallbackUser {
-  accessToken: string
-  user: { id: string; email: string; fullName: string; role: string; avatarUrl: string | null }
-}
+type GoogleCallbackUser =
+  | { ok: true; accessToken: string; user: { id: string; email: string; fullName: string; role: string; avatarUrl: string | null } }
+  | { ok: false; reason: string }
 
 @ApiTags('auth')
 @Controller('auth')
@@ -73,8 +72,14 @@ export class AuthController {
     @Request() req: { user: GoogleCallbackUser },
     @Res() res: Response,
   ) {
-    const { accessToken, user } = req.user
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173')
+    const result = req.user
+
+    if (!result.ok) {
+      return res.redirect(`${frontendUrl}/login?error=${encodeURIComponent(result.reason)}`)
+    }
+
+    const { accessToken, user } = result
     const params = new URLSearchParams({
       token: accessToken,
       id: user.id,
@@ -83,6 +88,6 @@ export class AuthController {
       role: user.role,
       ...(user.avatarUrl ? { avatarUrl: user.avatarUrl } : {}),
     })
-    res.redirect(`${frontendUrl}/auth/callback?${params.toString()}`)
+    return res.redirect(`${frontendUrl}/auth/callback?${params.toString()}`)
   }
 }

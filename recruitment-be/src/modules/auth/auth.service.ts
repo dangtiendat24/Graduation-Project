@@ -19,6 +19,10 @@ interface GoogleProfile {
   avatarUrl: string | null
 }
 
+type GoogleAuthResult =
+  | { ok: true; accessToken: string; user: { id: string; email: string; fullName: string; role: string; avatarUrl: string | null } }
+  | { ok: false; reason: string }
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -98,22 +102,34 @@ export class AuthService {
     }
   }
 
-  async googleLogin(profile: GoogleProfile) {
-    const { email, googleId, fullName, avatarUrl } = profile
+  async googleLogin(profile: GoogleProfile): Promise<GoogleAuthResult> {
+    const { googleId, fullName, avatarUrl } = profile
+    // Normalize để tránh mismatch hoa/thường (VD: ABC@Gmail.com vs abc@gmail.com)
+    const email = profile.email?.toLowerCase().trim()
 
     // Tài khoản đã liên kết Google trước đó
     const byGoogleId = await this.usersService.findByGoogleId(googleId)
-    if (byGoogleId) return this.buildTokenResponse(byGoogleId)
+    if (byGoogleId) {
+      // Recruiter đã từng link Google (không nên xảy ra, nhưng block để chắc chắn)
+      if (byGoogleId.role === 'recruiter') {
+        return { ok: false, reason: 'recruiter_oauth_not_allowed' }
+      }
+      return { ok: true, ...this.buildTokenResponse(byGoogleId) }
+    }
 
     if (email) {
       const byEmail = await this.usersService.findByEmail(email)
       if (byEmail) {
-        // Merge: tài khoản email/password cùng email → liên kết googleId
+        // Recruiter phải dùng email/password — không cho phép đăng nhập Google
+        if (byEmail.role === 'recruiter') {
+          return { ok: false, reason: 'recruiter_oauth_not_allowed' }
+        }
+        // Merge: candidate dùng email/password → liên kết googleId
         await this.usersService.linkGoogleId(byEmail.id, googleId, avatarUrl ?? undefined)
         byEmail.googleId = googleId
         if (avatarUrl) byEmail.avatarUrl = avatarUrl
         byEmail.isActive = true
-        return this.buildTokenResponse(byEmail)
+        return { ok: true, ...this.buildTokenResponse(byEmail) }
       }
     }
 
@@ -127,7 +143,7 @@ export class AuthService {
       avatarUrl,
       isActive: true,
     })
-    return this.buildTokenResponse(newUser)
+    return { ok: true, ...this.buildTokenResponse(newUser) }
   }
 
   private buildTokenResponse(user: { id: string; email: string; role: string; fullName: string; avatarUrl: string | null }) {

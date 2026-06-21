@@ -523,6 +523,50 @@
 }
 .check-row a:hover { text-decoration: underline; }
 
+/* Google login button */
+.btn-google {
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--fs-btn);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  position: relative;
+  margin-bottom: 16px;
+}
+.btn-google:hover {
+  border-color: var(--border-emphasis);
+  background: var(--bg-subtle);
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.btn-google:active { transform: scale(0.99); }
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.google-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-indigo);
+  background: var(--color-indigo-light);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
 /* ══════════════ RESPONSIVE ══════════════ */
 @media (max-width: 900px) {
   .auth-card { width: 100%; min-height: unset; flex-direction: column; }

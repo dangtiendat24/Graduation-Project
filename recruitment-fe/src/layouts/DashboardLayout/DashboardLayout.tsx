@@ -42,14 +42,13 @@ interface Props {
 }
 
 export default function DashboardLayout({ children, actions }: Props) {
-  const navigate = useNavigate()
   const { user, clearAuth } = useAuthStore()
 
   const prefix = user?.role === 'recruiter' ? '/recruiter' : '/candidate'
 
   function handleLogout() {
     clearAuth()
-    navigate('/')
+    window.location.replace('/')
   }
 
   return (

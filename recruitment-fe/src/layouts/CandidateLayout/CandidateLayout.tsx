@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import './CandidateLayout.css'
@@ -27,10 +28,22 @@ export default function CandidateLayout({ children }: Props) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { user, clearAuth } = useAuthStore()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const avatarRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   function handleLogout() {
     clearAuth()
-    navigate('/')
+    window.location.replace('/')
   }
 
   return (
@@ -61,16 +74,18 @@ export default function CandidateLayout({ children }: Props) {
             <span className="cl-dot" />
           </div>
 
-          <div className="cl-avatar-wrap">
-            <div className="cl-avatar">
+          <div className="cl-avatar-wrap" ref={avatarRef}>
+            <div className="cl-avatar" onClick={() => setMenuOpen(o => !o)}>
               {user ? getInitials(user.fullName) : 'U'}
             </div>
-            <div className="cl-avatar-menu">
-              <button onClick={handleLogout}>
-                <i className="ti ti-logout" />
-                Đăng xuất
-              </button>
-            </div>
+            {menuOpen && (
+              <div className="cl-avatar-menu">
+                <button onClick={handleLogout}>
+                  <i className="ti ti-logout" />
+                  Đăng xuất
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
