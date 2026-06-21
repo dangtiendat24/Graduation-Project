@@ -1,0 +1,158 @@
+/* ===================== NAVBAR ===================== */
+.cl-navbar {
+  height: 64px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-8);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.cl-nav-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.cl-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.cl-logo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-teal-light);
+  box-shadow: 0 0 8px rgba(94, 234, 212, 0.5);
+}
+
+.cl-logo-name {
+  font-size: var(--fs-logo);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.cl-logo-name span {
+  color: var(--color-teal);
+}
+
+.cl-nav-links {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.cl-nav-link {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  font-weight: var(--fw-bold);
+  padding-bottom: 4px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.cl-nav-link:hover {
+  color: var(--text-primary);
+}
+
+.cl-nav-link.active {
+  color: var(--color-indigo);
+  border-bottom-color: var(--color-indigo);
+}
+
+.cl-nav-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.cl-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  position: relative;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.cl-icon-btn .cl-dot {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-danger);
+}
+
+/* Avatar with dropdown */
+.cl-avatar-wrap {
+  position: relative;
+  cursor: pointer;
+}
+
+.cl-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-indigo);
+  color: #fff;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.cl-avatar-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 4px;
+  min-width: 148px;
+  z-index: 20;
+}
+
+.cl-avatar-wrap:hover .cl-avatar-menu {
+  display: block;
+}
+
+.cl-avatar-menu button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 8px 12px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  color: var(--color-danger);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-family);
+}
+
+.cl-avatar-menu button:hover {
+  background: var(--status-rejected-bg);
+}

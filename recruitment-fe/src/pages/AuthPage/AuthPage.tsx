@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuthStore } from '../../store/authStore'
 import './AuthPage.css'
 
 type Tab = 'login' | 'register'
@@ -29,6 +30,7 @@ export default function AuthPage() {
   const [searchParams] = useSearchParams()
   const initialTab = (searchParams.get('tab') as Tab) ?? 'login'
 
+  const { setAuth } = useAuthStore()
   const [tab, setTab] = useState<Tab>(initialTab)
 
   /* ── Login state ── */
@@ -81,9 +83,9 @@ export default function AuthPage() {
       if (!res.ok) {
         setApiError(data.message ?? 'Đăng nhập thất bại')
       } else {
-        localStorage.setItem('access_token', data.accessToken)
-        localStorage.setItem('user', JSON.stringify(data.user))
-        navigate('/') // TODO: chuyển sang /dashboard sau khi có
+        setAuth(data.user, data.accessToken)
+        const role = data.user?.role as string
+        navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard')
       }
     } catch {
       setApiError('Không thể kết nối đến máy chủ. Vui lòng thử lại.')
