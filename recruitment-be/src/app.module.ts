@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { MailModule } from './modules/mail/mail.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { BullMQConfigService } from './config/bullmq.config';
 
@@ -33,6 +34,7 @@ import { BullMQConfigService } from './config/bullmq.config';
     // Domain modules
     AuthModule,
     UsersModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService, BullMQConfigService],
