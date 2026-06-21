@@ -5,6 +5,7 @@ export interface AuthUser {
   fullName: string
   email: string
   role: 'recruiter' | 'candidate'
+  avatarUrl?: string | null
 }
 
 interface AuthState {

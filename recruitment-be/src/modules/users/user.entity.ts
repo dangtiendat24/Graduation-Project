@@ -29,6 +29,9 @@ export class User {
   @Column({ type: 'varchar', name: 'avatar_url', nullable: true })
   avatarUrl: string | null
 
+  @Column({ type: 'varchar', name: 'google_id', nullable: true, unique: true })
+  googleId: string | null
+
   @Column({ type: 'boolean', name: 'is_active', default: false })
   isActive: boolean
 

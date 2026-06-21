@@ -120,7 +120,6 @@
 }
 
 .cl-avatar-menu {
-  display: none;
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -131,10 +130,6 @@
   padding: 4px;
   min-width: 148px;
   z-index: 20;
-}
-
-.cl-avatar-wrap:hover .cl-avatar-menu {
-  display: block;
 }
 
 .cl-avatar-menu button {

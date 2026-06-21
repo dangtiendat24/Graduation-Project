@@ -41,4 +41,14 @@ export class UsersService {
     })
     return user
   }
+
+  findByGoogleId(googleId: string) {
+    return this.usersRepo.findOne({ where: { googleId } })
+  }
+
+  async linkGoogleId(userId: string, googleId: string, avatarUrl?: string) {
+    const update: Partial<User> = { googleId, isActive: true }
+    if (avatarUrl) update.avatarUrl = avatarUrl
+    await this.usersRepo.update(userId, update)
+  }
 }
