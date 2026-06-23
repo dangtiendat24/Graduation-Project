@@ -1,15 +1,20 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+
+const queryClient = new QueryClient()
 import LandingPage from './pages/LandingPage/LandingPage'
 import AuthPage from './pages/AuthPage/AuthPage'
 import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage'
 import AuthCallbackPage from './pages/AuthCallbackPage/AuthCallbackPage'
 import RecruiterDashboardPage from './pages/RecruiterDashboardPage/RecruiterDashboardPage'
+import RecruiterCompanyPage from './pages/RecruiterCompanyPage/RecruiterCompanyPage'
 import CandidateHomePage from './pages/CandidateHomePage/CandidateHomePage'
 import CandidateJobsPage from './pages/CandidateJobsPage/CandidateJobsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
   return (
+    <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -22,6 +27,15 @@ function App() {
           element={
             <ProtectedRoute role="recruiter">
               <RecruiterDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/company"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterCompanyPage />
             </ProtectedRoute>
           }
         />
@@ -45,6 +59,7 @@ function App() {
         />
       </Routes>
     </BrowserRouter>
+    </QueryClientProvider>
   )
 }
 
