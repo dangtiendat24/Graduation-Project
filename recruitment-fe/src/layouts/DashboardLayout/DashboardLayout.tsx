@@ -74,6 +74,13 @@ export default function DashboardLayout({ children, actions }: Props) {
         <NavItem to={`${prefix}/agents`} icon="ti-robot" label="AI Agents" />
         <NavItem to={`${prefix}/settings`} icon="ti-settings" label="Cài đặt" />
 
+        {user?.role === 'recruiter' && (
+          <>
+            <div className="dl-nav-label">Công ty</div>
+            <NavItem to="/recruiter/company" icon="ti-building" label="Hồ sơ công ty" />
+          </>
+        )}
+
         <div className="dl-sidebar-footer">
           <div className="dl-avatar">
             {user ? getInitials(user.fullName) : 'U'}
