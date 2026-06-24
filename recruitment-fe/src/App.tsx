@@ -10,6 +10,7 @@ import RecruiterDashboardPage from './pages/RecruiterDashboardPage/RecruiterDash
 import RecruiterCompanyPage from './pages/RecruiterCompanyPage/RecruiterCompanyPage'
 import CandidateHomePage from './pages/CandidateHomePage/CandidateHomePage'
 import CandidateJobsPage from './pages/CandidateJobsPage/CandidateJobsPage'
+import CandidateProfilePage from './pages/CandidateProfilePage/CandidateProfilePage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -54,6 +55,15 @@ function App() {
           element={
             <ProtectedRoute role="candidate">
               <CandidateJobsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/candidate/profile"
+          element={
+            <ProtectedRoute role="candidate">
+              <CandidateProfilePage />
             </ProtectedRoute>
           }
         />

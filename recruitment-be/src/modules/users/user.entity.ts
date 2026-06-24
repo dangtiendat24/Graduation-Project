@@ -26,6 +26,15 @@ export class User {
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string | null
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  city: string | null
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  linkedin: string | null
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  github: string | null
+
   @Column({ type: 'varchar', name: 'avatar_url', nullable: true })
   avatarUrl: string | null
 

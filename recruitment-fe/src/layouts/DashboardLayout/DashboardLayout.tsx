@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import LoginToast from '../../components/LoginToast/LoginToast'
 import './DashboardLayout.css'
 
 interface NavItemProps {
@@ -114,6 +115,8 @@ export default function DashboardLayout({ children, actions }: Props) {
 
         <main className="dl-content">{children}</main>
       </div>
+
+      <LoginToast />
     </div>
   )
 }

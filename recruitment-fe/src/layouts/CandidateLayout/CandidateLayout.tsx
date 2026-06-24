@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import LoginToast from '../../components/LoginToast/LoginToast'
 import './CandidateLayout.css'
 
 function getInitials(name: string): string {
@@ -13,12 +13,39 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
-const NAV_LINKS = [
-  { label: 'Trang chủ',        to: '/candidate/dashboard' },
-  { label: 'Việc làm',         to: '/candidate/jobs' },
-  { label: 'Hồ sơ ứng tuyển', to: '/candidate/applications' },
-  { label: 'Hồ sơ của tôi',   to: '/candidate/profile' },
-]
+function getFirstName(fullName: string): string {
+  const parts = fullName.trim().split(' ')
+  return parts[parts.length - 1]
+}
+
+function formatDate(): string {
+  const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
+  const months = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']
+  const d = new Date()
+  return `${days[d.getDay()]}, ${d.getDate()} tháng ${months[d.getMonth()]} năm ${d.getFullYear()}`
+}
+
+interface NavItemProps {
+  to: string
+  icon: string
+  label: string
+}
+
+function NavItem({ to, icon, label }: NavItemProps) {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const active = pathname === to || pathname.startsWith(to + '/')
+
+  return (
+    <div
+      className={`csl-nav-item${active ? ' active' : ''}`}
+      onClick={() => navigate(to)}
+    >
+      <i className={`ti ${icon}`} />
+      <span>{label}</span>
+    </div>
+  )
+}
 
 interface Props {
   children: React.ReactNode
@@ -26,20 +53,8 @@ interface Props {
 
 export default function CandidateLayout({ children }: Props) {
   const navigate = useNavigate()
-  const { pathname } = useLocation()
   const { user, clearAuth } = useAuthStore()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const avatarRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  const firstName = user ? getFirstName(user.fullName) : 'bạn'
 
   function handleLogout() {
     clearAuth()
@@ -47,50 +62,65 @@ export default function CandidateLayout({ children }: Props) {
   }
 
   return (
-    <div style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
-      <nav className="cl-navbar">
-        <div className="cl-nav-left">
-          <div className="cl-logo" onClick={() => navigate('/')}>
-            <span className="cl-logo-dot" />
-            <span className="cl-logo-name">Recruit<span>.AI</span></span>
-          </div>
-
-          <div className="cl-nav-links">
-            {NAV_LINKS.map((link) => (
-              <span
-                key={link.to}
-                className={`cl-nav-link${pathname === link.to ? ' active' : ''}`}
-                onClick={() => navigate(link.to)}
-              >
-                {link.label}
-              </span>
-            ))}
-          </div>
+    <div className="csl-root">
+      {/* ── Sidebar ── */}
+      <aside className="csl-sidebar">
+        <div className="csl-logo" onClick={() => navigate('/')}>
+          <span className="csl-logo-dot" />
+          <span className="csl-logo-name">Recruit<span>.AI</span></span>
         </div>
 
-        <div className="cl-nav-right">
-          <div className="cl-icon-btn">
-            <i className="ti ti-bell" />
-            <span className="cl-dot" />
-          </div>
+        <nav className="csl-nav">
+          <div className="csl-nav-label">Tổng quan</div>
+          <NavItem to="/candidate/dashboard" icon="ti-layout-dashboard" label="Dashboard" />
 
-          <div className="cl-avatar-wrap" ref={avatarRef}>
-            <div className="cl-avatar" onClick={() => setMenuOpen(o => !o)}>
-              {user ? getInitials(user.fullName) : 'U'}
+          <div className="csl-nav-label">Ứng tuyển</div>
+          <NavItem to="/candidate/jobs"         icon="ti-briefcase"        label="Việc làm" />
+          <NavItem to="/candidate/applications" icon="ti-send"             label="Đơn đã nộp" />
+          <NavItem to="/candidate/interview"    icon="ti-message-chatbot"  label="Phỏng vấn AI" />
+          <NavItem to="/candidate/schedule"     icon="ti-calendar"         label="Lịch phỏng vấn" />
+
+          <div className="csl-nav-label">Tài khoản</div>
+          <NavItem to="/candidate/profile" icon="ti-user-circle" label="Hồ sơ cá nhân" />
+        </nav>
+
+        <div className="csl-sidebar-footer">
+          <div className="csl-avatar">
+            {user ? getInitials(user.fullName) : 'U'}
+          </div>
+          <div className="csl-user-info">
+            <div className="csl-user-name">{user?.fullName ?? 'Người dùng'}</div>
+            <div className="csl-user-role">Ứng viên</div>
+          </div>
+          <button className="csl-logout-btn" onClick={handleLogout} title="Đăng xuất">
+            <i className="ti ti-logout" />
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main area ── */}
+      <div className="csl-main">
+        <header className="csl-topbar">
+          <div className="csl-topbar-left">
+            <div className="csl-greeting">Xin chào, {firstName} 👋</div>
+            <div className="csl-date">{formatDate()}</div>
+          </div>
+          <div className="csl-topbar-right">
+            <div className="csl-icon-btn">
+              <i className="ti ti-bell" />
+              <span className="csl-dot" />
             </div>
-            {menuOpen && (
-              <div className="cl-avatar-menu">
-                <button onClick={handleLogout}>
-                  <i className="ti ti-logout" />
-                  Đăng xuất
-                </button>
-              </div>
-            )}
+            <button className="csl-btn-primary" onClick={() => navigate('/candidate/jobs')}>
+              <i className="ti ti-briefcase" />
+              Tìm việc làm
+            </button>
           </div>
-        </div>
-      </nav>
+        </header>
 
-      {children}
+        <main className="csl-content">{children}</main>
+      </div>
+
+      <LoginToast />
     </div>
   )
 }

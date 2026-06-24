@@ -95,7 +95,10 @@ export default function AuthPage() {
       } else {
         setAuth(data.user, data.accessToken)
         const role = data.user?.role as string
-        navigate(role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard')
+        navigate(
+          role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard',
+          { state: { loginSuccess: true, userName: data.user?.fullName ?? '' } },
+        )
       }
     } catch {
       setApiError('Không thể kết nối đến máy chủ. Vui lòng thử lại.')

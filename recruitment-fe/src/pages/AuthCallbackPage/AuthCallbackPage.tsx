@@ -30,7 +30,7 @@ export default function AuthCallbackPage() {
     setAuth({ id, email, fullName, role, ...(avatarUrl ? { avatarUrl } : {}) }, token)
 
     const dest = role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard'
-    navigate(dest, { replace: true })
+    navigate(dest, { replace: true, state: { loginSuccess: true, userName: fullName } })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (error) {
