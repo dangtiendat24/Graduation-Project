@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { useAuthStore } from '../../store/authStore'
 import './RecruiterDashboardPage.css'
@@ -107,12 +108,13 @@ function formatToday(): string {
 
 export default function RecruiterDashboardPage() {
   const { user } = useAuthStore()
+  const navigate = useNavigate()
   const firstName = user ? getFirstName(user.fullName) : 'bạn'
 
   return (
     <DashboardLayout
       actions={
-        <button className="rd-btn-primary">
+        <button className="rd-btn-primary" onClick={() => navigate('/recruiter/jobs/create')}>
           <i className="ti ti-plus" />
           Tạo tin tuyển dụng
         </button>
