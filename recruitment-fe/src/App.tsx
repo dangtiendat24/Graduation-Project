@@ -8,6 +8,9 @@ import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage'
 import AuthCallbackPage from './pages/AuthCallbackPage/AuthCallbackPage'
 import RecruiterDashboardPage from './pages/RecruiterDashboardPage/RecruiterDashboardPage'
 import RecruiterCompanyPage from './pages/RecruiterCompanyPage/RecruiterCompanyPage'
+import RecruiterJobsPage from './pages/RecruiterJobsPage/RecruiterJobsPage'
+import RecruiterJobCreatePage from './pages/RecruiterJobCreatePage/RecruiterJobCreatePage'
+import RecruiterJobEditPage from './pages/RecruiterJobEditPage/RecruiterJobEditPage'
 import CandidateHomePage from './pages/CandidateHomePage/CandidateHomePage'
 import CandidateJobsPage from './pages/CandidateJobsPage/CandidateJobsPage'
 import CandidateProfilePage from './pages/CandidateProfilePage/CandidateProfilePage'
@@ -37,6 +40,33 @@ function App() {
           element={
             <ProtectedRoute role="recruiter">
               <RecruiterCompanyPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/jobs"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterJobsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/jobs/create"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterJobCreatePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/jobs/:id/edit"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterJobEditPage />
             </ProtectedRoute>
           }
         />
