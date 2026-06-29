@@ -1,12 +1,21 @@
 import { apiClient } from './client'
 
+export interface JobCompany {
+  id: string
+  name: string
+  shortName: string | null
+  logoUrl: string | null
+  industry: string | null
+}
+
 export interface Job {
   id: string
   recruiterId: string
   companyId: string | null
+  company: JobCompany | null
   title: string
   department: string | null
-  level: string | null
+  level: 'intern' | 'junior' | 'middle' | 'senior' | 'lead' | 'director' | null
   location: string | null
   headcount: number
   workModel: 'onsite' | 'hybrid' | 'remote' | null
@@ -20,6 +29,14 @@ export interface Job {
   deadline: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface JobSearchParams {
+  q?: string
+  location?: string
+  workModel?: 'onsite' | 'hybrid' | 'remote'
+  level?: 'intern' | 'junior' | 'middle' | 'senior' | 'lead' | 'director'
+  companyId?: string
 }
 
 export interface CreateJobPayload {
@@ -41,6 +58,11 @@ export interface CreateJobPayload {
 
 export async function createJob(payload: CreateJobPayload): Promise<Job> {
   const { data } = await apiClient.post<Job>('/jobs', payload)
+  return data
+}
+
+export async function getActiveJobs(params?: JobSearchParams): Promise<Job[]> {
+  const { data } = await apiClient.get<Job[]>('/jobs', { params })
   return data
 }
 

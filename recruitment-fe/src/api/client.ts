@@ -9,3 +9,22 @@ apiClient.interceptors.request.use(config => {
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
+
+// Khi server trả 401 → token hết hạn → xóa auth và redirect login
+apiClient.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('user')
+      // Dùng dynamic import để tránh circular dependency
+      import('../store/authStore').then(({ useAuthStore }) => {
+        useAuthStore.getState().clearAuth()
+      })
+      if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login'
+      }
+    }
+    return Promise.reject(error)
+  },
+)

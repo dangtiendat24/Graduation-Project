@@ -30,6 +30,11 @@ export async function getMyCompany(): Promise<CompanyData | null> {
   return data
 }
 
+export async function getCompany(id: string): Promise<CompanyData> {
+  const { data } = await apiClient.get<CompanyData>(`/companies/${id}`)
+  return data
+}
+
 export async function upsertCompany(payload: CompanyData): Promise<CompanyData> {
   const { data } = await apiClient.put<CompanyData>('/companies/my', payload)
   return data
