@@ -11,10 +11,8 @@ export default function ProtectedRoute({ children, role }: Props) {
 
   if (!token || !user) return <Navigate to="/login" replace />
 
-  if (user.role !== role) {
-    const fallback = user.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard'
-    return <Navigate to={fallback} replace />
-  }
+  // Sai role → về login để user tự chọn đúng tài khoản
+  if (user.role !== role) return <Navigate to="/login" replace />
 
   return <>{children}</>
 }

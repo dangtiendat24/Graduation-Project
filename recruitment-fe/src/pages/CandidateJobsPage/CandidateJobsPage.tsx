@@ -1,123 +1,114 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
+import { getActiveJobs, type Job, type JobSearchParams } from '../../api/jobs'
 import './CandidateJobsPage.css'
 
-/* ── Types ── */
-interface Job {
-  initials: string
-  title: string
-  company: string
-  matchPct: number
-  matchClass: 'high' | 'mid'
-  location: string
-  workType: string
-  experience: string
-  tags: string[]
-  salary: string
+type WorkModel = 'onsite' | 'hybrid' | 'remote'
+type Level = 'intern' | 'junior' | 'middle' | 'senior' | 'lead' | 'director'
+
+const WORK_MODEL_LABELS: Record<WorkModel, string> = {
+  onsite: 'Tại văn phòng',
+  hybrid: 'Hybrid',
+  remote: 'Remote',
 }
 
-/* ── Static data ── */
-const JOBS: Job[] = [
-  {
-    initials: 'TC',
-    title: 'Senior Backend Engineer',
-    company: 'TechCorp Vietnam',
-    matchPct: 92,
-    matchClass: 'high',
-    location: 'Quận 1, TP.HCM',
-    workType: 'Toàn thời gian',
-    experience: '2–4 năm kinh nghiệm',
-    tags: ['Node.js', 'PostgreSQL', 'Microservices'],
-    salary: '25 – 35 triệu',
-  },
-  {
-    initials: 'FN',
-    title: 'Product Designer',
-    company: 'Fintek Solutions',
-    matchPct: 88,
-    matchClass: 'high',
-    location: 'Remote',
-    workType: 'Toàn thời gian',
-    experience: '1–3 năm kinh nghiệm',
-    tags: ['Figma', 'Design System', 'UX Research'],
-    salary: '20 – 28 triệu',
-  },
-  {
-    initials: 'DV',
-    title: 'Data Analyst',
-    company: 'DataViet Group',
-    matchPct: 67,
-    matchClass: 'mid',
-    location: 'Quận 7, TP.HCM',
-    workType: 'Toàn thời gian',
-    experience: '1–2 năm kinh nghiệm',
-    tags: ['SQL', 'Power BI', 'Python'],
-    salary: '15 – 22 triệu',
-  },
-]
-
-const QUICK_CHIPS = ['Backend Developer', 'UI/UX Designer', 'Data Analyst', 'DevOps', 'Remote']
-
-/* ── Filter state helpers ── */
-interface FilterGroup {
-  label: string
-  options: { id: string; label: string; checked: boolean }[]
+const LEVEL_LABELS: Record<Level, string> = {
+  intern: 'Thực tập sinh',
+  junior: 'Junior',
+  middle: 'Middle',
+  senior: 'Senior',
+  lead: 'Lead',
+  director: 'Director',
 }
 
-const INITIAL_FILTERS: FilterGroup[] = [
-  {
-    label: 'Mức lương',
-    options: [
-      { id: 'salary-below15', label: 'Dưới 15 triệu', checked: false },
-      { id: 'salary-15-25',   label: '15 – 25 triệu', checked: true },
-      { id: 'salary-25-40',   label: '25 – 40 triệu', checked: false },
-      { id: 'salary-above40', label: 'Trên 40 triệu', checked: false },
-    ],
-  },
-  {
-    label: 'Hình thức',
-    options: [
-      { id: 'type-full',    label: 'Toàn thời gian', checked: true },
-      { id: 'type-part',    label: 'Bán thời gian',  checked: false },
-      { id: 'type-remote',  label: 'Remote',          checked: false },
-      { id: 'type-hybrid',  label: 'Hybrid',          checked: false },
-    ],
-  },
-  {
-    label: 'Kinh nghiệm',
-    options: [
-      { id: 'exp-fresh', label: 'Mới tốt nghiệp', checked: false },
-      { id: 'exp-1-3',   label: '1 – 3 năm',      checked: true },
-      { id: 'exp-3-5',   label: '3 – 5 năm',      checked: false },
-      { id: 'exp-5plus', label: 'Trên 5 năm',      checked: false },
-    ],
-  },
-]
+const QUICK_CHIPS = ['Backend Developer', 'UI/UX Designer', 'Data Analyst', 'DevOps', 'React']
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+}
 
 export default function CandidateJobsPage() {
-  const [query, setQuery] = useState('')
-  const [filters, setFilters] = useState<FilterGroup[]>(INITIAL_FILTERS)
+  const navigate = useNavigate()
+  const [inputQuery, setInputQuery] = useState('')
+  const [inputLocation, setInputLocation] = useState('')
+  const [activeQuery, setActiveQuery] = useState('')
+  const [activeLocation, setActiveLocation] = useState('')
+  const [workModelFilter, setWorkModelFilter] = useState<WorkModel | null>(null)
+  const [levelFilter, setLevelFilter] = useState<Level | null>(null)
 
-  function toggleOption(groupIdx: number, optionId: string) {
-    setFilters((prev) =>
-      prev.map((g, gi) =>
-        gi !== groupIdx
-          ? g
-          : {
-              ...g,
-              options: g.options.map((o) =>
-                o.id === optionId ? { ...o, checked: !o.checked } : o
-              ),
-            }
-      )
-    )
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function fetchJobs() {
+      setLoading(true)
+      setError(null)
+      try {
+        const params: JobSearchParams = {}
+        if (activeQuery) params.q = activeQuery
+        if (activeLocation) params.location = activeLocation
+        if (workModelFilter) params.workModel = workModelFilter
+        if (levelFilter) params.level = levelFilter
+        const data = await getActiveJobs(params)
+        if (!cancelled) setJobs(data)
+      } catch {
+        if (!cancelled) setError('Không thể tải danh sách việc làm. Vui lòng thử lại.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    fetchJobs()
+
+    // Refetch khi user switch lại tab — đảm bảo company name/avatar mới nhất
+    const handleVisible = () => { if (document.visibilityState === 'visible') fetchJobs() }
+    document.addEventListener('visibilitychange', handleVisible)
+
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', handleVisible)
+    }
+  }, [activeQuery, activeLocation, workModelFilter, levelFilter])
+
+  function handleSearch() {
+    setActiveQuery(inputQuery.trim())
+    setActiveLocation(inputLocation.trim())
+  }
+
+  function handleChipClick(chip: string) {
+    setInputQuery(chip)
+    setActiveQuery(chip)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') handleSearch()
+  }
+
+  function toggleWorkModel(value: WorkModel) {
+    setWorkModelFilter((prev) => (prev === value ? null : value))
+  }
+
+  function toggleLevel(value: Level) {
+    setLevelFilter((prev) => (prev === value ? null : value))
   }
 
   function resetFilters() {
-    setFilters(INITIAL_FILTERS.map((g) => ({
-      ...g,
-      options: g.options.map((o) => ({ ...o, checked: false })),
-    })))
+    setWorkModelFilter(null)
+    setLevelFilter(null)
+    setInputQuery('')
+    setInputLocation('')
+    setActiveQuery('')
+    setActiveLocation('')
   }
 
   return (
@@ -126,32 +117,37 @@ export default function CandidateJobsPage() {
       <div className="cj-hero">
         <div className="cj-hero-inner">
           <h1>Tìm công việc phù hợp với bạn</h1>
-          <p>AI phân tích hồ sơ của bạn và gợi ý những vị trí có độ phù hợp cao nhất</p>
+          <p>Tìm kiếm theo tên công việc, kỹ năng hoặc địa điểm</p>
 
           <div className="cj-search-bar">
             <div className="cj-search-field">
               <i className="ti ti-search" />
               <input
                 type="text"
-                placeholder="Tên công việc, công ty hoặc kỹ năng"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Tên công việc, kỹ năng..."
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
               />
             </div>
             <div className="cj-search-field divider">
               <i className="ti ti-map-pin" />
-              Hồ Chí Minh
+              <input
+                type="text"
+                placeholder="Địa điểm"
+                value={inputLocation}
+                onChange={(e) => setInputLocation(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
             </div>
-            <button className="cj-btn-search">Tìm kiếm</button>
+            <button className="cj-btn-search" onClick={handleSearch}>
+              Tìm kiếm
+            </button>
           </div>
 
           <div className="cj-chip-row">
             {QUICK_CHIPS.map((chip) => (
-              <span
-                key={chip}
-                className="cj-chip"
-                onClick={() => setQuery(chip)}
-              >
+              <span key={chip} className="cj-chip" onClick={() => handleChipClick(chip)}>
                 {chip}
               </span>
             ))}
@@ -165,21 +161,33 @@ export default function CandidateJobsPage() {
         <div className="cj-filters">
           <h3>Bộ lọc</h3>
 
-          {filters.map((group, gi) => (
-            <div key={group.label} className="cj-filter-group">
-              <div className="cj-filter-label">{group.label}</div>
-              {group.options.map((opt) => (
-                <label key={opt.id} className="cj-filter-option">
-                  <input
-                    type="checkbox"
-                    checked={opt.checked}
-                    onChange={() => toggleOption(gi, opt.id)}
-                  />
-                  {opt.label}
-                </label>
-              ))}
-            </div>
-          ))}
+          <div className="cj-filter-group">
+            <div className="cj-filter-label">Hình thức làm việc</div>
+            {(Object.entries(WORK_MODEL_LABELS) as [WorkModel, string][]).map(([value, label]) => (
+              <label key={value} className="cj-filter-option">
+                <input
+                  type="checkbox"
+                  checked={workModelFilter === value}
+                  onChange={() => toggleWorkModel(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          <div className="cj-filter-group">
+            <div className="cj-filter-label">Cấp độ</div>
+            {(Object.entries(LEVEL_LABELS) as [Level, string][]).map(([value, label]) => (
+              <label key={value} className="cj-filter-option">
+                <input
+                  type="checkbox"
+                  checked={levelFilter === value}
+                  onChange={() => toggleLevel(value)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
 
           <button className="cj-filter-reset" onClick={resetFilters}>
             Xóa bộ lọc
@@ -190,52 +198,105 @@ export default function CandidateJobsPage() {
         <div>
           <div className="cj-results-head">
             <h2>
-              Việc làm gợi ý cho bạn{' '}
-              <span className="cj-count">({JOBS.length} kết quả)</span>
+              Việc làm đang tuyển{' '}
+              <span className="cj-count">
+                {loading ? '' : `(${jobs.length} kết quả)`}
+              </span>
             </h2>
-            <span className="cj-sort-pill">Phù hợp nhất ▾</span>
           </div>
 
-          {JOBS.map((job) => (
-            <div key={job.title + job.company} className="cj-job-card">
-              <div className="cj-company-logo">{job.initials}</div>
+          {loading && (
+            <div className="cj-state-msg">Đang tải danh sách việc làm...</div>
+          )}
 
-              <div className="cj-job-main">
-                <div className="cj-job-top">
-                  <div>
-                    <div className="cj-job-title">{job.title}</div>
-                    <div className="cj-job-company">{job.company}</div>
+          {!loading && error && (
+            <div className="cj-state-msg cj-state-error">{error}</div>
+          )}
+
+          {!loading && !error && jobs.length === 0 && (
+            <div className="cj-state-msg">
+              Không tìm thấy tin tuyển dụng phù hợp. Hãy thử thay đổi từ khóa hoặc bộ lọc.
+            </div>
+          )}
+
+          {!loading && !error && jobs.map((job) => {
+            const companyName = job.company?.name ?? 'Công ty chưa cập nhật'
+            const initials = getInitials(companyName)
+            const workModelLabel = job.workModel ? WORK_MODEL_LABELS[job.workModel] : null
+            const levelLabel = job.level ? LEVEL_LABELS[job.level] : null
+
+            return (
+              <div key={job.id} className="cj-job-card" onClick={() => navigate(`/candidate/jobs/${job.id}`)} style={{ cursor: 'pointer' }}>
+                <div
+                  className="cj-company-logo"
+                  title={companyName}
+                  onClick={(e) => { if (job.company?.id) { e.stopPropagation(); navigate(`/candidate/companies/${job.company.id}`) } }}
+                  style={job.company?.id ? { cursor: 'pointer' } : undefined}
+                >
+                  {initials}
+                </div>
+
+                <div className="cj-job-main">
+                  <div className="cj-job-top">
+                    <div>
+                      <div className="cj-job-title">{job.title}</div>
+                      <div
+                        className="cj-job-company"
+                        onClick={(e) => { if (job.company?.id) { e.stopPropagation(); navigate(`/candidate/companies/${job.company.id}`) } }}
+                        style={job.company?.id ? { cursor: 'pointer', textDecoration: 'underline dotted' } : undefined}
+                      >
+                        {companyName}
+                      </div>
+                    </div>
+                    {job.deadline && (
+                      <span className="cj-deadline-pill">
+                        <i className="ti ti-calendar-due" />
+                        HSD: {new Date(job.deadline).toLocaleDateString('vi-VN')}
+                      </span>
+                    )}
                   </div>
-                  <span className={`cj-match-pill cj-match-${job.matchClass}`}>
-                    <i className="ti ti-bolt" />
-                    {job.matchPct}% phù hợp
-                  </span>
-                </div>
 
-                <div className="cj-job-meta">
-                  <span><i className="ti ti-map-pin" />{job.location}</span>
-                  <span><i className="ti ti-briefcase" />{job.workType}</span>
-                  <span><i className="ti ti-clock" />{job.experience}</span>
-                </div>
+                  <div className="cj-job-meta">
+                    {job.location && (
+                      <span><i className="ti ti-map-pin" />{job.location}</span>
+                    )}
+                    {workModelLabel && (
+                      <span><i className="ti ti-briefcase" />{workModelLabel}</span>
+                    )}
+                    {levelLabel && (
+                      <span><i className="ti ti-award" />{levelLabel}</span>
+                    )}
+                    {job.minExperience && (
+                      <span><i className="ti ti-clock" />{job.minExperience} năm kinh nghiệm</span>
+                    )}
+                  </div>
 
-                <div className="cj-job-tags">
-                  {job.tags.map((tag) => (
-                    <span key={tag} className="cj-tag">{tag}</span>
-                  ))}
-                </div>
+                  {job.requiredSkills && job.requiredSkills.length > 0 && (
+                    <div className="cj-job-tags">
+                      {job.requiredSkills.slice(0, 4).map((skill) => (
+                        <span key={skill} className="cj-tag">{skill}</span>
+                      ))}
+                      {job.requiredSkills.length > 4 && (
+                        <span className="cj-tag">+{job.requiredSkills.length - 4}</span>
+                      )}
+                    </div>
+                  )}
 
-                <div className="cj-job-footer">
-                  <span className="cj-job-salary">{job.salary}</span>
-                  <div className="cj-job-actions">
-                    <button className="cj-btn-save" title="Lưu tin">
-                      <i className="ti ti-heart" />
-                    </button>
-                    <button className="cj-btn-apply">Ứng tuyển ngay</button>
+                  <div className="cj-job-footer">
+                    <span className="cj-job-salary">
+                      {job.salaryRange ?? 'Thỏa thuận'}
+                    </span>
+                    <div className="cj-job-actions" onClick={(e) => e.stopPropagation()}>
+                      <button className="cj-btn-save" title="Lưu tin">
+                        <i className="ti ti-heart" />
+                      </button>
+                      <button className="cj-btn-apply" onClick={() => navigate(`/candidate/jobs/${job.id}`)}>Xem chi tiết</button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </CandidateLayout>
