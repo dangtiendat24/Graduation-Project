@@ -23,6 +23,8 @@ export interface EduItem {
   year: string
 }
 
+export type ParseStatus = 'pending' | 'processing' | 'done' | 'error'
+
 @Entity('candidate_resumes')
 @Unique('uq_candidate_resumes_candidate_id', ['candidateId'])
 export class CandidateResume {
@@ -66,6 +68,9 @@ export class CandidateResume {
 
   @Column({ type: 'boolean', name: 'is_analyzed', default: false })
   isAnalyzed: boolean
+
+  @Column({ type: 'varchar', name: 'parse_status', length: 20, default: 'pending' })
+  parseStatus: ParseStatus
 
   @Column({ type: 'timestamptz', name: 'parsed_at', nullable: true })
   parsedAt: Date | null

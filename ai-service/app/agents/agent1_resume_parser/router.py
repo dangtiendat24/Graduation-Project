@@ -1,5 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
+
+from .graph import resume_parser_graph
 
 router = APIRouter(prefix="/api/ai/resume-parser", tags=["Agent 1 — Resume Parser"])
 
@@ -22,8 +24,32 @@ async def parse_resume(body: ParseResumeRequest):
     Agent 1: Nhận raw text từ CV → LangGraph graph extract structured data
     → Trả về parsed_data JSON → NestJS lưu vào candidate_profiles.parsed_data
     """
-    # TODO: implement graph.ainvoke()
-    raise HTTPException(status_code=501, detail="Agent 1 not yet implemented")
+    if not body.cv_raw_text.strip():
+        return ParseResumeResponse(
+            profile_id=body.profile_id,
+            parsed_data={},
+            success=False,
+            error="cv_raw_text rỗng, không thể trích xuất",
+        )
+
+    result = await resume_parser_graph.ainvoke(
+        {"cv_raw_text": body.cv_raw_text, "parsed_data": None, "error": None}
+    )
+
+    if result.get("error") or result.get("parsed_data") is None:
+        return ParseResumeResponse(
+            profile_id=body.profile_id,
+            parsed_data={},
+            success=False,
+            error=result.get("error") or "Không trích xuất được dữ liệu từ CV",
+        )
+
+    return ParseResumeResponse(
+        profile_id=body.profile_id,
+        parsed_data=result["parsed_data"].model_dump(),
+        success=True,
+        error=None,
+    )
 
 
 @router.get("/health")
