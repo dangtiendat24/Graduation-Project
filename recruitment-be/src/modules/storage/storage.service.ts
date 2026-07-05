@@ -4,6 +4,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3'
 
 @Injectable()
@@ -38,6 +39,22 @@ export class StorageService {
     } catch (err) {
       throw new InternalServerErrorException(
         `Không thể upload file lên S3: ${(err as Error).message}`,
+      )
+    }
+  }
+
+  async download(key: string): Promise<Buffer> {
+    try {
+      const res = await this.s3.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }))
+      const stream = res.Body as AsyncIterable<Buffer | Uint8Array>
+      const chunks: Buffer[] = []
+      for await (const chunk of stream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
+      }
+      return Buffer.concat(chunks)
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Không thể tải file từ S3: ${(err as Error).message}`,
       )
     }
   }

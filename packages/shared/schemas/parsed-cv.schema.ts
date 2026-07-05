@@ -3,22 +3,24 @@ import { z } from 'zod';
 // Zod schema cho candidate_profiles.parsed_data (output của Agent 1)
 // Validate bắt buộc trước khi INSERT vào DB
 
+// Field names khớp với CandidateResume.ExperienceItem / EduItem (recruitment-be)
+// và ResumeData.ExperienceItem / EduItem (recruitment-fe) — KHÔNG đổi tên ở đây
+// nếu không đồng bộ cả 3 phía.
 const ExperienceSchema = z.object({
-  company: z.string().min(1),
-  role: z.string().min(1),
-  duration: z.string().min(1), // VD "2022/01 - 2024/06"
+  title: z.string().default(''),
+  company: z.string().default(''),
+  period: z.string().default(''), // VD "2022/01 - 2024/06"
   description: z.string().default(''),
 });
 
 const EducationSchema = z.object({
-  school: z.string().min(1),
-  degree: z.string().min(1),
-  major: z.string().min(1),
-  year: z.string().min(1),
+  school: z.string().default(''),
+  degree: z.string().default(''),
+  year: z.string().default(''),
 });
 
 export const ParsedCvSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().default(''),
   email: z.string().email().optional().nullable(),
   phone: z.string().optional().nullable(),
   summary: z.string().default(''),
