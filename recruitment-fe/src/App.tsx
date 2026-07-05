@@ -18,6 +18,7 @@ import CandidateJobsPage from './pages/CandidateJobsPage/CandidateJobsPage'
 import CandidateJobDetailPage from './pages/CandidateJobDetailPage/CandidateJobDetailPage'
 import CandidateProfilePage from './pages/CandidateProfilePage/CandidateProfilePage'
 import CandidateCompanyPage from './pages/CandidateCompanyPage/CandidateCompanyPage'
+import RecruiterCandidatesPage from './pages/RecruiterCandidatesPage/RecruiterCandidatesPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -86,6 +87,15 @@ function App() {
           element={
             <ProtectedRoute role="recruiter">
               <RecruiterJobsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/candidates"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterCandidatesPage />
             </ProtectedRoute>
           }
         />
