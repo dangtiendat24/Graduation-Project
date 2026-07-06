@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common'
@@ -17,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { JobsService } from './jobs.service'
 import { CreateJobDto } from './dto/create-job.dto'
 import { UpdateJobDto } from './dto/update-job.dto'
+import { SearchJobsDto } from './dto/search-jobs.dto'
 
 interface JwtUser {
   id: string
@@ -45,10 +47,10 @@ export class JobsController {
     return this.jobsService.findByRecruiter(req.user.id)
   }
 
-  @ApiOperation({ summary: 'Danh sách tin đang tuyển dụng (public cho ứng viên)' })
+  @ApiOperation({ summary: 'Danh sách tin đang tuyển dụng, hỗ trợ tìm kiếm và lọc' })
   @Get()
-  findActive() {
-    return this.jobsService.findActive()
+  findActive(@Query() dto: SearchJobsDto) {
+    return this.jobsService.search(dto)
   }
 
   @ApiOperation({ summary: 'Chi tiết tin tuyển dụng' })

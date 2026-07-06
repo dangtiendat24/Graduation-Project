@@ -13,6 +13,7 @@ export interface ResumeData {
   parsedExperience: ExperienceItem[] | null
   parsedEducation: EduItem[] | null
   isAnalyzed: boolean
+  parseStatus: 'pending' | 'processing' | 'done' | 'error'
   parsedAt: string | null
   createdAt: string
   updatedAt: string

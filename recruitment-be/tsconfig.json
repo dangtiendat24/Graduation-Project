@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "ignoreDeprecations": "5.0",
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
@@ -14,11 +13,6 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
-    "paths": {
-      "@smart-recruitment/shared": ["../packages/shared/index.ts"],
-      "@smart-recruitment/shared/*": ["../packages/shared/*"]
-    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

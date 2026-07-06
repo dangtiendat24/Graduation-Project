@@ -6,6 +6,7 @@ import 'multer'
 import { User } from '../users/user.entity'
 import { CandidateResume } from './entities/candidate-resume.entity'
 import { StorageService } from '../storage/storage.service'
+import { ResumeParserService } from '../resume-parser/resume-parser.service'
 import { UpdateProfileDto } from './dto/update-profile.dto'
 
 export interface ProfileResponse {
@@ -29,6 +30,7 @@ export class ProfileService {
     @InjectRepository(CandidateResume)
     private readonly resumeRepo: Repository<CandidateResume>,
     private readonly storage: StorageService,
+    private readonly resumeParser: ResumeParserService,
   ) {}
 
   async getMyProfile(userId: string): Promise<ProfileResponse> {
@@ -68,6 +70,7 @@ export class ProfileService {
       resume.cvUrl = url
       resume.cvSizeBytes = file.size
       resume.isAnalyzed = false
+      resume.parseStatus = 'pending'
       resume.parsedAt = null
       resume.parsedSummary = null
       resume.parsedSkills = null
@@ -83,7 +86,9 @@ export class ProfileService {
       })
     }
 
-    return this.resumeRepo.save(resume)
+    const saved = await this.resumeRepo.save(resume)
+    await this.resumeParser.enqueueParse(saved.id)
+    return saved
   }
 
   private toResponse(user: User, resume: CandidateResume | null): ProfileResponse {
