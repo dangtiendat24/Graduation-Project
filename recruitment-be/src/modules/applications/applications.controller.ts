@@ -4,7 +4,9 @@ import {
   Controller,
   FileTypeValidator,
   ForbiddenException,
+  Get,
   MaxFileSizeValidator,
+  Param,
   ParseFilePipe,
   Post,
   Request,
@@ -62,6 +64,13 @@ export class ApplicationsController {
   ) {
     this.assertCandidate(req.user)
     return this.applicationsService.apply(req.user.id, dto, file)
+  }
+
+  @ApiOperation({ summary: 'Kiểm tra trạng thái ứng tuyển của bản thân cho 1 tin tuyển dụng' })
+  @Get('status/:jobId')
+  getStatus(@Request() req: { user: JwtUser }, @Param('jobId') jobId: string) {
+    this.assertCandidate(req.user)
+    return this.applicationsService.getStatusForJob(req.user.id, jobId)
   }
 
   private assertCandidate(user: JwtUser): void {
