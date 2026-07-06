@@ -1,6 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
+import { HttpService } from '@nestjs/axios'
 import { Repository } from 'typeorm'
+import { firstValueFrom } from 'rxjs'
 import { Job } from './job.entity'
 import { Company } from '../companies/company.entity'
 import { CreateJobDto } from './dto/create-job.dto'
@@ -12,11 +15,15 @@ const COMPANY_JOIN_CONDITION =
 
 @Injectable()
 export class JobsService {
+  private readonly logger = new Logger(JobsService.name)
+
   constructor(
     @InjectRepository(Job)
     private readonly repo: Repository<Job>,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
+    private readonly httpService: HttpService,
+    private readonly config: ConfigService,
   ) {}
 
   async create(recruiterId: string, dto: CreateJobDto): Promise<Job> {
@@ -28,7 +35,9 @@ export class JobsService {
       status: dto.status ?? 'draft',
       headcount: dto.headcount ?? 1,
     })
-    return this.repo.save(job)
+    const saved = await this.repo.save(job)
+    void this.embedJob(saved)
+    return saved
   }
 
   async findByRecruiter(recruiterId: string): Promise<Job[]> {
@@ -90,7 +99,27 @@ export class JobsService {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa tin tuyển dụng này')
     }
     Object.assign(job, dto)
-    return this.repo.save(job)
+    const saved = await this.repo.save(job)
+    void this.embedJob(saved)
+    return saved
+  }
+
+  private async embedJob(job: Job): Promise<void> {
+    const jobText = [job.title, job.description, job.requirements, ...(job.requiredSkills ?? [])]
+      .filter(Boolean)
+      .join('\n')
+
+    try {
+      const aiServiceUrl = this.config.get<string>('AI_SERVICE_URL', 'http://localhost:8000')
+      await firstValueFrom(
+        this.httpService.post(`${aiServiceUrl}/api/ai/matching/embeddings/job`, {
+          job_id: job.id,
+          job_text: jobText,
+        }),
+      )
+    } catch (err) {
+      this.logger.warn(`Lưu embedding Job thất bại cho job ${job.id}: ${(err as Error).message}`)
+    }
   }
 
   async close(recruiterId: string, id: string): Promise<Job> {

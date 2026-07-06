@@ -1,11 +1,29 @@
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.core.vectorstore import ensure_collections
 from app.agents.agent1_resume_parser.router import router as resume_parser_router
 from app.agents.agent2_matching.router import router as matching_router
 from app.agents.agent3_interview.router import router as interview_router
 from app.agents.agent4_scheduling.router import router as scheduling_router
 from app.agents.agent5_reporting.router import router as reporting_router
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        await ensure_collections()
+    except Exception:
+        # Không để Qdrant tạm thời không sẵn sàng làm sập toàn bộ service
+        # (agent 1, 3, 4, 5 không phụ thuộc Qdrant và vẫn cần hoạt động bình thường).
+        logger.exception("Không thể khởi tạo Qdrant collections lúc startup")
+    yield
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -13,6 +31,7 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/api/ai/docs",
     redoc_url="/api/ai/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

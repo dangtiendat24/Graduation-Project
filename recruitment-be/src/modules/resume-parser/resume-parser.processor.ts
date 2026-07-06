@@ -66,12 +66,27 @@ export class ResumeParserProcessor extends WorkerHost {
       resume.parseStatus = 'done'
       resume.parsedAt = new Date()
       await this.resumeRepo.save(resume)
+
+      await this.embedCv(aiServiceUrl, resume.candidateId, cvRawText)
     } catch (err) {
       resume.isAnalyzed = false
       resume.parseStatus = 'error'
       await this.resumeRepo.save(resume)
       this.logger.error(`Parse CV thất bại cho resume ${resume.id}: ${(err as Error).message}`)
       throw err
+    }
+  }
+
+  private async embedCv(aiServiceUrl: string, profileId: string, cvText: string): Promise<void> {
+    try {
+      await firstValueFrom(
+        this.httpService.post(`${aiServiceUrl}/api/ai/matching/embeddings/cv`, {
+          profile_id: profileId,
+          cv_text: cvText,
+        }),
+      )
+    } catch (err) {
+      this.logger.warn(`Lưu embedding CV thất bại cho profile ${profileId}: ${(err as Error).message}`)
     }
   }
 }
