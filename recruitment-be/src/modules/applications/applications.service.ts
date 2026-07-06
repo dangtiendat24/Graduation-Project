@@ -48,4 +48,19 @@ export class ApplicationsService {
     })
     return this.repo.save(application)
   }
+
+  async getStatusForJob(
+    candidateId: string,
+    jobId: string,
+  ): Promise<{ hasApplied: boolean; status: ApplicationStatus | null; appliedAt: Date | null }> {
+    const existing = await this.repo.findOne({
+      where: { candidateId, jobId },
+      order: { createdAt: 'DESC' },
+    })
+    return {
+      hasApplied: !!existing && !NON_REAPPLICABLE_STATUSES.includes(existing.status),
+      status: existing?.status ?? null,
+      appliedAt: existing?.createdAt ?? null,
+    }
+  }
 }

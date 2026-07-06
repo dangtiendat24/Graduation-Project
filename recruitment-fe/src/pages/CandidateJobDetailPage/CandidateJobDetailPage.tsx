@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getJob, type Job } from '../../api/jobs'
+import { getApplicationStatus, applyToJob, type ApplicationStatus } from '../../api/applications'
 import './CandidateJobDetailPage.css'
 
 const WORK_MODEL_LABELS: Record<string, string> = {
@@ -19,6 +21,17 @@ const LEVEL_LABELS: Record<string, string> = {
   director: 'Director',
 }
 
+const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  pending: 'Vừa nộp đơn',
+  matched: 'Đã chấm điểm',
+  interviewed: 'Đã phỏng vấn AI',
+  schedule_sent: 'Chờ chọn lịch',
+  scheduled: 'Đã hẹn lịch',
+  completed: 'AI báo cáo',
+  hired: 'Đã tuyển',
+  rejected: 'Từ chối',
+}
+
 function getInitials(name: string): string {
   return name
     .split(' ')
@@ -32,9 +45,45 @@ function getInitials(name: string): string {
 export default function CandidateJobDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  /* apply flow */
+  const [showApplyModal, setShowApplyModal] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { data: applicationStatus } = useQuery({
+    queryKey: ['applications', 'status', id],
+    queryFn: () => getApplicationStatus(id!),
+    enabled: !!id,
+  })
+
+  const applyMutation = useMutation({
+    mutationFn: (file: File) => applyToJob(id!, file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['applications', 'status', id] })
+      setShowApplyModal(false)
+      setSelectedFile(null)
+    },
+  })
+
+  function openApplyModal() {
+    setSelectedFile(null)
+    applyMutation.reset()
+    setShowApplyModal(true)
+  }
+
+  function pickFile(file: File | undefined) {
+    if (file) setSelectedFile(file)
+  }
+
+  function handleSubmitApply() {
+    if (selectedFile) applyMutation.mutate(selectedFile)
+  }
 
   useEffect(() => {
     if (!id) return
@@ -189,9 +238,16 @@ export default function CandidateJobDetailPage() {
               </div>
               <div className="cjd-salary-label">Mức lương</div>
 
-              <button className="cjd-btn-apply">
-                <i className="ti ti-send" /> Ứng tuyển ngay
-              </button>
+              {applicationStatus?.hasApplied ? (
+                <button className="cjd-btn-apply cjd-btn-apply--done" disabled>
+                  <i className="ti ti-circle-check" />
+                  {applicationStatus.status ? STATUS_LABELS[applicationStatus.status] : 'Đã ứng tuyển'}
+                </button>
+              ) : (
+                <button className="cjd-btn-apply" onClick={openApplyModal}>
+                  <i className="ti ti-send" /> Ứng tuyển ngay
+                </button>
+              )}
               <button className="cjd-btn-save">
                 <i className="ti ti-heart" /> Lưu tin
               </button>
@@ -239,6 +295,71 @@ export default function CandidateJobDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Apply modal */}
+      {showApplyModal && (
+        <div className="cjd-overlay" onClick={() => !applyMutation.isPending && setShowApplyModal(false)}>
+          <div className="cjd-apply-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="cjd-apply-modal-title">Ứng tuyển: {job.title}</h3>
+            <p className="cjd-apply-modal-sub">Chọn CV (PDF hoặc DOCX, tối đa 5MB) để nộp cho tin tuyển dụng này.</p>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              style={{ display: 'none' }}
+              onChange={(e) => pickFile(e.target.files?.[0])}
+            />
+
+            <div
+              className={`cjd-drop-zone${dragOver ? ' cjd-drop-zone--over' : ''}`}
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setDragOver(false)
+                pickFile(e.dataTransfer.files?.[0])
+              }}
+            >
+              <i className="ti ti-file-upload cjd-drop-icon" />
+              {selectedFile ? (
+                <div className="cjd-drop-title">{selectedFile.name}</div>
+              ) : (
+                <>
+                  <div className="cjd-drop-title">Kéo thả file vào đây</div>
+                  <div className="cjd-drop-sub">hoặc bấm để chọn file từ máy</div>
+                </>
+              )}
+            </div>
+
+            {applyMutation.isError && (
+              <p className="cjd-apply-error">
+                <i className="ti ti-alert-circle" />
+                {(applyMutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message
+                  ?? 'Nộp đơn thất bại. Vui lòng thử lại.'}
+              </p>
+            )}
+
+            <div className="cjd-apply-modal-actions">
+              <button
+                className="cjd-btn-save"
+                disabled={applyMutation.isPending}
+                onClick={() => setShowApplyModal(false)}
+              >
+                Huỷ
+              </button>
+              <button
+                className="cjd-btn-apply"
+                disabled={!selectedFile || applyMutation.isPending}
+                onClick={handleSubmitApply}
+              >
+                {applyMutation.isPending ? 'Đang nộp...' : 'Nộp đơn ứng tuyển'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CandidateLayout>
   )
 }
