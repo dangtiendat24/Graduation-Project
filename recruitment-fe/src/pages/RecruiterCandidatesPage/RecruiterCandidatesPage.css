@@ -100,6 +100,35 @@
   cursor: pointer;
 }
 
+/* --- Sort toggle --- */
+.rcp-sort-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.rcp-sort-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.rcp-sort-btn--active {
+  background: var(--bg-surface);
+  color: var(--color-indigo);
+  font-weight: var(--fw-bold);
+  box-shadow: var(--shadow-surface);
+}
+
 /* --- Table Container --- */
 .rcp-table-container {
   background: var(--bg-surface);
@@ -165,6 +194,22 @@
   font-weight: var(--fw-bold);
   font-size: 14px;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.rcp-cand-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rcp-spin {
+  animation: rcp-spin 1s linear infinite;
+}
+
+@keyframes rcp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .rcp-cand-name {
@@ -267,4 +312,43 @@
   font-size: 48px;
   margin-bottom: var(--space-4);
   opacity: 0.5;
+}
+
+/* --- Pagination --- */
+.rcp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.rcp-page-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rcp-page-btn:hover:not(:disabled) {
+  background: var(--color-indigo-light);
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
+}
+
+.rcp-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rcp-page-info {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
 }

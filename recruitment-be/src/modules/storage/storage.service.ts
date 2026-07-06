@@ -6,6 +6,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
 } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 @Injectable()
 export class StorageService {
@@ -55,6 +56,21 @@ export class StorageService {
     } catch (err) {
       throw new InternalServerErrorException(
         `Không thể tải file từ S3: ${(err as Error).message}`,
+      )
+    }
+  }
+
+  /** Ký presigned URL (GET) cho một URL public đã lưu trong DB, ví dụ applications.cv_url */
+  async getPresignedUrlForStoredUrl(storedUrl: string, expiresInSeconds = 300): Promise<string> {
+    const publicPrefix = `https://${this.bucket}.s3.${this.region}.amazonaws.com/`
+    const key = storedUrl.startsWith(publicPrefix) ? storedUrl.slice(publicPrefix.length) : storedUrl
+
+    try {
+      const command = new GetObjectCommand({ Bucket: this.bucket, Key: key })
+      return await getSignedUrl(this.s3, command, { expiresIn: expiresInSeconds })
+    } catch (err) {
+      throw new InternalServerErrorException(
+        `Không thể tạo presigned URL cho file: ${(err as Error).message}`,
       )
     }
   }
