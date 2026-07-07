@@ -13,6 +13,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { ResumeParserModule } from './modules/resume-parser/resume-parser.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
+import { CandidateApplicationsModule } from './modules/candidate-applications/candidate-applications.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { BullMQConfigService } from './config/bullmq.config';
 
@@ -47,6 +48,7 @@ import { BullMQConfigService } from './config/bullmq.config';
     ApplicationsModule,
     ResumeParserModule,
     CandidatesModule,
+    CandidateApplicationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, BullMQConfigService],

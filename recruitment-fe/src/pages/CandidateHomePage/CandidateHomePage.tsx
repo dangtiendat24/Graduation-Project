@@ -1,70 +1,93 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
+import { getMyApplications, getMyApplicationDetail } from '../../api/candidateApplications'
+import type { ApplicationStatus } from '../../api/applications'
 import './CandidateHomePage.css'
 
-/* ── Static data ── */
-const HERO_STATS = [
-  { num: 5,  numClass: 'teal',   label: 'Đơn đã nộp'  },
-  { num: 2,  numClass: 'amber',  label: 'Đang xử lý'  },
-  { num: 1,  numClass: 'violet', label: 'Phỏng vấn'   },
+const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  pending: 'Đã nộp đơn',
+  matched: 'Hồ sơ phù hợp',
+  interviewed: 'Đã phỏng vấn AI',
+  schedule_sent: 'Đang chờ xác nhận lịch',
+  scheduled: 'Đã xác nhận lịch',
+  completed: 'Đã hoàn thành phỏng vấn',
+  hired: 'Được tuyển dụng',
+  rejected: 'Không phù hợp',
+}
+
+const SCORE_CLASS: Record<string, string> = {
+  strong_match: 'sp-strong',
+  good_match: 'sp-good',
+  partial_match: 'sp-part',
+  poor_match: 'sp-poor',
+}
+
+/* 6 bước pipeline — index khớp trực tiếp với application.status theo thứ tự tiến trình */
+const PIPE_STEP_LABELS = [
+  { label: 'Nộp đơn', icon: 'ti-send' },
+  { label: 'AI Matching', icon: 'ti-sparkles' },
+  { label: 'Phỏng vấn AI', icon: 'ti-message-chatbot' },
+  { label: 'Xác nhận\nlịch HV', icon: 'ti-calendar-check' },
+  { label: 'Phỏng vấn\nchính thức', icon: 'ti-calendar-event' },
+  { label: 'Kết quả', icon: 'ti-trophy' },
 ]
 
-const PIPE_STEPS = [
-  { state: 'done',   icon: 'ti-check',          label: 'Nộp đơn',                 sub: ''        },
-  { state: 'done',   icon: 'ti-check',          label: 'AI Matching',              sub: '85/100'  },
-  { state: 'done',   icon: 'ti-check',          label: 'Phỏng vấn AI',            sub: '78/100'  },
-  { state: 'active', icon: 'ti-clock',          label: 'Xác nhận\nlịch HV',       sub: ''        },
-  { state: 'wait',   icon: 'ti-calendar-event', label: 'Phỏng vấn\nchính thức',   sub: ''        },
-  { state: 'wait',   icon: 'ti-trophy',         label: 'Kết quả',                 sub: ''        },
+const STATUS_STEP_INDEX: Record<ApplicationStatus, number> = {
+  pending: 0,
+  matched: 1,
+  interviewed: 2,
+  schedule_sent: 3,
+  scheduled: 4,
+  completed: 5,
+  hired: 5,
+  rejected: 5,
+}
+
+/* Đơn "đang chạy" — không phải hired/rejected — dùng để chọn đơn nổi bật cho pipeline tracker */
+const ACTIVE_PIPELINE_STATUSES: ApplicationStatus[] = [
+  'pending',
+  'matched',
+  'interviewed',
+  'schedule_sent',
+  'scheduled',
+  'completed',
 ]
 
-const APPLICATIONS = [
-  {
-    title: 'Senior Backend Developer',
-    company: 'TechVision Vietnam',
-    gradFrom: '#0D9488', gradTo: '#4338CA',
-    score: 85, scoreClass: 'sp-strong',
-    badge: 'bd-scheduled', badgeIcon: 'ti-calendar',     badgeLabel: 'Chọn lịch',
-    date: '14/06/2026',
-    action: { label: 'Xem', icon: 'ti-eye', disabled: false },
-  },
-  {
-    title: 'Python Developer (AI/ML)',
-    company: 'VNG Corporation',
-    gradFrom: '#7C3AED', gradTo: '#1E1065',
-    score: 72, scoreClass: 'sp-good',
-    badge: 'bd-interview', badgeIcon: 'ti-microphone',   badgeLabel: 'Phỏng vấn AI',
-    date: '10/06/2026',
-    action: { label: 'Vào PV', icon: 'ti-message-chatbot', disabled: false },
-  },
-  {
-    title: 'Full-stack Developer',
-    company: 'FPT Software',
-    gradFrom: '#D97706', gradTo: '#EF4444',
-    score: 68, scoreClass: 'sp-good',
-    badge: 'bd-matched', badgeIcon: 'ti-sparkles',       badgeLabel: 'Đã match',
-    date: '05/06/2026',
-    action: { label: 'Xem', icon: 'ti-eye', disabled: false },
-  },
-  {
-    title: 'DevOps Engineer',
-    company: 'Tiki',
-    gradFrom: '#0369A1', gradTo: '#0D9488',
-    score: 45, scoreClass: 'sp-part',
-    badge: 'bd-rejected', badgeIcon: 'ti-x',             badgeLabel: 'Không phù hợp',
-    date: '01/06/2026',
-    action: { label: 'Đã đóng', icon: '', disabled: true },
-  },
-  {
-    title: 'Node.js Backend',
-    company: 'Shopee VN',
-    gradFrom: '#16A34A', gradTo: '#0D9488',
-    score: null, scoreClass: '',
-    badge: 'bd-pending', badgeIcon: 'ti-loader',          badgeLabel: 'Chờ AI',
-    date: '22/06/2026',
-    action: { label: 'Xem', icon: 'ti-eye', disabled: false },
-  },
+const IN_PROGRESS_STATUSES: ApplicationStatus[] = [
+  'pending',
+  'matched',
+  'interviewed',
+  'schedule_sent',
+  'scheduled',
 ]
+
+const INTERVIEW_STATUSES: ApplicationStatus[] = ['interviewed', 'schedule_sent', 'scheduled', 'completed']
+
+const COMPANY_GRADIENTS: [string, string][] = [
+  ['#0D9488', '#4338CA'],
+  ['#7C3AED', '#1E1065'],
+  ['#D97706', '#EF4444'],
+  ['#0369A1', '#0D9488'],
+  ['#16A34A', '#0D9488'],
+]
+
+function companyGradient(seed: string): [string, string] {
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+  return COMPANY_GRADIENTS[hash % COMPANY_GRADIENTS.length]
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
+}
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso)
+  return `${formatDate(iso)} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
 
 const REC_JOBS = [
   {
@@ -102,6 +125,32 @@ const PROFILE_PCT = 85
 
 export default function CandidateHomePage() {
   const navigate = useNavigate()
+  const [detailId, setDetailId] = useState<string | null>(null)
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['candidate-applications', 'dashboard'],
+    queryFn: () => getMyApplications({ limit: 100 }),
+  })
+
+  const applications = data?.data ?? []
+  const totalApplications = data?.meta.total ?? 0
+  const inProgressCount = applications.filter((a) => IN_PROGRESS_STATUSES.includes(a.status)).length
+  const interviewCount = applications.filter((a) => INTERVIEW_STATUSES.includes(a.status)).length
+
+  // Đơn nổi bật cho pipeline tracker: đơn active gần nhất (data đã sort DESC theo appliedAt)
+  const activeApplication = applications.find((a) => ACTIVE_PIPELINE_STATUSES.includes(a.status)) ?? null
+
+  const detailQuery = useQuery({
+    queryKey: ['candidate-applications', 'detail', detailId],
+    queryFn: () => getMyApplicationDetail(detailId as string),
+    enabled: detailId !== null,
+  })
+
+  const heroStats = [
+    { num: totalApplications, numClass: 'teal', label: 'Đơn đã nộp' },
+    { num: inProgressCount, numClass: 'amber', label: 'Đang xử lý' },
+    { num: interviewCount, numClass: 'violet', label: 'Phỏng vấn' },
+  ]
 
   return (
     <CandidateLayout>
@@ -110,10 +159,16 @@ export default function CandidateHomePage() {
       <div className="ch-hero">
         <div className="ch-hero-left">
           <h1 className="ch-hero-title">
-            Bạn có <span>1 buổi phỏng vấn</span><br />đang chờ xác nhận!
+            {activeApplication?.status === 'schedule_sent' ? (
+              <>Bạn có <span>1 buổi phỏng vấn</span><br />đang chờ xác nhận!</>
+            ) : (
+              <>Theo dõi <span>tiến trình ứng tuyển</span><br />của bạn</>
+            )}
           </h1>
           <p className="ch-hero-sub">
-            Agent AI đã tìm thấy 5 vị trí phù hợp với hồ sơ của bạn tuần này.
+            {totalApplications > 0
+              ? `Bạn đã nộp ${totalApplications} đơn ứng tuyển. Theo dõi tiến trình bên dưới.`
+              : 'Bạn chưa nộp đơn ứng tuyển nào. Hãy bắt đầu tìm việc phù hợp!'}
           </p>
           <div className="ch-hero-btns">
             <button className="ch-btn-hero-primary" onClick={() => navigate('/candidate/schedule')}>
@@ -125,7 +180,7 @@ export default function CandidateHomePage() {
           </div>
         </div>
         <div className="ch-hero-stats">
-          {HERO_STATS.map((s) => (
+          {heroStats.map((s) => (
             <div key={s.label} className="ch-hero-stat">
               <div className={`ch-hs-num ch-hs-${s.numClass}`}>{s.num}</div>
               <div className="ch-hs-lbl">{s.label}</div>
@@ -134,48 +189,52 @@ export default function CandidateHomePage() {
         </div>
       </div>
 
-      {/* ── Pipeline of featured application ── */}
-      <div>
-        <div className="ch-sec-header">
-          <div className="ch-sec-title"><i className="ti ti-route" /> Tiến trình đơn nổi bật</div>
-          <div className="ch-sec-link" onClick={() => navigate('/candidate/applications')}>
-            Xem tất cả đơn <i className="ti ti-arrow-right" />
+      {/* ── Pipeline của đơn nổi bật ── */}
+      {activeApplication && (
+        <div>
+          <div className="ch-sec-header">
+            <div className="ch-sec-title"><i className="ti ti-route" /> Tiến trình đơn nổi bật</div>
           </div>
-        </div>
-        <div className="ch-card">
-          <div className="ch-pipeline-wrap">
-            <div className="ch-pipeline-meta">
-              <strong>Senior Backend Developer</strong> · TechVision Vietnam
-              <span className="ch-badge-amber-sm">Đang chờ xác nhận lịch</span>
+          <div className="ch-card">
+            <div className="ch-pipeline-wrap">
+              <div className="ch-pipeline-meta">
+                <strong>{activeApplication.job.title}</strong> · {activeApplication.job.company?.name ?? 'N/A'}
+                <span className="ch-badge-amber-sm">{STATUS_LABELS[activeApplication.status]}</span>
+              </div>
+              <div className="ch-pipeline">
+                {PIPE_STEP_LABELS.map((step, i) => {
+                  const currentIdx = STATUS_STEP_INDEX[activeApplication.status]
+                  const state = i < currentIdx ? 'done' : i === currentIdx ? 'active' : 'wait'
+                  const lines = step.label.split('\n')
+                  return (
+                    <div key={i} className={`ch-pipe-step ch-ps-${state}`}>
+                      <div className="ch-pipe-dot">
+                        <i className={`ti ${state === 'done' ? 'ti-check' : step.icon}`} />
+                      </div>
+                      <div className="ch-pipe-lbl">
+                        {lines.map((line, j) => (
+                          <span key={j}>{line}{j < lines.length - 1 && <br />}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-            <div className="ch-pipeline">
-              {PIPE_STEPS.map((step, i) => (
-                <div key={i} className={`ch-pipe-step ch-ps-${step.state}`}>
-                  <div className="ch-pipe-dot">
-                    <i className={`ti ${step.icon}`} />
-                  </div>
-                  <div className="ch-pipe-lbl">
-                    {step.label.split('\n').map((line, j) => (
-                      <span key={j}>{line}{j < step.label.split('\n').length - 1 && <br />}</span>
-                    ))}
-                    {step.sub && <span className="ch-pipe-sub">{step.sub}</span>}
-                  </div>
+            {activeApplication.status === 'schedule_sent' && (
+              <div className="ch-pipeline-alert">
+                <div className="ch-pa-text">
+                  <i className="ti ti-alert-triangle" />
+                  Bạn có lịch phỏng vấn chờ xác nhận!
                 </div>
-              ))}
-            </div>
-          </div>
-          <div className="ch-pipeline-alert">
-            <div className="ch-pa-text">
-              <i className="ti ti-alert-triangle" />
-              Recruiter đã gửi 3 slot lịch phỏng vấn. Vui lòng xác nhận trước{' '}
-              <strong>25/06/2026</strong>.
-            </div>
-            <button className="ch-pa-btn" onClick={() => navigate('/candidate/schedule')}>
-              <i className="ti ti-calendar-check" /> Chọn lịch ngay
-            </button>
+                <button className="ch-pa-btn" onClick={() => navigate('/candidate/schedule')}>
+                  <i className="ti ti-calendar-check" /> Xác nhận ngay
+                </button>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── 2-column layout ── */}
       <div className="ch-two-col">
@@ -184,60 +243,75 @@ export default function CandidateHomePage() {
         <div>
           {/* Applications table */}
           <div className="ch-sec-header">
-            <div className="ch-sec-title"><i className="ti ti-list-check" /> Đơn ứng tuyển gần đây</div>
-            <div className="ch-sec-link" onClick={() => navigate('/candidate/applications')}>
-              Xem tất cả <i className="ti ti-arrow-right" />
-            </div>
+            <div className="ch-sec-title"><i className="ti ti-list-check" /> Đơn ứng tuyển của tôi</div>
           </div>
           <div className="ch-card">
-            <table className="ch-app-table">
-              <thead>
-                <tr>
-                  <th>VỊ TRÍ</th>
-                  <th>ĐIỂM AI</th>
-                  <th>TRẠNG THÁI</th>
-                  <th>NGÀY NỘP</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {APPLICATIONS.map((app, i) => (
-                  <tr key={i}>
-                    <td>
-                      <div className="ch-job-title">{app.title}</div>
-                      <div className="ch-job-co">
-                        <span
-                          className="ch-co-logo"
-                          style={{ background: `linear-gradient(135deg, ${app.gradFrom}, ${app.gradTo})` }}
-                        />
-                        {app.company}
-                      </div>
-                    </td>
-                    <td>
-                      {app.score !== null
-                        ? <span className={`ch-score-pill ${app.scoreClass}`}>{app.score}</span>
-                        : <span className="ch-score-pending">Đang xử lý…</span>
-                      }
-                    </td>
-                    <td>
-                      <span className={`ch-badge ${app.badge}`}>
-                        <i className={`ti ${app.badgeIcon}`} /> {app.badgeLabel}
-                      </span>
-                    </td>
-                    <td className="ch-td-date">{app.date}</td>
-                    <td>
-                      <button
-                        className={`ch-btn-row${app.action.disabled ? ' ch-btn-row-disabled' : ''}`}
-                        disabled={app.action.disabled}
-                      >
-                        {app.action.icon && <i className={`ti ${app.action.icon}`} />}
-                        {app.action.label}
-                      </button>
-                    </td>
+            {isLoading ? (
+              <div className="ch-empty-state">Đang tải danh sách đơn ứng tuyển...</div>
+            ) : isError ? (
+              <div className="ch-empty-state">Không thể tải danh sách đơn ứng tuyển. Vui lòng thử lại.</div>
+            ) : applications.length === 0 ? (
+              <div className="ch-empty-state">Bạn chưa nộp đơn ứng tuyển nào.</div>
+            ) : (
+              <table className="ch-app-table">
+                <thead>
+                  <tr>
+                    <th>VỊ TRÍ</th>
+                    <th>ĐIỂM AI</th>
+                    <th>TRẠNG THÁI</th>
+                    <th>NGÀY NỘP</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {applications.map((app) => {
+                    const companyName = app.job.company?.name ?? '—'
+                    const [gradFrom, gradTo] = companyGradient(companyName || app.job.title)
+                    return (
+                      <tr key={app.applicationId}>
+                        <td>
+                          <div className="ch-job-title">{app.job.title}</div>
+                          <div className="ch-job-co">
+                            {app.job.company?.logoUrl ? (
+                              <img src={app.job.company.logoUrl} className="ch-co-logo" alt="" />
+                            ) : (
+                              <span
+                                className="ch-co-logo"
+                                style={{ background: `linear-gradient(135deg, ${gradFrom}, ${gradTo})` }}
+                              />
+                            )}
+                            {companyName}
+                          </div>
+                        </td>
+                        <td>
+                          {app.matching?.overallScore != null ? (
+                            <span
+                              className={`ch-score-pill ${
+                                SCORE_CLASS[app.matching.recommendation ?? ''] ?? 'sp-part'
+                              }`}
+                            >
+                              {app.matching.overallScore}
+                            </span>
+                          ) : (
+                            <span className="ch-score-pending">Đang xử lý…</span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`ch-badge bd-${app.status}`}>{STATUS_LABELS[app.status]}</span>
+                          {app.autoRejected && <div className="ch-auto-rejected-note">Từ chối tự động</div>}
+                        </td>
+                        <td className="ch-td-date">{formatDate(app.appliedAt)}</td>
+                        <td>
+                          <button className="ch-btn-row" onClick={() => setDetailId(app.applicationId)}>
+                            <i className="ti ti-eye" /> Xem chi tiết
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
 
           {/* Job recommendations */}
@@ -399,6 +473,49 @@ export default function CandidateHomePage() {
 
         </div>{/* end right */}
       </div>{/* end two-col */}
+
+      {/* ── Application detail modal ── */}
+      {detailId && (
+        <div className="ch-overlay" onClick={() => setDetailId(null)}>
+          <div className="ch-detail-modal" onClick={(e) => e.stopPropagation()}>
+            {detailQuery.isLoading ? (
+              <div className="ch-empty-state">Đang tải chi tiết đơn ứng tuyển...</div>
+            ) : detailQuery.isError || !detailQuery.data ? (
+              <div className="ch-empty-state">Không tải được chi tiết đơn ứng tuyển.</div>
+            ) : (
+              <>
+                <h3 className="ch-detail-title">{detailQuery.data.job.title}</h3>
+                <p className="ch-detail-sub">{detailQuery.data.job.company?.name ?? 'N/A'}</p>
+                <div className="ch-detail-status">
+                  <span className={`ch-badge bd-${detailQuery.data.status}`}>
+                    {STATUS_LABELS[detailQuery.data.status]}
+                  </span>
+                  {detailQuery.data.autoRejected && (
+                    <span className="ch-auto-rejected-note" style={{ marginLeft: 8, display: 'inline-block' }}>
+                      Hồ sơ bị từ chối tự động do điểm matching thấp
+                    </span>
+                  )}
+                </div>
+                <div className="ch-timeline">
+                  {detailQuery.data.statusHistory.map((h, i) => (
+                    <div key={i} className="ch-timeline-item">
+                      <div className="ch-timeline-rail">
+                        <div className="ch-timeline-dot" />
+                        {i < detailQuery.data.statusHistory.length - 1 && <div className="ch-timeline-line" />}
+                      </div>
+                      <div className="ch-timeline-content">
+                        <div className="ch-timeline-label">{h.label}</div>
+                        <div className="ch-timeline-date">{formatDateTime(h.changedAt)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            <button className="ch-detail-close-btn" onClick={() => setDetailId(null)}>Đóng</button>
+          </div>
+        </div>
+      )}
 
     </CandidateLayout>
   )
