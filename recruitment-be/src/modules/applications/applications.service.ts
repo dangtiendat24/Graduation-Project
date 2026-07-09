@@ -11,6 +11,7 @@ import { Application, ApplicationStatus } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Job } from '../jobs/job.entity';
 import { StorageService } from '../storage/storage.service';
+import { MatchingService } from '../matching/matching.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 
 const NON_REAPPLICABLE_STATUSES: ApplicationStatus[] = ['hired', 'rejected'];
@@ -25,6 +26,7 @@ export class ApplicationsService {
     @InjectRepository(ApplicationStatusHistory)
     private readonly statusHistoryRepo: Repository<ApplicationStatusHistory>,
     private readonly storage: StorageService,
+    private readonly matching: MatchingService,
   ) {}
 
   async apply(
@@ -65,6 +67,8 @@ export class ApplicationsService {
         changedBy: null,
       }),
     );
+
+    await this.matching.enqueueMatch(saved.id);
 
     return saved;
   }
