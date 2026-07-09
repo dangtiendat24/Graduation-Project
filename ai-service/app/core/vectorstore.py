@@ -43,3 +43,10 @@ async def search_similar(collection: str, query_vector: list[float], top_k: int 
         query_vector=query_vector,
         limit=top_k,
     )
+
+
+async def get_vector(collection: str, point_id: str) -> list[float] | None:
+    """Lấy lại vector đã lưu theo point_id (profile_id/job_id) — None nếu chưa được embed."""
+    client = get_qdrant_client()
+    records = await client.retrieve(collection_name=collection, ids=[point_id], with_vectors=True)
+    return records[0].vector if records else None
