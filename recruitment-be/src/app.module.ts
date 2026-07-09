@@ -15,6 +15,7 @@ import { ResumeParserModule } from './modules/resume-parser/resume-parser.module
 import { MatchingModule } from './modules/matching/matching.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { CandidateApplicationsModule } from './modules/candidate-applications/candidate-applications.module';
+import { RecruiterApplicationsModule } from './modules/recruiter-applications/recruiter-applications.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { BullMQConfigService } from './config/bullmq.config';
 
@@ -51,6 +52,7 @@ import { BullMQConfigService } from './config/bullmq.config';
     MatchingModule,
     CandidatesModule,
     CandidateApplicationsModule,
+    RecruiterApplicationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, BullMQConfigService],
