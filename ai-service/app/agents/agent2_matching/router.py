@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.core.vectorstore import upsert_vector
+from app.core.vectorstore import get_vector, search_similar, upsert_vector
 from app.services.embeddings import create_embedding
 
 router = APIRouter(prefix="/api/ai/matching", tags=["Agent 2 — CV-JD Matching"])
@@ -75,6 +75,33 @@ async def embed_job(body: EmbedJobRequest):
         return EmbedResponse(success=True)
     except Exception as exc:  # noqa: BLE001
         return EmbedResponse(success=False, error=str(exc))
+
+
+class SimilarJobHit(BaseModel):
+    job_id: str | None
+    score: float
+
+
+class SimilarJobsResponse(BaseModel):
+    profile_id: str
+    matches: list[SimilarJobHit]
+
+
+@router.get("/similar-jobs/{profile_id}", response_model=SimilarJobsResponse)
+async def similar_jobs(profile_id: str, top_k: int = 5):
+    """
+    Similarity search: tìm top-k JD có vector Qdrant gần nhất với CV của profile_id
+    (cosine similarity, dùng CV embedding đã upsert qua POST /embeddings/cv).
+    """
+    cv_vector = await get_vector("cvs", profile_id)
+    if cv_vector is None:
+        raise HTTPException(status_code=404, detail=f"Chưa có CV embedding cho profile_id={profile_id}")
+
+    hits = await search_similar("jobs", cv_vector, top_k=top_k)
+    return SimilarJobsResponse(
+        profile_id=profile_id,
+        matches=[SimilarJobHit(job_id=hit.payload.get("job_id"), score=hit.score) for hit in hits],
+    )
 
 
 @router.get("/health")
