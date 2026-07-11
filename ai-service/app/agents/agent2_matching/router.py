@@ -3,25 +3,12 @@ from pydantic import BaseModel
 
 from app.core.vectorstore import get_vector, search_similar, upsert_vector
 from app.services.embeddings import create_embedding
+from .graph import matching_graph
+from .schemas import MatchCriteria, MatchRequest, MatchResponse
 
 router = APIRouter(prefix="/api/ai/matching", tags=["Agent 2 — CV-JD Matching"])
 
-
-class MatchRequest(BaseModel):
-    application_id: str  # applications.id (UUID)
-    profile_id: str      # candidate_profiles.id — để lấy Qdrant vector
-    job_id: str          # jobs.id — để lấy Qdrant vector
-
-
-class MatchResponse(BaseModel):
-    application_id: str
-    overall_score: float          # 0-100
-    criteria: dict                # {skills, experience, education: 0-100}
-    qdrant_similarity: float | None
-    explanation: str
-    recommendation: str           # strong_match / good_match / partial_match / poor_match
-    success: bool
-    error: str | None = None
+_EMPTY_CRITERIA = MatchCriteria(skills=0, experience=0, education=0)
 
 
 @router.post("/match", response_model=MatchResponse)
@@ -30,8 +17,55 @@ async def match_cv_jd(body: MatchRequest):
     Agent 2: Qdrant cosine similarity + LLM scoring
     → Trả kết quả → NestJS lưu matching_results + transition application sang 'matched'/'rejected'
     """
-    # TODO: implement graph.ainvoke()
-    raise HTTPException(status_code=501, detail="Agent 2 not yet implemented")
+    if not body.cv_text.strip() or not body.job_text.strip():
+        return MatchResponse(
+            application_id=body.application_id,
+            overall_score=0,
+            criteria=_EMPTY_CRITERIA,
+            qdrant_similarity=None,
+            explanation="",
+            recommendation="poor_match",
+            success=False,
+            error="cv_text hoặc job_text rỗng, không thể chấm điểm",
+        )
+
+    result = await matching_graph.ainvoke(
+        {
+            "profile_id": body.profile_id,
+            "job_id": body.job_id,
+            "cv_text": body.cv_text,
+            "job_text": body.job_text,
+            "qdrant_similarity": None,
+            "criteria": None,
+            "overall_score": None,
+            "recommendation": None,
+            "explanation": None,
+            "error": None,
+        }
+    )
+
+    if result.get("error") or result.get("criteria") is None:
+        return MatchResponse(
+            application_id=body.application_id,
+            overall_score=0,
+            criteria=_EMPTY_CRITERIA,
+            qdrant_similarity=result.get("qdrant_similarity"),
+            explanation="",
+            recommendation="poor_match",
+            success=False,
+            error=result.get("error") or "Không thể chấm điểm CV-JD",
+        )
+
+    return MatchResponse(
+        application_id=body.application_id,
+        overall_score=result["overall_score"],
+        criteria=result["criteria"],
+        qdrant_similarity=result["qdrant_similarity"],
+        explanation=result["explanation"],
+        recommendation=result["recommendation"],
+        success=True,
+        error=None,
+    )
 
 
 class EmbedCvRequest(BaseModel):
