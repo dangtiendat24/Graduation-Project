@@ -255,13 +255,22 @@ export default function RecruiterCandidatesPage() {
                       </span>
                     </td>
                     <td>
-                      <button
-                        className="rcp-btn-view"
-                        title="Xem chi tiết CV & Báo cáo"
-                        onClick={() => navigate(`/recruiter/candidates/${c.applicationId}`)}
-                      >
-                        <i className="ti ti-chevron-right" />
-                      </button>
+                      <div className="rcp-row-actions">
+                        <button
+                          className="rcp-btn-view"
+                          title="Xem xếp hạng ứng viên theo tin tuyển dụng này"
+                          onClick={() => navigate(`/recruiter/jobs/${c.job.id}/rankings`)}
+                        >
+                          <i className="ti ti-chart-bar" />
+                        </button>
+                        <button
+                          className="rcp-btn-view"
+                          title="Xem chi tiết CV & Báo cáo"
+                          onClick={() => navigate(`/recruiter/candidates/${c.applicationId}`)}
+                        >
+                          <i className="ti ti-chevron-right" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
