@@ -12,16 +12,18 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 export class StorageService {
   private readonly s3: S3Client
   private readonly bucket: string
-  private readonly region: string
+  private readonly publicPrefix: string
 
   constructor(private readonly config: ConfigService) {
-    this.region = config.get<string>('AWS_REGION', 'ap-southeast-1')
-    this.bucket = config.get<string>('AWS_S3_BUCKET', 'smart-recruitment-files')
+    const accountId = config.get<string>('CF_ACCOUNT_ID', '')
+    this.bucket = config.get<string>('R2_BUCKET', 'smart-recruitment-files')
+    this.publicPrefix = `https://${accountId}.r2.cloudflarestorage.com/${this.bucket}/`
     this.s3 = new S3Client({
-      region: this.region,
+      region: 'auto',
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: config.get<string>('AWS_ACCESS_KEY_ID', ''),
-        secretAccessKey: config.get<string>('AWS_SECRET_ACCESS_KEY', ''),
+        accessKeyId: config.get<string>('R2_ACCESS_KEY_ID', ''),
+        secretAccessKey: config.get<string>('R2_SECRET_ACCESS_KEY', ''),
       },
     })
   }
@@ -36,10 +38,10 @@ export class StorageService {
           ContentType: mimeType,
         }),
       )
-      return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`
+      return `${this.publicPrefix}${key}`
     } catch (err) {
       throw new InternalServerErrorException(
-        `Không thể upload file lên S3: ${(err as Error).message}`,
+        `Không thể upload file lên R2: ${(err as Error).message}`,
       )
     }
   }
@@ -55,15 +57,16 @@ export class StorageService {
       return Buffer.concat(chunks)
     } catch (err) {
       throw new InternalServerErrorException(
-        `Không thể tải file từ S3: ${(err as Error).message}`,
+        `Không thể tải file từ R2: ${(err as Error).message}`,
       )
     }
   }
 
   /** Ký presigned URL (GET) cho một URL public đã lưu trong DB, ví dụ applications.cv_url */
   async getPresignedUrlForStoredUrl(storedUrl: string, expiresInSeconds = 300): Promise<string> {
-    const publicPrefix = `https://${this.bucket}.s3.${this.region}.amazonaws.com/`
-    const key = storedUrl.startsWith(publicPrefix) ? storedUrl.slice(publicPrefix.length) : storedUrl
+    const key = storedUrl.startsWith(this.publicPrefix)
+      ? storedUrl.slice(this.publicPrefix.length)
+      : storedUrl
 
     try {
       const command = new GetObjectCommand({ Bucket: this.bucket, Key: key })
