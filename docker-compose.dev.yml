@@ -10,8 +10,8 @@ services:
       target: builder
     command: npm run start:dev
     volumes:
-      - ./recruitment-be:/app
-      - /app/node_modules
+      - ./recruitment-be:/app/recruitment-be
+      - /app/recruitment-be/node_modules
     environment:
       NODE_ENV: development
       DB_HOST: postgres
