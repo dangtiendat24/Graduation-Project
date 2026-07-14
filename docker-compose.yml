@@ -48,8 +48,8 @@ services:
   # NestJS Backend API
   api:
     build:
-      context: ./recruitment-be
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: recruitment-be/Dockerfile
       target: production
     container_name: recruitment_api
     restart: unless-stopped
