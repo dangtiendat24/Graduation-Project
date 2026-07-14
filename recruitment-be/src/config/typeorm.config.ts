@@ -23,7 +23,7 @@ export const getTypeOrmConfig = (config: ConfigService): DataSourceOptions => {
     ...connection,
     entities: [__dirname + '/../**/*.entity.{ts,js}'],
     migrations: [__dirname + '/../database/migrations/*.{ts,js}'],
-    synchronize: databaseUrl ? false : config.get<string>('NODE_ENV') !== 'production',
+    synchronize: process.env.TYPEORM_SYNC === 'true',
     logging: config.get<string>('NODE_ENV') === 'development',
   } as DataSourceOptions;
 };
