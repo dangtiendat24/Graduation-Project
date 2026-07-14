@@ -1,0 +1,105 @@
+.verify-page {
+  font-family: var(--font-family);
+  background: var(--bg-page);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.verify-box {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+/* Logo */
+.verify-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2rem;
+}
+.verify-logo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--logo-dot-color);
+}
+.verify-logo-name {
+  font-size: var(--fs-logo);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  letter-spacing: .04em;
+}
+.verify-logo-name span { color: var(--color-teal); }
+
+/* Spinner */
+.spinner {
+  width: 52px;
+  height: 52px;
+  border: 3.5px solid var(--border-default);
+  border-top-color: var(--color-indigo);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin-bottom: 1.5rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Status icon */
+.verify-icon {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+.verify-icon.success { color: var(--color-teal); }
+.verify-icon.error   { color: var(--color-danger); }
+
+/* Text */
+.verify-title {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+.verify-sub {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0 0 1.5rem;
+}
+
+/* Buttons */
+.verify-btn {
+  width: 100%;
+  padding: 11px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--fs-btn);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  background: var(--color-indigo);
+  color: var(--bg-surface);
+  border: none;
+}
+.verify-btn:hover { background: var(--color-indigo-hover); }
+
+.verify-btn.outline {
+  background: none;
+  border: 1.5px solid var(--border-default);
+  color: var(--text-secondary);
+}
+.verify-btn.outline:hover {
+  border-color: var(--border-emphasis);
+  color: var(--text-primary);
+}

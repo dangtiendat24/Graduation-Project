@@ -1,10 +1,12 @@
 version: '3.8'
 
 services:
-  # Dịch vụ Cơ sở dữ liệu quan hệ (PostgreSQL)
+  # ── Infrastructure ─────────────────────────────────────────────
+
   postgres:
     image: postgres:16-alpine
     container_name: recruitment_postgres
+    restart: unless-stopped
     ports:
       - "5432:5432"
     environment:
@@ -13,25 +15,100 @@ services:
       POSTGRES_DB: smart_recruitment
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smart_user -d smart_recruitment"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Dịch vụ Hàng đợi & Cache (Redis)
   redis:
     image: redis:7-alpine
     container_name: recruitment_redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Dịch vụ Cơ sở dữ liệu Vector (Qdrant)
   qdrant:
     image: qdrant/qdrant:latest
     container_name: recruitment_qdrant
+    restart: unless-stopped
     ports:
       - "6333:6333"
       - "6334:6334"
     volumes:
       - qdrantdata:/qdrant/storage
 
-# Cấu hình Lưu trữ dữ liệu bền vững (Không bị mất data khi tắt Docker)
+  # ── Application Services ───────────────────────────────────────
+
+  # NestJS Backend API
+  api:
+    build:
+      context: ./recruitment-be
+      dockerfile: Dockerfile
+      target: production
+    container_name: recruitment_api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./recruitment-be/.env
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      REDIS_HOST: redis
+      AI_SERVICE_URL: http://ai-service:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  # FastAPI AI Service (LangGraph Agents)
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: recruitment_ai
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./ai-service/.env
+    environment:
+      QDRANT_HOST: qdrant
+      DB_HOST: postgres
+      BE_INTERNAL_URL: http://api:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  # React Frontend (Vite build → Nginx)
+  frontend:
+    build:
+      context: ./recruitment-fe
+      dockerfile: Dockerfile
+      target: production
+    container_name: recruitment_fe
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+# ── Development override ────────────────────────────────────────
+# Dùng lệnh: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Xem file docker-compose.dev.yml để chạy với hot-reload
+
+# ── Persistent Volumes ─────────────────────────────────────────
 volumes:
   pgdata:
   qdrantdata:

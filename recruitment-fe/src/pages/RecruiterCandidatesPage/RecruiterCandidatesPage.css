@@ -1,0 +1,361 @@
+/* --------------------------------------------------------------------------
+   RECRUITER CANDIDATES PAGE CSS
+   Kế thừa var(--) từ design-tokens.css
+   -------------------------------------------------------------------------- */
+
+.rcp-page {
+  padding: var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* --- Header --- */
+.rcp-header {
+  margin-bottom: var(--space-6);
+}
+
+.rcp-title {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.rcp-sub {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+}
+
+/* --- Filters Card --- */
+.rcp-filters-card {
+  display: flex;
+  gap: var(--space-4);
+  background: var(--bg-surface);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-surface);
+  margin-bottom: var(--space-6);
+  border: 1px solid var(--border-default);
+  align-items: center;
+}
+
+.rcp-search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.rcp-search-box:focus-within {
+  border-color: var(--color-indigo);
+  box-shadow: var(--shadow-focus);
+}
+
+.rcp-search-box i {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.rcp-search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: var(--fs-input);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+
+.rcp-search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.rcp-filter-select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+}
+
+.rcp-filter-select i {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.rcp-filter-select select {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: var(--fs-input);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+
+/* --- Sort toggle --- */
+.rcp-sort-toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.rcp-sort-btn {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.rcp-sort-btn--active {
+  background: var(--bg-surface);
+  color: var(--color-indigo);
+  font-weight: var(--fw-bold);
+  box-shadow: var(--shadow-surface);
+}
+
+/* --- Table Container --- */
+.rcp-table-container {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-surface);
+  border: 1px solid var(--border-default);
+  overflow: hidden;
+}
+
+.rcp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.rcp-table th {
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  font-weight: var(--fw-bold);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  letter-spacing: 0.5px;
+}
+
+.rcp-table td {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+  vertical-align: middle;
+}
+
+.rcp-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.rcp-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.rcp-table tbody tr:hover {
+  background-color: var(--bg-subtle);
+}
+
+/* --- Table Cells Styles --- */
+
+/* Candidate Info */
+.rcp-cand-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.rcp-cand-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--bg-brand-gradient);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--fw-bold);
+  font-size: 14px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.rcp-cand-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rcp-spin {
+  animation: rcp-spin 1s linear infinite;
+}
+
+@keyframes rcp-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.rcp-cand-name {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-input);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.rcp-cand-meta {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rcp-job-role {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+/* Extracted Skills */
+.rcp-skills-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-2);
+}
+
+.rcp-skill-tag {
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: var(--fw-regular);
+}
+
+.rcp-skill-tag.more {
+  background: var(--border-default);
+  color: var(--text-primary);
+}
+
+.rcp-exp-hint {
+  font-size: var(--fs-xs);
+  color: var(--color-indigo);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Match Score */
+.rcp-score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+}
+
+/* Row actions */
+.rcp-row-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+/* Action Button */
+.rcp-btn-view {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rcp-btn-view:hover {
+  background: var(--color-indigo-light);
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
+}
+
+/* --- Empty State --- */
+.rcp-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) 0;
+  color: var(--text-muted);
+}
+
+.rcp-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+/* --- Pagination --- */
+.rcp-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.rcp-page-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: var(--fs-label);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rcp-page-btn:hover:not(:disabled) {
+  background: var(--color-indigo-light);
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
+}
+
+.rcp-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rcp-page-info {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+}

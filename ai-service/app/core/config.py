@@ -1,24 +1,42 @@
-import os
-from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Đọc dữ liệu từ file .env vào bộ nhớ tạm
-load_dotenv()
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+
     PROJECT_NAME: str = "Smart Recruitment AI Multi-Agent Service"
-    PORT: int = int(os.getenv("PORT", 8000))
-    HOST: str = os.getenv("HOST", "0.0.0.0")
-    
-    # Cấu hình OpenAI API
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    
-    # Cấu hình kết nối Vector DB Qdrant
-    QDRANT_HOST: str = os.getenv("QDRANT_HOST", "localhost")
-    QDRANT_PORT: int = int(os.getenv("QDRANT_PORT", 6333))
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
 
-    class Config:
-        case_sensitive = True
+    # OpenAI
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
-# Khởi tạo một instance dùng chung cho toàn bộ ứng dụng
+    # Qdrant Vector DB
+    QDRANT_HOST: str = "localhost"
+    QDRANT_PORT: int = 6333
+
+    # PostgreSQL
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_USER: str = "smart_user"
+    DB_PASSWORD: str = "smart_password"
+    DB_NAME: str = "smart_recruitment"
+
+    # NestJS BE internal (callback sau khi agent hoàn thành)
+    BE_INTERNAL_URL: str = "http://localhost:3000"
+    BE_INTERNAL_SECRET: str = ""
+
+    @property
+    def database_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
+
+    @property
+    def qdrant_url(self) -> str:
+        return f"http://{self.QDRANT_HOST}:{self.QDRANT_PORT}"
+
+
 settings = Settings()

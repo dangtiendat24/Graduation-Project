@@ -1,0 +1,407 @@
+.cjd-loading,
+.cjd-error {
+  max-width: 600px;
+  margin: var(--space-10) auto;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--fs-body);
+}
+
+.cjd-error button {
+  margin-top: var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-indigo);
+  cursor: pointer;
+  font-size: var(--fs-body);
+  font-family: var(--font-family);
+}
+
+/* ── Wrapper ── */
+.cjd-wrapper {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-8) var(--space-10);
+}
+
+.cjd-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--fs-body);
+  font-family: var(--font-family);
+  cursor: pointer;
+  margin-bottom: var(--space-5);
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.cjd-back:hover {
+  color: var(--color-indigo);
+}
+
+/* ── Layout ── */
+.cjd-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* ── Header card ── */
+.cjd-header-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-surface);
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  margin-bottom: var(--space-4);
+}
+
+.cjd-company-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-md);
+  background: var(--color-indigo-light);
+  color: var(--color-indigo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+}
+
+.cjd-title {
+  font-size: 22px;
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1);
+}
+
+.cjd-company-name {
+  font-size: var(--fs-input);
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.cjd-industry {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+
+/* ── Meta badges ── */
+.cjd-meta-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.cjd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  background: var(--bg-muted);
+  border: 1px solid var(--border-default);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+}
+
+.cjd-badge i {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ── Sections ── */
+.cjd-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-surface);
+  margin-bottom: var(--space-4);
+}
+
+.cjd-section-title {
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--bg-muted);
+}
+
+.cjd-text-body {
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+/* ── Skills ── */
+.cjd-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.cjd-skill-tag {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  color: var(--color-indigo);
+  background: var(--color-indigo-light);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+}
+
+/* ── Perks ── */
+.cjd-perks-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cjd-perks-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+}
+
+.cjd-perks-list li i {
+  color: var(--color-hired);
+  font-size: 16px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+/* ── Sidebar ── */
+.cjd-sidebar {
+  position: sticky;
+  top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cjd-sidebar-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-surface);
+}
+
+.cjd-salary {
+  font-size: 22px;
+  font-weight: var(--fw-bold);
+  color: var(--color-hired);
+  margin-bottom: 2px;
+}
+
+.cjd-salary-label {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  margin-bottom: var(--space-5);
+}
+
+.cjd-btn-apply {
+  width: 100%;
+  background: var(--color-indigo);
+  color: #fff;
+  border: none;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-family);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: background 0.15s;
+  margin-bottom: var(--space-2);
+}
+
+.cjd-btn-apply:hover {
+  background: var(--color-indigo-hover);
+}
+
+.cjd-btn-apply--done,
+.cjd-btn-apply--done:hover {
+  background: var(--color-hired);
+  cursor: default;
+}
+
+.cjd-btn-apply:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.cjd-btn-save {
+  width: 100%;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  padding: 11px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-family);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.cjd-btn-save:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* ── Detail rows ── */
+.cjd-detail-title {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-3);
+}
+
+.cjd-detail-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.cjd-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+}
+
+.cjd-detail-label {
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Apply modal ── */
+.cjd-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--space-4);
+}
+
+.cjd-apply-modal {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  max-width: 460px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.cjd-apply-modal-title {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cjd-apply-modal-sub {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.cjd-drop-zone {
+  border: 2px dashed var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: var(--bg-subtle);
+}
+
+.cjd-drop-zone:hover,
+.cjd-drop-zone--over {
+  border-color: var(--color-indigo);
+  background: var(--color-indigo-light);
+}
+
+.cjd-drop-icon {
+  font-size: 36px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.cjd-drop-zone:hover .cjd-drop-icon,
+.cjd-drop-zone--over .cjd-drop-icon {
+  color: var(--color-indigo);
+}
+
+.cjd-drop-title {
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.cjd-drop-sub {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.cjd-apply-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-danger);
+  font-size: var(--fs-sm);
+  margin: 0;
+}
+
+.cjd-apply-modal-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+
+.cjd-apply-modal-actions .cjd-btn-apply,
+.cjd-apply-modal-actions .cjd-btn-save {
+  width: auto;
+  padding-left: var(--space-5);
+  padding-right: var(--space-5);
+}
