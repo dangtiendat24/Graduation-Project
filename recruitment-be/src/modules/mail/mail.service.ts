@@ -31,17 +31,17 @@ export class MailService implements OnModuleInit {
       return;
     }
 
+    const port = this.config.get<number>('SMTP_PORT', 587);
     this.transporter = nodemailer.createTransport({
       host: this.config.get<string>('SMTP_HOST', 'smtp.gmail.com'),
-      port: this.config.get<number>('SMTP_PORT', 587),
-      secure: false,
+      port,
+      secure: port === 465,   // true cho 465 (SSL), false cho 587 (STARTTLS)
       auth: {
         user: this.config.get<string>('SMTP_USER'),
         pass: this.config.get<string>('SMTP_PASS'),
       },
     });
   }
-
   async sendVerificationEmail(to: string, fullName: string, token: string) {
     const verifyUrl = `${this.frontendUrl}/verify-email?token=${token}`;
 
