@@ -76,7 +76,7 @@ export async function getJob(id: string): Promise<Job> {
   return data
 }
 
-export async function updateJob(id: string, payload: Partial<CreateJobPayload> & { status?: 'draft' | 'active' | 'closed' }): Promise<Job> {
+export async function updateJob(id: string, payload: Omit<Partial<CreateJobPayload>, 'status'> & { status?: 'draft' | 'active' | 'closed' }): Promise<Job> {
   const { data } = await apiClient.patch<Job>(`/jobs/${id}`, payload)
   return data
 }
