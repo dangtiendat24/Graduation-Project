@@ -22,7 +22,6 @@ import {
   MatchRecommendation,
 } from '../applications/matching-result.entity';
 import { Job as JobEntity } from '../jobs/job.entity';
-import { CandidateResume } from '../profile/entities/candidate-resume.entity';
 import { CvMatchJobData } from './matching.service';
 
 interface AiMatchResponse {
@@ -45,8 +44,6 @@ export class MatchingProcessor extends WorkerHost {
     private readonly appRepo: Repository<Application>,
     @InjectRepository(MatchingResult)
     private readonly matchRepo: Repository<MatchingResult>,
-    @InjectRepository(CandidateResume)
-    private readonly resumeRepo: Repository<CandidateResume>,
     @InjectRepository(ApplicationStatusHistory)
     private readonly historyRepo: Repository<ApplicationStatusHistory>,
     private readonly httpService: HttpService,
@@ -62,12 +59,9 @@ export class MatchingProcessor extends WorkerHost {
     });
     if (!application) return;
 
-    const resume = await this.resumeRepo.findOne({
-      where: { candidateId: application.candidateId },
-    });
-    if (!resume) {
+    if (application.parseStatus !== 'done' || !application.isAnalyzed) {
       this.logger.warn(
-        `Không tìm thấy CV đã parse cho candidate ${application.candidateId}, bỏ qua matching`,
+        `CV nộp cho application ${application.id} chưa parse xong (status=${application.parseStatus}), bỏ qua matching`,
       );
       return;
     }
@@ -81,9 +75,9 @@ export class MatchingProcessor extends WorkerHost {
         `${aiServiceUrl}/api/ai/matching/match`,
         {
           application_id: application.id,
-          profile_id: application.candidateId,
+          profile_id: application.id,
           job_id: application.jobId,
-          cv_text: this.buildCvText(resume),
+          cv_text: this.buildCvText(application),
           job_text: this.buildJobText(application.job),
         },
       ),
@@ -132,16 +126,16 @@ export class MatchingProcessor extends WorkerHost {
     );
   }
 
-  private buildCvText(resume: CandidateResume): string {
-    const experienceLines = (resume.parsedExperience ?? []).map(
+  private buildCvText(application: Application): string {
+    const experienceLines = (application.parsedExperience ?? []).map(
       (e) => `${e.title} tại ${e.company} (${e.period}): ${e.description}`,
     );
-    const educationLines = (resume.parsedEducation ?? []).map(
+    const educationLines = (application.parsedEducation ?? []).map(
       (e) => `${e.degree} - ${e.school} (${e.year})`,
     );
     return [
-      resume.parsedSummary,
-      ...(resume.parsedSkills ?? []),
+      application.parsedSummary,
+      ...(application.parsedSkills ?? []),
       ...experienceLines,
       ...educationLines,
     ]
