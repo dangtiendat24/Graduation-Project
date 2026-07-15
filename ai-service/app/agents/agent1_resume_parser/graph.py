@@ -22,11 +22,16 @@ class ResumeParserState(TypedDict):
 
 
 def _build_llm():
+    # settings.GROQ_MODEL (llama-3.3-70b-versatile) dùng method="function_calling" mặc định,
+    # đôi khi trả lẫn text + JSON với schema lồng nested (experience/education) — lỗi đã biết
+    # của Llama trên Groq với structured output phức tạp. gpt-oss-120b là 1 trong 2 model Groq
+    # hỗ trợ method="json_schema" (ép decode đúng schema, không phải best-effort như function_calling),
+    # nên tách riêng cho agent này thay vì dùng GROQ_MODEL chung.
     return ChatGroq(
-        model=settings.GROQ_MODEL,
+        model="openai/gpt-oss-120b",
         api_key=SecretStr(settings.GROQ_API_KEY),
         temperature=0,
-    ).with_structured_output(ParsedCv)
+    ).with_structured_output(ParsedCv, method="json_schema")
 
 
 async def extract_node(state: ResumeParserState) -> ResumeParserState:
