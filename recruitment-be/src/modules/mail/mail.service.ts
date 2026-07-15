@@ -25,23 +25,21 @@ export class MailService implements OnModuleInit {
 
   onModuleInit() {
     if (this.devMode) {
-      this.logger.warn(
-        'SMTP_USER chưa được cấu hình — email sẽ được in ra console (dev mode)',
-      );
+      this.logger.warn('SMTP_USER chưa được cấu hình — email sẽ được in ra console (dev mode)');
       return;
     }
 
-    const port = this.config.get<number>('SMTP_PORT', 587);
     this.transporter = nodemailer.createTransport({
       host: this.config.get<string>('SMTP_HOST', 'smtp.gmail.com'),
-      port,
-      secure: port === 465,   // true cho 465 (SSL), false cho 587 (STARTTLS)
+      port: this.config.get<number>('SMTP_PORT', 587),
+      secure: false,
       auth: {
         user: this.config.get<string>('SMTP_USER'),
         pass: this.config.get<string>('SMTP_PASS'),
       },
     });
   }
+
   async sendVerificationEmail(to: string, fullName: string, token: string) {
     const verifyUrl = `${this.frontendUrl}/verify-email?token=${token}`;
 
