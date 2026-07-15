@@ -49,4 +49,6 @@ async def get_vector(collection: str, point_id: str) -> list[float] | None:
     """Lấy lại vector đã lưu theo point_id (profile_id/job_id) — None nếu chưa được embed."""
     client = get_qdrant_client()
     records = await client.retrieve(collection_name=collection, ids=[point_id], with_vectors=True)
-    return records[0].vector if records else None
+    if not records or not isinstance(records[0].vector, list):
+        return None
+    return records[0].vector

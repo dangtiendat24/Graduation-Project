@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
 import { Application, ApplicationStatus } from '../applications/application.entity'
 import { MatchingResult, MatchingCriteria, MatchRecommendation } from '../applications/matching-result.entity'
-import { CandidateResume, ExperienceItem, EduItem } from '../profile/entities/candidate-resume.entity'
+import { ExperienceItem, EduItem } from '../profile/entities/candidate-resume.entity'
 import { StorageService } from '../storage/storage.service'
 import { GetCandidatesQueryDto } from './dto/get-candidates-query.dto'
 
@@ -98,7 +98,6 @@ export class CandidatesService {
       .createQueryBuilder('app')
       .innerJoin('app.job', 'job')
       .innerJoin('app.candidate', 'user')
-      .leftJoin(CandidateResume, 'resume', 'resume.candidateId = user.id')
       .leftJoin(MatchingResult, 'match', 'match.applicationId = app.id')
       .where('job.recruiterId = :recruiterId', { recruiterId })
       .select('app.id', 'applicationId')
@@ -113,11 +112,11 @@ export class CandidatesService {
       .addSelect('user.city', 'candidateCity')
       .addSelect('user.linkedin', 'candidateLinkedinUrl')
       .addSelect('user.github', 'candidateGithubUrl')
-      .addSelect('resume.isAnalyzed', 'isParsed')
-      .addSelect('resume.parsedSummary', 'parsedSummary')
-      .addSelect('resume.parsedSkills', 'parsedSkills')
-      .addSelect('resume.parsedExperience', 'parsedExperience')
-      .addSelect('resume.parsedEducation', 'parsedEducation')
+      .addSelect('app.isAnalyzed', 'isParsed')
+      .addSelect('app.parsedSummary', 'parsedSummary')
+      .addSelect('app.parsedSkills', 'parsedSkills')
+      .addSelect('app.parsedExperience', 'parsedExperience')
+      .addSelect('app.parsedEducation', 'parsedEducation')
       .addSelect('match.overallScore', 'overallScore')
       .addSelect('match.recommendation', 'recommendation')
       .addSelect('match.criteria', 'criteria')

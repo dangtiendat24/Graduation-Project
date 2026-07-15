@@ -1,8 +1,9 @@
 import math
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, cast
 
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
+from pydantic import SecretStr
 
 from app.core.config import settings
 from app.core.vectorstore import get_vector
@@ -57,7 +58,7 @@ class MatchState(TypedDict):
 def _build_llm():
     return ChatOpenAI(
         model=settings.OPENAI_MODEL,
-        api_key=settings.OPENAI_API_KEY,
+        api_key=SecretStr(settings.OPENAI_API_KEY),
         temperature=0,
     ).with_structured_output(MatchAnalysis)
 
@@ -84,8 +85,9 @@ async def score_node(state: MatchState) -> MatchState:
             f"--- CV ứng viên ---\n{state['cv_text']}\n\n"
             f"--- Mô tả công việc (JD) ---\n{state['job_text']}"
         )
-        analysis: MatchAnalysis = await llm.ainvoke(
-            [("system", SYSTEM_PROMPT), ("human", human_message)]
+        analysis = cast(
+            MatchAnalysis,
+            await llm.ainvoke([("system", SYSTEM_PROMPT), ("human", human_message)]),
         )
 
         criteria = MatchCriteria(

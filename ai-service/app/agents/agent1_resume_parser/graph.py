@@ -1,7 +1,8 @@
-from typing import Optional, TypedDict
+from typing import Optional, TypedDict, cast
 
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
+from pydantic import SecretStr
 
 from app.core.config import settings
 from .schemas import ParsedCv
@@ -23,7 +24,7 @@ class ResumeParserState(TypedDict):
 def _build_llm():
     return ChatOpenAI(
         model=settings.OPENAI_MODEL,
-        api_key=settings.OPENAI_API_KEY,
+        api_key=SecretStr(settings.OPENAI_API_KEY),
         temperature=0,
     ).with_structured_output(ParsedCv)
 
@@ -31,11 +32,14 @@ def _build_llm():
 async def extract_node(state: ResumeParserState) -> ResumeParserState:
     try:
         llm = _build_llm()
-        result = await llm.ainvoke(
-            [
-                ("system", SYSTEM_PROMPT),
-                ("human", state["cv_raw_text"]),
-            ]
+        result = cast(
+            ParsedCv,
+            await llm.ainvoke(
+                [
+                    ("system", SYSTEM_PROMPT),
+                    ("human", state["cv_raw_text"]),
+                ]
+            ),
         )
         return {**state, "parsed_data": result, "error": None}
     except Exception as exc:  # noqa: BLE001 — muốn bắt mọi lỗi từ LLM call để trả về success=False
