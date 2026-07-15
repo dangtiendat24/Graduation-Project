@@ -8,9 +8,12 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # OpenAI
+    # OpenAI (chỉ dùng cho embeddings — xem app/services/embeddings.py)
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-4o-mini"
+
+    # Groq (dùng cho agent1 resume-parser và agent2 matching)
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # Qdrant Vector DB
     QDRANT_HOST: str = "localhost"
