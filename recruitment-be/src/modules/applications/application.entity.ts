@@ -9,6 +9,11 @@ import {
 } from 'typeorm'
 import { User } from '../users/user.entity'
 import { Job } from '../jobs/job.entity'
+import type {
+  ExperienceItem,
+  EduItem,
+  ParseStatus,
+} from '../profile/entities/candidate-resume.entity'
 
 /** Phải khớp với APPLICATION_STATUSES trong packages/shared/scoring.constants.ts */
 export type ApplicationStatus =
@@ -46,6 +51,28 @@ export class Application {
 
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status!: ApplicationStatus
+
+  /* ── AI-parsed data cho chính CV nộp trong đơn này (độc lập với CV hồ sơ cá nhân) ── */
+  @Column({ type: 'text', name: 'parsed_summary', nullable: true })
+  parsedSummary!: string | null
+
+  @Column({ type: 'jsonb', name: 'parsed_skills', nullable: true })
+  parsedSkills!: string[] | null
+
+  @Column({ type: 'jsonb', name: 'parsed_experience', nullable: true })
+  parsedExperience!: ExperienceItem[] | null
+
+  @Column({ type: 'jsonb', name: 'parsed_education', nullable: true })
+  parsedEducation!: EduItem[] | null
+
+  @Column({ type: 'boolean', name: 'is_analyzed', default: false })
+  isAnalyzed!: boolean
+
+  @Column({ type: 'varchar', name: 'parse_status', length: 20, default: 'pending' })
+  parseStatus!: ParseStatus
+
+  @Column({ type: 'timestamptz', name: 'parsed_at', nullable: true })
+  parsedAt!: Date | null
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date

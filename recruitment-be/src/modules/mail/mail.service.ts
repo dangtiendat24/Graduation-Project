@@ -1,61 +1,71 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
 
 @Injectable()
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
-  private transporter: Transporter | null = null;
-  private readonly from: string;
   private readonly frontendUrl: string;
   private readonly devMode: boolean;
+  private readonly apiKey: string | undefined;
+  private readonly fromEmail: string;
+  private readonly fromName = 'RecruitAI';
 
   constructor(private readonly config: ConfigService) {
-    this.from = config.get<string>(
-      'SMTP_FROM',
-      'RecruitAI <noreply@recruitai.com>',
-    );
     this.frontendUrl = config.get<string>(
       'FRONTEND_URL',
       'http://localhost:5173',
     );
-    this.devMode = !config.get<string>('SMTP_USER');
+    this.apiKey = config.get<string>('BREVO_API_KEY');
+    this.fromEmail = config.get<string>('BREVO_SENDER_EMAIL', '');
+    this.devMode = !this.apiKey || !this.fromEmail;
   }
 
   onModuleInit() {
     if (this.devMode) {
       this.logger.warn(
-        'SMTP_USER chưa được cấu hình — email sẽ được in ra console (dev mode)',
+        'BREVO_API_KEY hoặc BREVO_SENDER_EMAIL chưa cấu hình — email in ra console (dev mode)',
       );
+    }
+  }
+
+  private async sendEmail(to: string, subject: string, html: string) {
+    if (this.devMode) {
+      this.logger.log(`[DEV] Email to ${to} | Subject: ${subject}`);
       return;
     }
 
-    const port = this.config.get<number>('SMTP_PORT', 587);
-    this.transporter = nodemailer.createTransport({
-      host: this.config.get<string>('SMTP_HOST', 'smtp.gmail.com'),
-      port,
-      secure: port === 465,   // true cho 465 (SSL), false cho 587 (STARTTLS)
-      auth: {
-        user: this.config.get<string>('SMTP_USER'),
-        pass: this.config.get<string>('SMTP_PASS'),
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'api-key': this.apiKey!,
+        'content-type': 'application/json',
       },
+      body: JSON.stringify({
+        sender: { name: this.fromName, email: this.fromEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
     });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Brevo API error: ${err}`);
+    }
   }
+
   async sendVerificationEmail(to: string, fullName: string, token: string) {
     const verifyUrl = `${this.frontendUrl}/verify-email?token=${token}`;
-
-    if (this.devMode || !this.transporter) {
+    if (this.devMode) {
       this.logger.log(`[DEV] Verification link for ${to}: ${verifyUrl}`);
       return;
     }
-
-    await this.transporter.sendMail({
-      from: this.from,
+    await this.sendEmail(
       to,
-      subject: '[RecruitAI] Xác nhận địa chỉ email của bạn',
-      html: buildVerifyEmailHtml(fullName, verifyUrl),
-    });
+      '[RecruitAI] Xác nhận địa chỉ email của bạn',
+      buildVerifyEmailHtml(fullName, verifyUrl),
+    );
   }
 
   async sendInterviewInviteEmail(
@@ -63,21 +73,15 @@ export class MailService implements OnModuleInit {
     fullName: string,
     jobTitle: string,
   ) {
-    const subject = `[RecruitAI] Bạn được mời phỏng vấn cho vị trí ${jobTitle}`;
-
-    if (this.devMode || !this.transporter) {
-      this.logger.log(
-        `[DEV] Interview invite email for ${to} — job: ${jobTitle}`,
-      );
+    if (this.devMode) {
+      this.logger.log(`[DEV] Interview invite for ${to} — job: ${jobTitle}`);
       return;
     }
-
-    await this.transporter.sendMail({
-      from: this.from,
+    await this.sendEmail(
       to,
-      subject,
-      html: buildInterviewInviteEmailHtml(fullName, jobTitle, this.frontendUrl),
-    });
+      `[RecruitAI] Bạn được mời phỏng vấn cho vị trí ${jobTitle}`,
+      buildInterviewInviteEmailHtml(fullName, jobTitle, this.frontendUrl),
+    );
   }
 
   async sendApplicationRejectedEmail(
@@ -85,19 +89,15 @@ export class MailService implements OnModuleInit {
     fullName: string,
     jobTitle: string,
   ) {
-    const subject = `[RecruitAI] Kết quả ứng tuyển vị trí ${jobTitle}`;
-
-    if (this.devMode || !this.transporter) {
+    if (this.devMode) {
       this.logger.log(`[DEV] Rejection email for ${to} — job: ${jobTitle}`);
       return;
     }
-
-    await this.transporter.sendMail({
-      from: this.from,
+    await this.sendEmail(
       to,
-      subject,
-      html: buildRejectionEmailHtml(fullName, jobTitle),
-    });
+      `[RecruitAI] Kết quả ứng tuyển vị trí ${jobTitle}`,
+      buildRejectionEmailHtml(fullName, jobTitle),
+    );
   }
 }
 

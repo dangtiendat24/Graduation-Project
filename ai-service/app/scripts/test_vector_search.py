@@ -50,10 +50,10 @@ async def main() -> None:
     print("→ Similarity search: JD gần nhất với CV...")
     hits = await search_similar("jobs", cv_vector, top_k=5)
     for hit in hits:
-        print(f"  job_id={hit.payload.get('job_id')}  score={hit.score:.4f}")
+        print(f"  job_id={(hit.payload or {}).get('job_id')}  score={hit.score:.4f}")
 
     assert hits, "Không tìm thấy kết quả nào — kiểm tra lại Qdrant/OpenAI config"
-    assert hits[0].payload.get("job_id") == relevant_job_id, "JD liên quan phải có similarity score cao nhất"
+    assert (hits[0].payload or {}).get("job_id") == relevant_job_id, "JD liên quan phải có similarity score cao nhất"
     print("✔ Test PASSED: JD liên quan có similarity score cao nhất")
 
 

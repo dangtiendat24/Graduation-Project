@@ -134,7 +134,10 @@ async def similar_jobs(profile_id: str, top_k: int = 5):
     hits = await search_similar("jobs", cv_vector, top_k=top_k)
     return SimilarJobsResponse(
         profile_id=profile_id,
-        matches=[SimilarJobHit(job_id=hit.payload.get("job_id"), score=hit.score) for hit in hits],
+        matches=[
+            SimilarJobHit(job_id=(hit.payload or {}).get("job_id"), score=hit.score)
+            for hit in hits
+        ],
     )
 
 

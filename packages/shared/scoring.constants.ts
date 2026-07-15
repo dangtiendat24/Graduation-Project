@@ -125,6 +125,7 @@ export function getReportRecommendation(score: number): ReportRecommendation {
 
 export const QUEUE_NAMES = {
   RESUME_PARSE: 'resume-parse',
+  APPLICATION_CV_PARSE: 'application-cv-parse',
   CV_MATCHING: 'cv-matching',
   INTERVIEW: 'interview',
   SCHEDULING: 'scheduling',
