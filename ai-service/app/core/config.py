@@ -8,13 +8,20 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # OpenAI
+    # OpenAI (chỉ dùng cho embeddings — xem app/services/embeddings.py)
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-4o-mini"
+
+    # Groq (dùng cho agent1 resume-parser và agent2 matching)
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # Qdrant Vector DB
+    # Local/Docker: dùng QDRANT_HOST/QDRANT_PORT
+    # Production (Qdrant Cloud): set QDRANT_URL (https://xxx.qdrant.io) + QDRANT_API_KEY — ghi đè QDRANT_HOST/PORT
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
+    QDRANT_URL: str = ""
+    QDRANT_API_KEY: str = ""
 
     # PostgreSQL
     DB_HOST: str = "localhost"
@@ -36,7 +43,7 @@ class Settings(BaseSettings):
 
     @property
     def qdrant_url(self) -> str:
-        return f"http://{self.QDRANT_HOST}:{self.QDRANT_PORT}"
+        return self.QDRANT_URL or f"http://{self.QDRANT_HOST}:{self.QDRANT_PORT}"
 
 
 settings = Settings()

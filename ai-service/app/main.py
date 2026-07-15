@@ -70,8 +70,8 @@ def health_check():
     return {
         "status": "ok",
         "infrastructure": {
-            "openai_model": settings.OPENAI_MODEL,
-            "qdrant": f"{settings.QDRANT_HOST}:{settings.QDRANT_PORT}",
+            "groq_model": settings.GROQ_MODEL,
+            "qdrant": settings.qdrant_url,
         },
     }
 
