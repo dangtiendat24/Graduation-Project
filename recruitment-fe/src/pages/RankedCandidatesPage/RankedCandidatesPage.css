@@ -380,6 +380,31 @@
   cursor: not-allowed;
 }
 
+.rk-btn-view-cv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 5px 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.rk-btn-view-cv i {
+  font-size: 14px;
+}
+
+.rk-btn-view-cv:hover {
+  background: var(--color-indigo-light);
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
+}
+
 /* Empty / loading state */
 .rk-empty-state {
   display: flex;

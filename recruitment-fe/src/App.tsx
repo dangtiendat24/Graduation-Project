@@ -19,6 +19,7 @@ import CandidateJobDetailPage from './pages/CandidateJobDetailPage/CandidateJobD
 import CandidateProfilePage from './pages/CandidateProfilePage/CandidateProfilePage'
 import CandidateCompanyPage from './pages/CandidateCompanyPage/CandidateCompanyPage'
 import RecruiterCandidatesPage from './pages/RecruiterCandidatesPage/RecruiterCandidatesPage'
+import RecruiterCandidateDetailPage from './pages/RecruiterCandidateDetailPage/RecruiterCandidateDetailPage'
 import RankedCandidatesPage from './pages/RankedCandidatesPage/RankedCandidatesPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -97,6 +98,15 @@ function App() {
           element={
             <ProtectedRoute role="recruiter">
               <RecruiterCandidatesPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/candidates/:applicationId"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterCandidateDetailPage />
             </ProtectedRoute>
           }
         />
