@@ -116,9 +116,28 @@
 .rje-form-group { display: flex; flex-direction: column; gap: var(--space-2); }
 .rje-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
 .rje-label { font-size: var(--fs-sm); font-weight: 500; color: var(--text-primary); }
+.rje-label-tip { font-size: var(--fs-xs); color: var(--text-muted); font-weight: 400; }
 .rje-req { color: var(--color-danger); margin-left: 2px; }
 .rje-hint { font-size: var(--fs-xs); color: var(--text-muted); }
+.rje-hint-error { color: var(--color-danger); font-weight: 600; }
 .rje-char-count { font-size: var(--fs-xs); color: var(--text-muted); text-align: right; }
+
+.rje-check-label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+.rje-weights-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-4);
+  margin-top: 10px;
+}
 
 .rje-input-icon { position: relative; }
 .rje-input-icon > i {

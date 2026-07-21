@@ -1,4 +1,10 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectRepository } from '@nestjs/typeorm'
 import { HttpService } from '@nestjs/axios'
@@ -6,7 +12,7 @@ import { Repository } from 'typeorm'
 import { firstValueFrom } from 'rxjs'
 import { Job } from './job.entity'
 import { Company } from '../companies/company.entity'
-import { CreateJobDto } from './dto/create-job.dto'
+import { CreateJobDto, ScoringWeightsDto } from './dto/create-job.dto'
 import { UpdateJobDto } from './dto/update-job.dto'
 import { SearchJobsDto } from './dto/search-jobs.dto'
 
@@ -27,6 +33,7 @@ export class JobsService {
   ) {}
 
   async create(recruiterId: string, dto: CreateJobDto): Promise<Job> {
+    this.assertValidScoringWeights(dto.scoringWeights)
     const company = await this.companyRepo.findOne({ where: { recruiterId } })
     const job = this.repo.create({
       ...dto,
@@ -94,6 +101,7 @@ export class JobsService {
   }
 
   async update(recruiterId: string, id: string, dto: UpdateJobDto): Promise<Job> {
+    this.assertValidScoringWeights(dto.scoringWeights)
     const job = await this.findOne(id)
     if (job.recruiterId !== recruiterId) {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa tin tuyển dụng này')
@@ -102,6 +110,17 @@ export class JobsService {
     const saved = await this.repo.save(job)
     void this.embedJob(saved)
     return saved
+  }
+
+  /** Trọng số phải cộng lại đúng 1 (dung sai làm tròn 0.001) — nếu không sẽ làm sai lệch overall_score */
+  private assertValidScoringWeights(weights?: ScoringWeightsDto | null): void {
+    if (!weights) return
+    const sum = weights.skills + weights.experience + weights.education
+    if (Math.abs(sum - 1) > 0.001) {
+      throw new BadRequestException(
+        `Tổng trọng số scoringWeights phải bằng 1 (hiện tại: ${sum.toFixed(3)})`,
+      )
+    }
   }
 
   private async embedJob(job: Job): Promise<void> {

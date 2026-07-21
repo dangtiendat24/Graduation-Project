@@ -15,6 +15,12 @@ export interface MatchingCriteria {
   skills: number
   experience: number
   education: number
+  /** Breakdown 3 tầng của skills — keyword matching / TF-IDF / semantic (Qdrant). Xem ai-service SkillBreakdown. */
+  skillBreakdown?: {
+    keyword: number
+    tfidf: number
+    semantic: number
+  }
 }
 
 /** Ghi lại bởi Agent 2 (CV-JD Matching) sau khi chấm điểm ứng viên cho một đơn ứng tuyển */

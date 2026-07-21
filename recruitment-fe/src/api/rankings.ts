@@ -3,10 +3,17 @@ import type { ApplicationStatus } from './candidates'
 
 export type ScoreBand = 'high' | 'medium' | 'low'
 
+export interface SkillBreakdown {
+  keyword: number
+  tfidf: number
+  semantic: number
+}
+
 export interface RankingMatchingCriteria {
   skills: number
   experience: number
   education: number
+  skillBreakdown?: SkillBreakdown
 }
 
 export interface JobApplicationMatching {
