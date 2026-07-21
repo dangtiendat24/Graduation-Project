@@ -15,7 +15,8 @@ openai==2.43.0
 qdrant-client==1.8.0
 
 # TF-IDF cosine similarity (agent2_matching keyword/tfidf scoring nodes)
-scikit-learn==1.5.2
+# 1.5.2 không có wheel cho Python 3.14 (không có compiler để build từ source) — bump lên bản có sẵn wheel
+scikit-learn==1.9.0
 
 # Pydantic v2
 pydantic==2.13.4

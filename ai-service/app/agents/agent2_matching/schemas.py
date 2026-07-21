@@ -46,12 +46,28 @@ class MatchCriteria(BaseModel):
 class MatchAnalysis(BaseModel):
     """LLM structured output — chỉ chấm experience/education; skills_score do thuật toán tính (xem SkillBreakdown)"""
 
-    experience_score: float = Field(ge=0, le=100, description="Điểm phù hợp kinh nghiệm làm việc, 0-100")
-    education_score: float = Field(ge=0, le=100, description="Điểm phù hợp học vấn/bằng cấp, 0-100")
+    experience_score: float = Field(
+        ge=0,
+        le=100,
+        description=(
+            "Điểm phù hợp kinh nghiệm làm việc, 0-100 — bao gồm số năm kinh nghiệm (kể cả yêu cầu "
+            "'tối thiểu N năm' trong JD), vị trí/công ty/dự án thực tế đã làm."
+        ),
+    )
+    education_score: float = Field(
+        ge=0,
+        le=100,
+        description=(
+            "Điểm phù hợp học vấn/bằng cấp, 0-100 — CHỈ xét trường học, chuyên ngành, bằng cấp, "
+            "năm tốt nghiệp/niên khóa. KHÔNG liên quan đến số năm kinh nghiệm làm việc."
+        ),
+    )
     explanation: str = Field(
         description=(
-            "Giải thích chi tiết bằng tiếng Việt: breakdown điểm theo kỹ năng/kinh nghiệm/học vấn "
-            "(kỹ năng đã được chấm sẵn bằng thuật toán), điểm mạnh của ứng viên, điểm còn thiếu sót so với JD"
+            "Giải thích chi tiết bằng tiếng Việt, chia thành đúng 3 đoạn theo nhãn "
+            "'Kỹ năng (skills_score): ...', 'Kinh nghiệm (experience_score): ...', "
+            "'Học vấn (education_score): ...' — mỗi đoạn CHỈ bàn đúng phạm vi tiêu chí đó, không lặp lại "
+            "hoặc mượn lý do của đoạn khác. Nêu điểm mạnh của ứng viên và điểm còn thiếu sót so với JD."
         )
     )
 

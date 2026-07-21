@@ -165,6 +165,32 @@
   white-space: pre-wrap;
 }
 
+.rcd-summary-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rcd-summary-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  line-height: 1.55;
+}
+
+.rcd-summary-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-indigo);
+}
+
 .rcd-muted {
   font-size: var(--fs-label);
   color: var(--text-muted);

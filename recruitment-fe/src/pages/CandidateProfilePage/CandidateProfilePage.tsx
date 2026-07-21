@@ -15,6 +15,7 @@ import {
   type EduItem,
   type ExperienceItem,
 } from '../../api/profile'
+import { splitSummaryLines } from '../../utils/summary'
 import './CandidateProfilePage.css'
 
 /* ── helpers ── */
@@ -399,7 +400,11 @@ export default function CandidateProfilePage() {
                   {resume.parsedSummary && (
                     <div className="cp-parse-block">
                       <div className="cp-parse-label"><i className="ti ti-quote cp-icon-indigo" /> Tóm tắt</div>
-                      <div className="cp-summary-box">{resume.parsedSummary}</div>
+                      <ul className="cp-summary-box cp-summary-list">
+                        {splitSummaryLines(resume.parsedSummary).map((line, i) => (
+                          <li key={i}>{line}</li>
+                        ))}
+                      </ul>
                     </div>
                   )}
 

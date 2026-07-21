@@ -2,6 +2,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { getRecruiterCandidates, type ApplicationStatus } from '../../api/candidates'
+import { splitSummaryLines } from '../../utils/summary'
 import './RecruiterCandidateDetailPage.css'
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
@@ -113,7 +114,11 @@ export default function RecruiterCandidateDetailPage() {
               <section className="rcd-card">
                 <h2 className="rcd-card-title"><i className="ti ti-sparkles" /> Tóm tắt AI</h2>
                 {item.isParsed && item.parsedData?.summary ? (
-                  <p className="rcd-body">{item.parsedData.summary}</p>
+                  <ul className="rcd-summary-list">
+                    {splitSummaryLines(item.parsedData.summary).map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
                 ) : (
                   <p className="rcd-muted">
                     {item.isParsed ? 'Chưa có tóm tắt.' : 'CV đang được AI xử lý…'}

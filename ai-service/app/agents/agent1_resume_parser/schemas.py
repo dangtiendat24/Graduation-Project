@@ -20,7 +20,16 @@ class ParsedCv(BaseModel):
     name: str = Field(default="", description="Họ tên ứng viên")
     email: str | None = Field(default=None, description="Email liên hệ nếu có trong CV")
     phone: str | None = Field(default=None, description="Số điện thoại nếu có trong CV")
-    summary: str = Field(default="", description="Tóm tắt ngắn gọn về ứng viên")
+    summary: str = Field(
+        default="",
+        description=(
+            "Tóm tắt về ứng viên — luôn viết bằng tiếng Việt dù CV gốc là ngôn ngữ nào. "
+            "Định dạng: 3-4 gạch đầu dòng ngắn gọn, mỗi dòng bắt đầu bằng '• ' và cách nhau "
+            "bằng ký tự xuống dòng (\\n) — KHÔNG viết thành 1 đoạn văn dài liền mạch. "
+            "Mỗi dòng nêu đúng 1 ý: học vấn/trình độ hiện tại, kỹ năng nổi bật, "
+            "kinh nghiệm/dự án đáng chú ý (nếu có), mục tiêu nghề nghiệp (nếu có)."
+        ),
+    )
     skills: list[str] = Field(default_factory=list, description="Danh sách kỹ năng")
     experience: list[ParsedCvExperience] = Field(default_factory=list)
     education: list[ParsedCvEducation] = Field(default_factory=list)
