@@ -1,4 +1,3 @@
-import React from 'react'
 import type { ApplicationStatus } from '../../api/applications'
 import type { MyApplicationListItem, MyApplicationDetail } from '../../api/candidateApplications'
 import './ApplicationDetailModal.css'
@@ -134,7 +133,7 @@ export default function ApplicationDetailModal({ applicationId, onClose }: Appli
                 <div key={i} className="ch-timeline-item">
                   <div className="ch-timeline-rail">
                     <div className="ch-timeline-dot" />
-                    {i < detailQuery.data.statusHistory.length - 1 && <div className="ch-timeline-line" />}
+                    {i < (detailQuery.data?.statusHistory.length ?? 0) - 1 && <div className="ch-timeline-line" />}
                   </div>
                   <div className="ch-timeline-content">
                     <div className="ch-timeline-label">{h.label}</div>
