@@ -10,10 +10,30 @@ interface NavItemProps {
   badge?: string
 }
 
+/** Xếp hạng ứng viên nằm dưới URL /jobs/:id/rankings nhưng thuộc luồng Ứng viên. */
+function isNavActive(pathname: string, to: string): boolean {
+  const isJobRankings = /^\/recruiter\/jobs\/[^/]+\/rankings(?:\/|$)/.test(pathname)
+
+  if (to === '/recruiter/candidates' || to.endsWith('/candidates')) {
+    return (
+      pathname === '/recruiter/candidates' ||
+      pathname.startsWith('/recruiter/candidates/') ||
+      isJobRankings
+    )
+  }
+
+  if (to === '/recruiter/jobs' || to.endsWith('/jobs')) {
+    if (isJobRankings) return false
+    return pathname === to || pathname.startsWith(to + '/')
+  }
+
+  return pathname === to || pathname.startsWith(to + '/')
+}
+
 function NavItem({ to, icon, label, badge }: NavItemProps) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
-  const active = pathname === to || pathname.startsWith(to + '/')
+  const active = isNavActive(pathname, to)
 
   return (
     <div

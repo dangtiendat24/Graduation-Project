@@ -206,11 +206,9 @@ export default function RankedCandidatesPage() {
     <DashboardLayout>
       <div className="rk-page">
         <div className="rk-breadcrumb">
-          <span className="rk-bc-link" onClick={() => navigate('/recruiter/jobs')}>Tin tuyển dụng</span>
+          <span className="rk-bc-link" onClick={() => navigate('/recruiter/candidates')}>Ứng viên</span>
           <i className="ti ti-chevron-right" />
-          <span className="rk-bc-link" onClick={() => navigate(`/recruiter/jobs/${jobId}/edit`)}>
-            {job?.title ?? '...'}
-          </span>
+          <span className="rk-bc-current">{job?.title ?? '…'}</span>
           <i className="ti ti-chevron-right" />
           <span className="rk-bc-current">Xếp hạng ứng viên</span>
         </div>
@@ -234,6 +232,7 @@ export default function RankedCandidatesPage() {
               pendingApplicationId={statusMutation.isPending ? pendingConfirm?.row.applicationId ?? null : null}
               onSelectRow={setSelectedRow}
               onAction={handleAction}
+              onViewCv={(row) => navigate(`/recruiter/candidates/${row.applicationId}`)}
             />
 
             {meta && meta.totalPages > 1 && (

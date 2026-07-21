@@ -1,314 +1,225 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
-import { getMyJobs } from '../../api/jobs'
-import { getRecruiterCandidates, type ApplicationStatus } from '../../api/candidates'
+import { getMyJobs, type Job } from '../../api/jobs'
+import { getJobApplications } from '../../api/rankings'
 import './RecruiterCandidatesPage.css'
 
-const PAGE_LIMIT = 20
-
-// Từ điển hiển thị trạng thái application (khớp APPLICATION_STATUSES)
-const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  pending: 'Vừa nộp đơn',
-  matched: 'Đã chấm điểm',
-  interviewed: 'Đã phỏng vấn AI',
-  schedule_sent: 'Chờ chọn lịch',
-  scheduled: 'Đã hẹn lịch',
-  completed: 'AI báo cáo',
-  hired: 'Đã tuyển',
-  rejected: 'Từ chối',
+const STATUS_LABEL: Record<Job['status'], string> = {
+  draft: 'Nháp',
+  active: 'Đang tuyển',
+  closed: 'Đã đóng',
 }
 
-// design-tokens.css chỉ có sẵn class .badge-schedule (không phải schedule_sent)
-const STATUS_BADGE_CLASS: Record<ApplicationStatus, string> = {
-  pending: 'pending',
-  matched: 'matched',
-  interviewed: 'interviewed',
-  schedule_sent: 'schedule',
-  scheduled: 'scheduled',
-  completed: 'completed',
-  hired: 'hired',
-  rejected: 'rejected',
+const LEVEL_LABEL: Record<string, string> = {
+  intern: 'Intern',
+  junior: 'Junior',
+  middle: 'Middle',
+  senior: 'Senior',
+  lead: 'Lead',
+  director: 'Director',
 }
 
-function getScoreClass(score: number) {
-  if (score >= 70) return 'score-high'
-  if (score >= 40) return 'score-mid'
-  return 'score-low'
-}
-
-function getInitials(name: string): string {
-  return name.split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
-}
+type StatusFilter = 'all' | 'active' | 'closed'
 
 export default function RecruiterCandidatesPage() {
   const navigate = useNavigate()
-
-  const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
-  const [jobFilter, setJobFilter] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [sort, setSort] = useState<'appliedAt' | 'overallScore'>('appliedAt')
-  const [page, setPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
-  // Debounce search 300ms — reset về trang 1 khi search mới có hiệu lực
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearch(searchInput.trim())
-      setPage(1)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [searchInput])
-
-  function handleJobFilterChange(value: string) {
-    setJobFilter(value)
-    setPage(1)
-  }
-
-  function handleStatusFilterChange(value: string) {
-    setStatusFilter(value)
-    setPage(1)
-  }
-
-  function handleSortChange(value: 'appliedAt' | 'overallScore') {
-    setSort(value)
-    setPage(1)
-  }
-
-  const { data: jobs = [] } = useQuery({ queryKey: ['my-jobs'], queryFn: getMyJobs })
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['recruiter-candidates', jobFilter, statusFilter, search, sort, page],
-    queryFn: () =>
-      getRecruiterCandidates({
-        jobId: jobFilter === 'all' ? undefined : jobFilter,
-        status: statusFilter === 'all' ? undefined : (statusFilter as ApplicationStatus),
-        search: search || undefined,
-        sort,
-        page,
-        limit: PAGE_LIMIT,
-      }),
-    placeholderData: keepPreviousData,
+  const { data: jobs = [], isLoading, isError } = useQuery({
+    queryKey: ['my-jobs'],
+    queryFn: getMyJobs,
   })
 
-  const candidates = data?.data ?? []
-  const meta = data?.meta
+  const publishedJobs = useMemo(
+    () => jobs.filter((j) => j.status === 'active' || j.status === 'closed'),
+    [jobs],
+  )
+
+  const countQueries = useQueries({
+    queries: publishedJobs.map((job) => ({
+      queryKey: ['job-applicant-count', job.id],
+      queryFn: () => getJobApplications(job.id, { limit: 1 }),
+      staleTime: 30_000,
+    })),
+  })
+
+  const applicantMetaByJobId = useMemo(() => {
+    const map = new Map<string, { total?: number; loading: boolean }>()
+    publishedJobs.forEach((job, i) => {
+      const q = countQueries[i]
+      map.set(job.id, {
+        total: q?.data?.meta.total,
+        loading: Boolean(q?.isLoading || q?.isFetching),
+      })
+    })
+    return map
+  }, [publishedJobs, countQueries])
+
+  const filteredJobs = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return publishedJobs.filter((job) => {
+      if (statusFilter !== 'all' && job.status !== statusFilter) return false
+      if (!q) return true
+      return (
+        job.title.toLowerCase().includes(q) ||
+        (job.department?.toLowerCase().includes(q) ?? false) ||
+        (job.location?.toLowerCase().includes(q) ?? false)
+      )
+    })
+  }, [publishedJobs, search, statusFilter])
+
+  const totalApplicants = useMemo(
+    () =>
+      [...applicantMetaByJobId.values()].reduce(
+        (sum, meta) => sum + (meta.total ?? 0),
+        0,
+      ),
+    [applicantMetaByJobId],
+  )
 
   return (
     <DashboardLayout>
       <div className="rcp-page">
-        {/* Header Section */}
         <div className="rcp-header">
           <div>
-            <h1 className="rcp-title">Hồ sơ ứng viên</h1>
+            <h1 className="rcp-title">Vị trí ứng tuyển</h1>
             <p className="rcp-sub">
-              Quản lý danh sách ứng viên đã nộp đơn. Thông tin kỹ năng đã được AI tự động trích xuất từ CV.
+              Chọn icon Ranking để xem xếp hạng ứng viên của vị trí đó. Trong trang xếp hạng, bấm nút mũi tên để xem CV từng ứng viên.
             </p>
           </div>
         </div>
 
-        {/* Filters Section */}
+        {!isLoading && publishedJobs.length > 0 && (
+          <div className="rcp-stats">
+            <div className="rcp-stat-card">
+              <div className="rcp-stat-val">{publishedJobs.length}</div>
+              <div className="rcp-stat-lbl">Vị trí</div>
+            </div>
+            <div className="rcp-stat-card rcp-stat-card--indigo">
+              <div className="rcp-stat-val">{totalApplicants}</div>
+              <div className="rcp-stat-lbl">Tổng ứng viên</div>
+            </div>
+            <div className="rcp-stat-card rcp-stat-card--teal">
+              <div className="rcp-stat-val">
+                {publishedJobs.filter((j) => j.status === 'active').length}
+              </div>
+              <div className="rcp-stat-lbl">Đang tuyển</div>
+            </div>
+          </div>
+        )}
+
         <div className="rcp-filters-card">
           <div className="rcp-search-box">
             <i className="ti ti-search" />
             <input
               type="text"
-              placeholder="Tìm kiếm ứng viên theo tên hoặc email..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Tìm vị trí theo tên, phòng ban, địa điểm…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
           <div className="rcp-filter-select">
-            <i className="ti ti-briefcase" />
-            <select value={jobFilter} onChange={(e) => handleJobFilterChange(e.target.value)}>
-              <option value="all">Tất cả tin tuyển dụng</option>
-              {jobs.map((job) => (
-                <option key={job.id} value={job.id}>{job.title}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="rcp-filter-select">
             <i className="ti ti-filter" />
-            <select value={statusFilter} onChange={(e) => handleStatusFilterChange(e.target.value)}>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            >
               <option value="all">Tất cả trạng thái</option>
-              {Object.entries(STATUS_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
+              <option value="active">Đang tuyển</option>
+              <option value="closed">Đã đóng</option>
             </select>
           </div>
+        </div>
 
-          <div className="rcp-sort-toggle">
-            <button
-              className={`rcp-sort-btn${sort === 'appliedAt' ? ' rcp-sort-btn--active' : ''}`}
-              onClick={() => handleSortChange('appliedAt')}
-            >
-              Ngày nộp
-            </button>
-            <button
-              className={`rcp-sort-btn${sort === 'overallScore' ? ' rcp-sort-btn--active' : ''}`}
-              onClick={() => handleSortChange('overallScore')}
-            >
-              Điểm phù hợp
-            </button>
+        {isLoading ? (
+          <div className="rcp-empty-state">
+            <i className="ti ti-loader-2 rcp-spin" />
+            <div>Đang tải danh sách vị trí…</div>
           </div>
-        </div>
+        ) : isError ? (
+          <div className="rcp-empty-state">
+            <i className="ti ti-alert-circle" />
+            <div>Không tải được danh sách vị trí. Vui lòng thử lại.</div>
+          </div>
+        ) : filteredJobs.length === 0 ? (
+          <div className="rcp-empty-state">
+            <div className="rcp-empty-icon"><i className="ti ti-briefcase-off" /></div>
+            <div className="rcp-empty-title">
+              {publishedJobs.length === 0
+                ? 'Chưa có vị trí ứng tuyển nào'
+                : 'Không tìm thấy vị trí phù hợp'}
+            </div>
+            <div className="rcp-empty-sub">
+              {publishedJobs.length === 0
+                ? 'Đăng tin tuyển dụng và chờ ứng viên nộp CV để bắt đầu.'
+                : 'Thử đổi từ khóa hoặc bộ lọc trạng thái.'}
+            </div>
+          </div>
+        ) : (
+          <div className="rcp-job-list">
+            {filteredJobs.map((job) => {
+              const meta = applicantMetaByJobId.get(job.id)
+              const count = meta?.total
+              const countLoading = Boolean(meta?.loading && count === undefined)
 
-        {/* Candidates List / Table */}
-        <div className="rcp-table-container">
-          <table className="rcp-table">
-            <thead>
-              <tr>
-                <th>Ứng viên</th>
-                <th>Vị trí ứng tuyển</th>
-                <th style={{ width: '30%' }}>Kỹ năng trích xuất (AI)</th>
-                <th>Điểm số</th>
-                <th>Trạng thái</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="rcp-empty-state">
-                      <i className="ti ti-loader-2 rcp-spin" />
-                      <div>Đang tải danh sách ứng viên…</div>
-                    </div>
-                  </td>
-                </tr>
-              ) : isError ? (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="rcp-empty-state">
-                      <i className="ti ti-alert-circle" />
-                      <div>Không tải được danh sách ứng viên. Vui lòng thử lại.</div>
-                    </div>
-                  </td>
-                </tr>
-              ) : candidates.length > 0 ? (
-                candidates.map((c) => (
-                  <tr key={c.applicationId}>
-                    <td>
-                      <div className="rcp-cand-info">
-                        <div className="rcp-cand-avatar">
-                          {c.candidate.avatarUrl ? (
-                            <img src={c.candidate.avatarUrl} alt={c.candidate.fullName} />
-                          ) : (
-                            getInitials(c.candidate.fullName)
-                          )}
-                        </div>
-                        <div>
-                          <div className="rcp-cand-name">{c.candidate.fullName}</div>
-                          <div className="rcp-cand-meta">
-                            <i className="ti ti-mail" /> {c.candidate.email}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="rcp-job-role">{c.job.title}</div>
-                      <div className="rcp-cand-meta">
-                        <i className="ti ti-calendar" /> {new Date(c.appliedAt).toLocaleDateString('vi-VN')}
-                      </div>
-                    </td>
-                    <td>
-                      {c.isParsed && c.parsedData ? (
-                        <>
-                          <div className="rcp-skills-wrap">
-                            {c.parsedData.skills.slice(0, 3).map((skill, i) => (
-                              <span key={i} className="rcp-skill-tag">{skill}</span>
-                            ))}
-                            {c.parsedData.skills.length > 3 && (
-                              <span className="rcp-skill-tag more">+{c.parsedData.skills.length - 3}</span>
-                            )}
-                            {c.parsedData.skills.length === 0 && (
-                              <span className="rcp-cand-meta">Chưa có kỹ năng trích xuất</span>
-                            )}
-                          </div>
-                          {c.parsedData.experience.length > 0 && (
-                            <div className="rcp-exp-hint">
-                              <i className="ti ti-briefcase" /> {c.parsedData.experience.length} kinh nghiệm
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="rcp-cand-meta">
-                          <i className="ti ti-loader-2 rcp-spin" /> Đang xử lý CV
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {c.matching ? (
-                        <span className={`rcp-score-pill ${getScoreClass(c.matching.overallScore)}`}>
-                          {Math.round(c.matching.overallScore)}
-                        </span>
-                      ) : (
-                        <span className="rcp-cand-meta">Chưa có điểm</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge badge-${STATUS_BADGE_CLASS[c.status]}`}>
-                        {STATUS_LABELS[c.status]}
+              return (
+                <div key={job.id} className="rcp-job-card">
+                  <div className="rcp-job-main">
+                    <div className="rcp-job-title-row">
+                      <span className="rcp-job-title">{job.title}</span>
+                      <span className={`rcp-status rcp-status--${job.status}`}>
+                        {STATUS_LABEL[job.status]}
                       </span>
-                    </td>
-                    <td>
-                      <div className="rcp-row-actions">
-                        <button
-                          className="rcp-btn-view"
-                          title="Xem xếp hạng ứng viên theo tin tuyển dụng này"
-                          onClick={() => navigate(`/recruiter/jobs/${c.job.id}/rankings`)}
-                        >
-                          <i className="ti ti-chart-bar" />
-                        </button>
-                        <button
-                          className="rcp-btn-view"
-                          title="Xem chi tiết CV & Báo cáo"
-                          onClick={() => navigate(`/recruiter/candidates/${c.applicationId}`)}
-                        >
-                          <i className="ti ti-chevron-right" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="rcp-empty-state">
-                      <div className="rcp-empty-icon"><i className="ti ti-user-x" /></div>
-                      <div>Không tìm thấy ứng viên nào phù hợp</div>
                     </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    <div className="rcp-job-meta">
+                      {job.department && (
+                        <span className="rcp-meta-item">
+                          <i className="ti ti-building" /> {job.department}
+                        </span>
+                      )}
+                      {job.location && (
+                        <span className="rcp-meta-item">
+                          <i className="ti ti-map-pin" /> {job.location}
+                        </span>
+                      )}
+                      {job.level && (
+                        <span className="rcp-meta-item">
+                          <i className="ti ti-award" /> {LEVEL_LABEL[job.level] ?? job.level}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-        {/* Pagination */}
-        {meta && meta.totalPages > 1 && (
-          <div className="rcp-pagination">
-            <button
-              className="rcp-page-btn"
-              disabled={meta.page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <i className="ti ti-chevron-left" /> Trước
-            </button>
-            <span className="rcp-page-info">Trang {meta.page} / {meta.totalPages} · {meta.total} ứng viên</span>
-            <button
-              className="rcp-page-btn"
-              disabled={meta.page >= meta.totalPages}
-              onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
-            >
-              Sau <i className="ti ti-chevron-right" />
-            </button>
+                  <div className="rcp-job-right">
+                    <div className="rcp-applicant-count">
+                      {countLoading ? (
+                        <i className="ti ti-loader-2 rcp-spin" />
+                      ) : (
+                        <>
+                          <span className="rcp-applicant-num">{count ?? 0}</span>
+                          <span className="rcp-applicant-lbl">ứng viên</span>
+                        </>
+                      )}
+                    </div>
+                    {/* Giống nút Ranking cũ — vào trang xếp hạng của vị trí */}
+                    <button
+                      type="button"
+                      className="rcp-btn-view"
+                      title="Xem xếp hạng ứng viên theo tin tuyển dụng này"
+                      onClick={() => navigate(`/recruiter/jobs/${job.id}/rankings`)}
+                    >
+                      <i className="ti ti-chart-bar" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
-
       </div>
     </DashboardLayout>
   )
