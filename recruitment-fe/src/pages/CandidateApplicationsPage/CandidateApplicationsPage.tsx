@@ -17,11 +17,12 @@ import {
   CheckCircle2,
   XCircle,
   Clock3,
-  CalendarCheck
+  CalendarCheck,
+  type LucideIcon,
 } from 'lucide-react'
 import './CandidateApplicationsPage.css'
 
-const STATUS_CONFIG: Record<ApplicationStatus, { label: string; clsPrefix: string; icon: any }> = {
+const STATUS_CONFIG: Record<ApplicationStatus, { label: string; clsPrefix: string; icon: LucideIcon }> = {
   pending: { label: 'Đã nộp đơn', clsPrefix: 'st-pending', icon: Clock3 },
   matched: { label: 'Hồ sơ phù hợp', clsPrefix: 'st-matched', icon: Sparkles },
   interviewed: { label: 'Đã phỏng vấn AI', clsPrefix: 'st-interviewed', icon: Bot },
