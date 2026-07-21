@@ -1,5 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
 import type { ApplicationStatus } from '../../api/applications'
-import type { MyApplicationListItem, MyApplicationDetail } from '../../api/candidateApplications'
+import { getMyApplicationDetail } from '../../api/candidateApplications'
 import './ApplicationDetailModal.css'
 
 interface ApplicationDetailModalProps {
@@ -28,84 +29,11 @@ function formatDateTime(iso: string): string {
   return `${formatDate(iso)} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-const MOCK_APPLICATIONS: MyApplicationListItem[] = [
-  {
-    applicationId: 'app-1',
-    appliedAt: '2026-06-20T08:00:00Z',
-    updatedAt: '2026-06-21T08:00:00Z',
-    status: 'pending',
-    job: {
-      id: 'job-1',
-      title: 'Senior Node.js Developer',
-      department: 'Engineering',
-      level: 'Senior',
-      location: 'Hà Nội',
-      workModel: 'Hybrid',
-      salaryRange: '25–35 tr/tháng',
-      company: { name: 'TechVision', logoUrl: null }
-    },
-    matching: { overallScore: 92, recommendation: 'strong_match' },
-    interview: null,
-    schedule: null,
-  },
-  {
-    applicationId: 'app-2',
-    appliedAt: '2026-06-15T08:00:00Z',
-    updatedAt: '2026-06-16T08:00:00Z',
-    status: 'schedule_sent',
-    job: {
-      id: 'job-2',
-      title: 'Backend Engineer (NestJS)',
-      department: 'Engineering',
-      level: 'Middle',
-      location: 'TP. HCM',
-      workModel: 'Onsite',
-      salaryRange: '20–30 tr/tháng',
-      company: { name: 'Zalo', logoUrl: null }
-    },
-    matching: { overallScore: 85, recommendation: 'good_match' },
-    interview: { status: 'completed', overallScore: 8.5 },
-    schedule: {
-      status: 'pending',
-      confirmedStartTime: '2026-06-25T14:00:00Z',
-      meetLink: 'https://meet.google.com/abc-xyz-def'
-    },
-  },
-  {
-    applicationId: 'app-3',
-    appliedAt: '2026-06-10T08:00:00Z',
-    updatedAt: '2026-06-10T09:00:00Z',
-    status: 'rejected',
-    autoRejected: true,
-    job: {
-      id: 'job-3',
-      title: 'Data Analyst',
-      department: 'Data',
-      level: 'Junior',
-      location: 'Đà Nẵng',
-      workModel: 'Remote',
-      salaryRange: '15-20 tr/tháng',
-      company: { name: 'VNG', logoUrl: null }
-    },
-    matching: { overallScore: 40, recommendation: 'poor_match' },
-    interview: null,
-    schedule: null,
-  }
-]
-
 export default function ApplicationDetailModal({ applicationId, onClose }: ApplicationDetailModalProps) {
-  const baseApp = MOCK_APPLICATIONS.find(a => a.applicationId === applicationId)
-  const detailQuery = {
-    isLoading: false,
-    isError: !baseApp,
-    data: baseApp ? {
-      ...baseApp,
-      statusHistory: [
-        { fromStatus: null, toStatus: 'pending' as ApplicationStatus, changedAt: baseApp.appliedAt, label: 'Nộp đơn ứng tuyển thành công' },
-        { fromStatus: 'pending' as ApplicationStatus, toStatus: baseApp.status, changedAt: baseApp.updatedAt, label: `Trạng thái hiện tại: ${STATUS_LABELS[baseApp.status]}` }
-      ]
-    } as MyApplicationDetail : null
-  }
+  const detailQuery = useQuery({
+    queryKey: ['candidate-application-detail', applicationId],
+    queryFn: () => getMyApplicationDetail(applicationId),
+  })
 
   return (
     <div className="ch-overlay" onClick={onClose}>
