@@ -4,12 +4,37 @@ import {
   IsEnum,
   IsInt,
   IsArray,
+  IsNumber,
   MaxLength,
   Min,
+  Max,
   IsNotEmpty,
   IsDateString,
+  ValidateNested,
 } from 'class-validator'
+import { Type } from 'class-transformer'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+
+/** Trọng số chấm điểm riêng cho vị trí (P4) — 3 số 0-1, tổng phải = 1 (kiểm tra ở JobsService). */
+export class ScoringWeightsDto {
+  @ApiProperty({ example: 0.5 })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  skills: number
+
+  @ApiProperty({ example: 0.3 })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  experience: number
+
+  @ApiProperty({ example: 0.2 })
+  @IsNumber()
+  @Min(0)
+  @Max(1)
+  education: number
+}
 
 export class CreateJobDto {
   @ApiProperty({ example: 'Senior Frontend Developer' })
@@ -91,4 +116,16 @@ export class CreateJobDto {
   @IsOptional()
   @IsDateString({}, { message: 'Hạn nộp hồ sơ phải đúng định dạng YYYY-MM-DD' })
   deadline?: string
+
+  @ApiPropertyOptional({
+    type: ScoringWeightsDto,
+    nullable: true,
+    description:
+      'Ghi đè trọng số matching mặc định cho riêng vị trí này (tổng 3 giá trị phải = 1). ' +
+      'Gửi null để xoá override và quay về MATCHING_WEIGHTS mặc định.',
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ScoringWeightsDto)
+  scoringWeights?: ScoringWeightsDto | null
 }

@@ -291,6 +291,34 @@
 .rk-bar-exp    { background: var(--color-teal); }
 .rk-bar-edu    { background: var(--color-amber); }
 
+/* Skill sub-breakdown: keyword / TF-IDF / semantic (§6 đề xuất matching engine) */
+.rk-subcriteria {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 2px 0 4px 90px;
+  padding: 8px 10px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+}
+
+.rk-subcriteria-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.rk-subcriteria-row span:first-child { width: 90px; flex-shrink: 0; }
+
+.rk-bar--sm { height: 4px; }
+
+.rk-bar-keyword  { background: var(--color-indigo-hover); }
+.rk-bar-tfidf    { background: var(--status-scheduled); }
+.rk-bar-semantic { background: var(--color-hired); }
+
 .rk-criteria--lg .rk-criteria-row {
   font-size: var(--fs-label);
 }

@@ -61,16 +61,32 @@ export const MATCHING_WEIGHTS = {
   education: 0.20,
 } as const;
 
-/** overall_score = skills×0.45 + experience×0.35 + education×0.20 */
-export function calcMatchingScore(criteria: {
+export interface MatchingWeights {
   skills: number;
   experience: number;
   education: number;
-}): number {
+}
+
+/**
+ * Nguồn chân lý duy nhất cho trọng số matching (P4). `Job.scoringWeights` (nếu recruiter
+ * cấu hình riêng cho vị trí) ghi đè `MATCHING_WEIGHTS` mặc định — BE resolve ở đây rồi gửi
+ * kèm mỗi request sang ai-service, ai-service không tự giữ bản trọng số hardcode nào nữa.
+ */
+export function resolveMatchingWeights(
+  override?: MatchingWeights | null,
+): MatchingWeights {
+  return override ?? MATCHING_WEIGHTS;
+}
+
+/** overall_score = skills×weight + experience×weight + education×weight (mặc định 0.45/0.35/0.20) */
+export function calcMatchingScore(
+  criteria: MatchingWeights,
+  weights: MatchingWeights = MATCHING_WEIGHTS,
+): number {
   return (
-    criteria.skills * MATCHING_WEIGHTS.skills +
-    criteria.experience * MATCHING_WEIGHTS.experience +
-    criteria.education * MATCHING_WEIGHTS.education
+    criteria.skills * weights.skills +
+    criteria.experience * weights.experience +
+    criteria.education * weights.education
   );
 }
 

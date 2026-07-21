@@ -23,10 +23,17 @@ export interface Education {
   year: string
 }
 
+export interface SkillBreakdown {
+  keyword: number
+  tfidf: number
+  semantic: number
+}
+
 export interface MatchingCriteria {
   skills: number
   experience: number
   education: number
+  skillBreakdown?: SkillBreakdown
 }
 
 export interface CandidateListItem {

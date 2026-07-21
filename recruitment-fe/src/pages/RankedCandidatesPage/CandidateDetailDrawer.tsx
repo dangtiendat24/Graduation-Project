@@ -55,6 +55,31 @@ export default function CandidateDetailDrawer({ row, requiredSkills, onClose }: 
                 <div className="rk-bar"><div className="rk-bar-fill rk-bar-skills" style={{ width: `${row.matching.criteria.skills}%` }} /></div>
                 <span className="rk-criteria-val">{Math.round(row.matching.criteria.skills)}</span>
               </div>
+              {row.matching.criteria.skillBreakdown && (
+                <div className="rk-subcriteria">
+                  <div className="rk-subcriteria-row">
+                    <span>Từ khoá (keyword)</span>
+                    <div className="rk-bar rk-bar--sm">
+                      <div className="rk-bar-fill rk-bar-keyword" style={{ width: `${row.matching.criteria.skillBreakdown.keyword}%` }} />
+                    </div>
+                    <span className="rk-criteria-val">{Math.round(row.matching.criteria.skillBreakdown.keyword)}</span>
+                  </div>
+                  <div className="rk-subcriteria-row">
+                    <span>TF-IDF</span>
+                    <div className="rk-bar rk-bar--sm">
+                      <div className="rk-bar-fill rk-bar-tfidf" style={{ width: `${row.matching.criteria.skillBreakdown.tfidf}%` }} />
+                    </div>
+                    <span className="rk-criteria-val">{Math.round(row.matching.criteria.skillBreakdown.tfidf)}</span>
+                  </div>
+                  <div className="rk-subcriteria-row">
+                    <span>Ngữ nghĩa (AI)</span>
+                    <div className="rk-bar rk-bar--sm">
+                      <div className="rk-bar-fill rk-bar-semantic" style={{ width: `${row.matching.criteria.skillBreakdown.semantic}%` }} />
+                    </div>
+                    <span className="rk-criteria-val">{Math.round(row.matching.criteria.skillBreakdown.semantic)}</span>
+                  </div>
+                </div>
+              )}
               <div className="rk-criteria-row">
                 <span>Kinh nghiệm</span>
                 <div className="rk-bar"><div className="rk-bar-fill rk-bar-exp" style={{ width: `${row.matching.criteria.experience}%` }} /></div>

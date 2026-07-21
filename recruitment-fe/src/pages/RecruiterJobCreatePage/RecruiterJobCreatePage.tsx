@@ -20,6 +20,10 @@ interface JobForm {
   jobPerks: string[]
   deadline: string
   status: 'draft' | 'active'
+  useCustomWeights: boolean
+  weightSkills: string
+  weightExperience: string
+  weightEducation: string
 }
 
 const EMPTY_FORM: JobForm = {
@@ -38,9 +42,19 @@ const EMPTY_FORM: JobForm = {
   jobPerks: [],
   deadline: '',
   status: 'active',
+  useCustomWeights: false,
+  weightSkills: '45',
+  weightExperience: '35',
+  weightEducation: '20',
 }
 
-type StringField = Exclude<keyof JobForm, 'requiredSkills' | 'jobPerks' | 'workModel' | 'status'>
+// Khớp mặc định với packages/shared/scoring.constants.ts::MATCHING_WEIGHTS
+const DEFAULT_WEIGHTS_LABEL = 'Kỹ năng 45% · Kinh nghiệm 35% · Học vấn 20%'
+
+type StringField = Exclude<
+  keyof JobForm,
+  'requiredSkills' | 'jobPerks' | 'workModel' | 'status' | 'useCustomWeights'
+>
 
 const WORK_MODEL_OPTS: { value: 'onsite' | 'hybrid' | 'remote'; label: string; icon: string }[] = [
   { value: 'onsite', label: 'Tại văn phòng', icon: 'ti-building' },
@@ -115,8 +129,12 @@ export default function RecruiterJobCreatePage() {
   const removeTag = (list: 'requiredSkills' | 'jobPerks', idx: number) =>
     setForm(prev => ({ ...prev, [list]: prev[list].filter((_, i) => i !== idx) }))
 
+  const weightsSum =
+    (Number(form.weightSkills) || 0) + (Number(form.weightExperience) || 0) + (Number(form.weightEducation) || 0)
+  const weightsValid = !form.useCustomWeights || weightsSum === 100
+
   const handleSave = async (publish: boolean) => {
-    if (!form.title.trim()) return
+    if (!form.title.trim() || !weightsValid) return
     setSaveStatus('saving')
     try {
       await createJob({
@@ -141,6 +159,13 @@ export default function RecruiterJobCreatePage() {
         jobPerks: form.jobPerks.length ? form.jobPerks : undefined,
         status: publish ? 'active' : 'draft',
         deadline: form.deadline || undefined,
+        scoringWeights: form.useCustomWeights
+          ? {
+              skills: (Number(form.weightSkills) || 0) / 100,
+              experience: (Number(form.weightExperience) || 0) / 100,
+              education: (Number(form.weightEducation) || 0) / 100,
+            }
+          : null,
       })
       setSaveStatus('saved')
       setTimeout(() => {
@@ -181,7 +206,7 @@ export default function RecruiterJobCreatePage() {
       <button
         className="rjc-btn-ghost"
         onClick={() => handleSave(false)}
-        disabled={saveStatus === 'saving' || !form.title.trim()}
+        disabled={saveStatus === 'saving' || !form.title.trim() || !weightsValid}
       >
         <i className="ti ti-device-floppy" />
         {saveStatus === 'saving' ? 'Đang lưu…' : 'Lưu nháp'}
@@ -189,7 +214,7 @@ export default function RecruiterJobCreatePage() {
       <button
         className="rjc-btn-teal"
         onClick={() => handleSave(true)}
-        disabled={saveStatus === 'saving' || !form.title.trim()}
+        disabled={saveStatus === 'saving' || !form.title.trim() || !weightsValid}
       >
         <i className="ti ti-send" /> Đăng tuyển
       </button>
@@ -413,6 +438,61 @@ export default function RecruiterJobCreatePage() {
                     <option value="">-- Chọn --</option>
                     {MIN_EXP_OPTS.map(o => <option key={o}>{o}</option>)}
                   </select>
+                </div>
+
+                <div className="rjc-form-group">
+                  <label className="rjc-check-label">
+                    <input
+                      type="checkbox"
+                      checked={form.useCustomWeights}
+                      onChange={e => setForm(prev => ({ ...prev, useCustomWeights: e.target.checked }))}
+                    />
+                    Tuỳ chỉnh trọng số chấm điểm AI cho vị trí này
+                    <span className="rjc-label-tip"> — mặc định: {DEFAULT_WEIGHTS_LABEL}</span>
+                  </label>
+
+                  {form.useCustomWeights && (
+                    <>
+                      <div className="rjc-weights-row">
+                        <div className="rjc-form-group">
+                          <label className="rjc-label">Kỹ năng (%)</label>
+                          <input
+                            className="rjc-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={form.weightSkills}
+                            onChange={setField('weightSkills')}
+                          />
+                        </div>
+                        <div className="rjc-form-group">
+                          <label className="rjc-label">Kinh nghiệm (%)</label>
+                          <input
+                            className="rjc-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={form.weightExperience}
+                            onChange={setField('weightExperience')}
+                          />
+                        </div>
+                        <div className="rjc-form-group">
+                          <label className="rjc-label">Học vấn (%)</label>
+                          <input
+                            className="rjc-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={form.weightEducation}
+                            onChange={setField('weightEducation')}
+                          />
+                        </div>
+                      </div>
+                      <div className={`rjc-hint${weightsValid ? '' : ' rjc-hint-error'}`}>
+                        Tổng: {weightsSum}%{!weightsValid && ' — phải bằng 100%'}
+                      </div>
+                    </>
+                  )}
                 </div>
 
               </div>
@@ -699,14 +779,14 @@ export default function RecruiterJobCreatePage() {
             <button
               className="rjc-btn-ghost"
               onClick={() => handleSave(false)}
-              disabled={saveStatus === 'saving' || !form.title.trim()}
+              disabled={saveStatus === 'saving' || !form.title.trim() || !weightsValid}
             >
               <i className="ti ti-device-floppy" /> Lưu nháp
             </button>
             <button
               className="rjc-btn-primary"
               onClick={() => handleSave(true)}
-              disabled={saveStatus === 'saving' || !form.title.trim()}
+              disabled={saveStatus === 'saving' || !form.title.trim() || !weightsValid}
             >
               <i className="ti ti-send" /> Đăng tuyển ngay
             </button>

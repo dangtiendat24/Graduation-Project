@@ -9,6 +9,7 @@ import {
 } from 'typeorm'
 import { User } from '../users/user.entity'
 import { Company } from '../companies/company.entity'
+import type { MatchingWeights } from '@smart-recruitment/shared'
 
 @Entity('jobs')
 export class Job {
@@ -64,6 +65,10 @@ export class Job {
 
   @Column({ type: 'jsonb', name: 'job_perks', nullable: true })
   jobPerks: string[] | null
+
+  /** Trọng số chấm điểm riêng cho vị trí này (skills/experience/education, tổng = 1). Null → dùng MATCHING_WEIGHTS mặc định. */
+  @Column({ type: 'jsonb', name: 'scoring_weights', nullable: true })
+  scoringWeights: MatchingWeights | null
 
   @Column({ type: 'varchar', length: 20, default: 'draft' })
   status: 'draft' | 'active' | 'closed'
