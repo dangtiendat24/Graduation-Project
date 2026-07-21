@@ -10,6 +10,7 @@ import {
   QUEUE_NAMES,
   AUTO_REJECT_THRESHOLD,
   VALID_TRANSITIONS,
+  resolveMatchingWeights,
 } from '@smart-recruitment/shared';
 import {
   Application,
@@ -24,10 +25,16 @@ import {
 import { Job as JobEntity } from '../jobs/job.entity';
 import { CvMatchJobData } from './matching.service';
 
+/** Shape thô trả về từ ai-service (Python/Pydantic dùng snake_case, kể cả nested skill_breakdown) */
 interface AiMatchResponse {
   application_id: string;
   overall_score: number;
-  criteria: MatchingCriteria;
+  criteria: {
+    skills: number;
+    experience: number;
+    education: number;
+    skill_breakdown?: { keyword: number; tfidf: number; semantic: number };
+  };
   qdrant_similarity: number | null;
   explanation: string;
   recommendation: MatchRecommendation;
@@ -79,6 +86,9 @@ export class MatchingProcessor extends WorkerHost {
           job_id: application.jobId,
           cv_text: this.buildCvText(application),
           job_text: this.buildJobText(application.job),
+          cv_skills: application.parsedSkills ?? [],
+          job_skills: application.job.requiredSkills ?? [],
+          weights: resolveMatchingWeights(application.job.scoringWeights),
         },
       ),
     );
@@ -95,7 +105,7 @@ export class MatchingProcessor extends WorkerHost {
     }
     result.overallScore = data.overall_score;
     result.recommendation = data.recommendation;
-    result.criteria = data.criteria;
+    result.criteria = this.toPersistedCriteria(data.criteria);
     result.explanation = data.explanation;
     await this.matchRepo.save(result);
 
@@ -124,6 +134,16 @@ export class MatchingProcessor extends WorkerHost {
         metadata: { source: 'agent2_matching', overallScore },
       }),
     );
+  }
+
+  /** ai-service trả wire format snake_case — chuẩn hoá sang camelCase trước khi lưu/hiển thị cho FE */
+  private toPersistedCriteria(criteria: AiMatchResponse['criteria']): MatchingCriteria {
+    return {
+      skills: criteria.skills,
+      experience: criteria.experience,
+      education: criteria.education,
+      skillBreakdown: criteria.skill_breakdown,
+    };
   }
 
   private buildCvText(application: Application): string {

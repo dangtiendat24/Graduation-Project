@@ -8,6 +8,12 @@ export interface JobCompany {
   industry: string | null
 }
 
+export interface ScoringWeights {
+  skills: number
+  experience: number
+  education: number
+}
+
 export interface Job {
   id: string
   recruiterId: string
@@ -27,6 +33,7 @@ export interface Job {
   jobPerks: string[] | null
   status: 'draft' | 'active' | 'closed'
   deadline: string | null
+  scoringWeights: ScoringWeights | null
   createdAt: string
   updatedAt: string
 }
@@ -54,6 +61,8 @@ export interface CreateJobPayload {
   jobPerks?: string[]
   status?: 'draft' | 'active'
   deadline?: string
+  /** undefined = giữ nguyên trọng số hiện có; null = xoá override, quay về mặc định */
+  scoringWeights?: ScoringWeights | null
 }
 
 export async function createJob(payload: CreateJobPayload): Promise<Job> {

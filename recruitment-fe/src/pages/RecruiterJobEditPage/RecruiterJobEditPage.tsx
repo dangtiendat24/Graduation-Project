@@ -21,9 +21,19 @@ interface JobForm {
   jobPerks: string[]
   deadline: string
   status: 'draft' | 'active' | 'closed'
+  useCustomWeights: boolean
+  weightSkills: string
+  weightExperience: string
+  weightEducation: string
 }
 
-type StringField = Exclude<keyof JobForm, 'requiredSkills' | 'jobPerks' | 'workModel' | 'status'>
+// Khớp mặc định với packages/shared/scoring.constants.ts::MATCHING_WEIGHTS
+const DEFAULT_WEIGHTS_LABEL = 'Kỹ năng 45% · Kinh nghiệm 35% · Học vấn 20%'
+
+type StringField = Exclude<
+  keyof JobForm,
+  'requiredSkills' | 'jobPerks' | 'workModel' | 'status' | 'useCustomWeights'
+>
 
 const WORK_MODEL_OPTS: { value: 'onsite' | 'hybrid' | 'remote'; label: string; icon: string }[] = [
   { value: 'onsite', label: 'Tại văn phòng', icon: 'ti-building' },
@@ -106,6 +116,10 @@ export default function RecruiterJobEditPage() {
       jobPerks: job.jobPerks ?? [],
       deadline: job.deadline ?? '',
       status: job.status,
+      useCustomWeights: !!job.scoringWeights,
+      weightSkills: job.scoringWeights ? String(Math.round(job.scoringWeights.skills * 100)) : '45',
+      weightExperience: job.scoringWeights ? String(Math.round(job.scoringWeights.experience * 100)) : '35',
+      weightEducation: job.scoringWeights ? String(Math.round(job.scoringWeights.education * 100)) : '20',
     })
   }, [job])
 
@@ -158,8 +172,12 @@ export default function RecruiterJobEditPage() {
   const removeTag = (list: 'requiredSkills' | 'jobPerks', idx: number) =>
     setForm(prev => prev ? { ...prev, [list]: prev[list].filter((_, i) => i !== idx) } : prev)
 
+  const weightsSum =
+    (Number(form.weightSkills) || 0) + (Number(form.weightExperience) || 0) + (Number(form.weightEducation) || 0)
+  const weightsValid = !form.useCustomWeights || weightsSum === 100
+
   const handleSave = async () => {
-    if (!form.title.trim() || !id) return
+    if (!form.title.trim() || !id || !weightsValid) return
     setSaveStatus('saving')
     try {
       await updateJob(id, {
@@ -184,6 +202,13 @@ export default function RecruiterJobEditPage() {
         jobPerks: form.jobPerks.length ? form.jobPerks : undefined,
         status: form.status,
         deadline: form.deadline || undefined,
+        scoringWeights: form.useCustomWeights
+          ? {
+              skills: (Number(form.weightSkills) || 0) / 100,
+              experience: (Number(form.weightExperience) || 0) / 100,
+              education: (Number(form.weightEducation) || 0) / 100,
+            }
+          : null,
       })
       setSaveStatus('saved')
       setTimeout(() => {
@@ -204,7 +229,7 @@ export default function RecruiterJobEditPage() {
       <button
         className="rje-btn-primary"
         onClick={handleSave}
-        disabled={saveStatus === 'saving' || !form.title.trim()}
+        disabled={saveStatus === 'saving' || !form.title.trim() || !weightsValid}
       >
         {saveStatus === 'saving'
           ? <><i className="ti ti-loader-2 rje-spin" /> Đang lưu…</>
@@ -371,6 +396,43 @@ export default function RecruiterJobEditPage() {
                   </select>
                 </div>
 
+                <div className="rje-form-group">
+                  <label className="rje-check-label">
+                    <input
+                      type="checkbox"
+                      checked={form.useCustomWeights}
+                      onChange={e => setForm(prev => prev ? { ...prev, useCustomWeights: e.target.checked } : prev)}
+                    />
+                    Tuỳ chỉnh trọng số chấm điểm AI cho vị trí này
+                    <span className="rje-label-tip"> — mặc định: {DEFAULT_WEIGHTS_LABEL}</span>
+                  </label>
+
+                  {form.useCustomWeights && (
+                    <>
+                      <div className="rje-weights-row">
+                        <div className="rje-form-group">
+                          <label className="rje-label">Kỹ năng (%)</label>
+                          <input className="rje-input" type="number" min="0" max="100"
+                            value={form.weightSkills} onChange={setField('weightSkills')} />
+                        </div>
+                        <div className="rje-form-group">
+                          <label className="rje-label">Kinh nghiệm (%)</label>
+                          <input className="rje-input" type="number" min="0" max="100"
+                            value={form.weightExperience} onChange={setField('weightExperience')} />
+                        </div>
+                        <div className="rje-form-group">
+                          <label className="rje-label">Học vấn (%)</label>
+                          <input className="rje-input" type="number" min="0" max="100"
+                            value={form.weightEducation} onChange={setField('weightEducation')} />
+                        </div>
+                      </div>
+                      <div className={`rje-hint${weightsValid ? '' : ' rje-hint-error'}`}>
+                        Tổng: {weightsSum}%{!weightsValid && ' — phải bằng 100%'}
+                      </div>
+                    </>
+                  )}
+                </div>
+
               </div>
             </div>
 
@@ -523,7 +585,7 @@ export default function RecruiterJobEditPage() {
             <button
               className="rje-btn-primary"
               onClick={handleSave}
-              disabled={saveStatus === 'saving' || !form.title.trim()}
+              disabled={saveStatus === 'saving' || !form.title.trim() || !weightsValid}
             >
               <i className="ti ti-device-floppy" /> Lưu thay đổi
             </button>

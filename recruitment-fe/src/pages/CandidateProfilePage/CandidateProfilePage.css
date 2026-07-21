@@ -455,6 +455,29 @@
   line-height: 1.7;
 }
 
+.cp-summary-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cp-summary-list li {
+  position: relative;
+  padding-left: 16px;
+}
+
+.cp-summary-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-indigo);
+}
+
 /* Skills */
 .cp-skills-wrap {
   display: flex;

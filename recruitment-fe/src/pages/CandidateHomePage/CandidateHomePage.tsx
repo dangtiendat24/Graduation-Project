@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
-import { getMyApplications, getMyApplicationDetail } from '../../api/candidateApplications'
+import { getMyApplications } from '../../api/candidateApplications'
 import type { ApplicationStatus } from '../../api/applications'
+import ApplicationDetailModal from '../../components/ApplicationDetailModal/ApplicationDetailModal'
 import './CandidateHomePage.css'
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
@@ -84,11 +85,6 @@ function formatDate(iso: string): string {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
 }
 
-function formatDateTime(iso: string): string {
-  const d = new Date(iso)
-  return `${formatDate(iso)} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
 const REC_JOBS = [
   {
     logo: 'M', gradFrom: '#7C3AED', gradTo: '#4338CA',
@@ -139,12 +135,6 @@ export default function CandidateHomePage() {
 
   // Đơn nổi bật cho pipeline tracker: đơn active gần nhất (data đã sort DESC theo appliedAt)
   const activeApplication = applications.find((a) => ACTIVE_PIPELINE_STATUSES.includes(a.status)) ?? null
-
-  const detailQuery = useQuery({
-    queryKey: ['candidate-applications', 'detail', detailId],
-    queryFn: () => getMyApplicationDetail(detailId as string),
-    enabled: detailId !== null,
-  })
 
   const heroStats = [
     { num: totalApplications, numClass: 'teal', label: 'Đơn đã nộp' },
@@ -476,45 +466,10 @@ export default function CandidateHomePage() {
 
       {/* ── Application detail modal ── */}
       {detailId && (
-        <div className="ch-overlay" onClick={() => setDetailId(null)}>
-          <div className="ch-detail-modal" onClick={(e) => e.stopPropagation()}>
-            {detailQuery.isLoading ? (
-              <div className="ch-empty-state">Đang tải chi tiết đơn ứng tuyển...</div>
-            ) : detailQuery.isError || !detailQuery.data ? (
-              <div className="ch-empty-state">Không tải được chi tiết đơn ứng tuyển.</div>
-            ) : (
-              <>
-                <h3 className="ch-detail-title">{detailQuery.data.job.title}</h3>
-                <p className="ch-detail-sub">{detailQuery.data.job.company?.name ?? 'N/A'}</p>
-                <div className="ch-detail-status">
-                  <span className={`ch-badge bd-${detailQuery.data.status}`}>
-                    {STATUS_LABELS[detailQuery.data.status]}
-                  </span>
-                  {detailQuery.data.autoRejected && (
-                    <span className="ch-auto-rejected-note" style={{ marginLeft: 8, display: 'inline-block' }}>
-                      Hồ sơ bị từ chối tự động do điểm matching thấp
-                    </span>
-                  )}
-                </div>
-                <div className="ch-timeline">
-                  {detailQuery.data.statusHistory.map((h, i) => (
-                    <div key={i} className="ch-timeline-item">
-                      <div className="ch-timeline-rail">
-                        <div className="ch-timeline-dot" />
-                        {i < detailQuery.data.statusHistory.length - 1 && <div className="ch-timeline-line" />}
-                      </div>
-                      <div className="ch-timeline-content">
-                        <div className="ch-timeline-label">{h.label}</div>
-                        <div className="ch-timeline-date">{formatDateTime(h.changedAt)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-            <button className="ch-detail-close-btn" onClick={() => setDetailId(null)}>Đóng</button>
-          </div>
-        </div>
+        <ApplicationDetailModal
+          applicationId={detailId}
+          onClose={() => setDetailId(null)}
+        />
       )}
 
     </CandidateLayout>

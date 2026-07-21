@@ -29,20 +29,39 @@ async def match_cv_jd(body: MatchRequest):
             error="cv_text hoặc job_text rỗng, không thể chấm điểm",
         )
 
-    result = await matching_graph.ainvoke(
-        {
-            "profile_id": body.profile_id,
-            "job_id": body.job_id,
-            "cv_text": body.cv_text,
-            "job_text": body.job_text,
-            "qdrant_similarity": None,
-            "criteria": None,
-            "overall_score": None,
-            "recommendation": None,
-            "explanation": None,
-            "error": None,
-        }
-    )
+    try:
+        result = await matching_graph.ainvoke(
+            {
+                "profile_id": body.profile_id,
+                "job_id": body.job_id,
+                "cv_text": body.cv_text,
+                "job_text": body.job_text,
+                "cv_skills": body.cv_skills,
+                "job_skills": body.job_skills,
+                "weights": body.weights,
+                "qdrant_similarity": None,
+                "keyword_score": None,
+                "tfidf_score": None,
+                "skill_score": None,
+                "skill_breakdown": None,
+                "criteria": None,
+                "overall_score": None,
+                "recommendation": None,
+                "explanation": None,
+                "error": None,
+            }
+        )
+    except Exception as exc:  # noqa: BLE001 — muốn bắt mọi lỗi (Qdrant/LLM down...) để trả về success=False
+        return MatchResponse(
+            application_id=body.application_id,
+            overall_score=0,
+            criteria=_EMPTY_CRITERIA,
+            qdrant_similarity=None,
+            explanation="",
+            recommendation="poor_match",
+            success=False,
+            error=str(exc),
+        )
 
     if result.get("error") or result.get("criteria") is None:
         return MatchResponse(

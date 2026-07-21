@@ -1,4 +1,5 @@
 import type { RankedRow } from './RankingTable'
+import { parseMatchExplanation } from '../../utils/matchExplanation'
 
 interface Props {
   row: RankedRow
@@ -16,6 +17,7 @@ export default function CandidateDetailDrawer({ row, requiredSkills, onClose }: 
 
   const matchedSkills = row.skills.filter((s) => normalizedRequired.includes(s.trim().toLowerCase()))
   const missingSkills = requiredSkills.filter((s) => !normalizedCandidate.has(s.trim().toLowerCase()))
+  const explanationSections = row.matching?.explanation ? parseMatchExplanation(row.matching.explanation) : []
 
   return (
     <div className="rk-overlay" onClick={onClose}>
@@ -55,6 +57,31 @@ export default function CandidateDetailDrawer({ row, requiredSkills, onClose }: 
                 <div className="rk-bar"><div className="rk-bar-fill rk-bar-skills" style={{ width: `${row.matching.criteria.skills}%` }} /></div>
                 <span className="rk-criteria-val">{Math.round(row.matching.criteria.skills)}</span>
               </div>
+              {row.matching.criteria.skillBreakdown && (
+                <div className="rk-subcriteria">
+                  <div className="rk-subcriteria-row">
+                    <span>Từ khoá (keyword)</span>
+                    <div className="rk-bar rk-bar--sm">
+                      <div className="rk-bar-fill rk-bar-keyword" style={{ width: `${row.matching.criteria.skillBreakdown.keyword}%` }} />
+                    </div>
+                    <span className="rk-criteria-val">{Math.round(row.matching.criteria.skillBreakdown.keyword)}</span>
+                  </div>
+                  <div className="rk-subcriteria-row">
+                    <span>TF-IDF</span>
+                    <div className="rk-bar rk-bar--sm">
+                      <div className="rk-bar-fill rk-bar-tfidf" style={{ width: `${row.matching.criteria.skillBreakdown.tfidf}%` }} />
+                    </div>
+                    <span className="rk-criteria-val">{Math.round(row.matching.criteria.skillBreakdown.tfidf)}</span>
+                  </div>
+                  <div className="rk-subcriteria-row">
+                    <span>Ngữ nghĩa (AI)</span>
+                    <div className="rk-bar rk-bar--sm">
+                      <div className="rk-bar-fill rk-bar-semantic" style={{ width: `${row.matching.criteria.skillBreakdown.semantic}%` }} />
+                    </div>
+                    <span className="rk-criteria-val">{Math.round(row.matching.criteria.skillBreakdown.semantic)}</span>
+                  </div>
+                </div>
+              )}
               <div className="rk-criteria-row">
                 <span>Kinh nghiệm</span>
                 <div className="rk-bar"><div className="rk-bar-fill rk-bar-exp" style={{ width: `${row.matching.criteria.experience}%` }} /></div>
@@ -99,9 +126,20 @@ export default function CandidateDetailDrawer({ row, requiredSkills, onClose }: 
 
         <div className="rk-drawer-section">
           <div className="rk-drawer-section-title">Giải thích của AI</div>
-          <p className="rk-explanation">
-            {row.matching?.explanation ?? 'Chưa có giải thích cho ứng viên này.'}
-          </p>
+          {explanationSections.length > 0 ? (
+            <div className="rk-explanation-sections">
+              {explanationSections.map((s) => (
+                <div key={s.key} className={`rk-explanation-card rk-explanation-card--${s.key}`}>
+                  <div className="rk-explanation-card-title">{s.title}</div>
+                  <p className="rk-explanation-card-text">{s.text}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="rk-explanation">
+              {row.matching?.explanation ?? 'Chưa có giải thích cho ứng viên này.'}
+            </p>
+          )}
         </div>
       </div>
     </div>

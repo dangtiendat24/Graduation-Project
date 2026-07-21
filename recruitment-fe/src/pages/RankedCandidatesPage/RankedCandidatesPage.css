@@ -291,6 +291,34 @@
 .rk-bar-exp    { background: var(--color-teal); }
 .rk-bar-edu    { background: var(--color-amber); }
 
+/* Skill sub-breakdown: keyword / TF-IDF / semantic (§6 đề xuất matching engine) */
+.rk-subcriteria {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 2px 0 4px 90px;
+  padding: 8px 10px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+}
+
+.rk-subcriteria-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.rk-subcriteria-row span:first-child { width: 90px; flex-shrink: 0; }
+
+.rk-bar--sm { height: 4px; }
+
+.rk-bar-keyword  { background: var(--color-indigo-hover); }
+.rk-bar-tfidf    { background: var(--status-scheduled); }
+.rk-bar-semantic { background: var(--color-hired); }
+
 .rk-criteria--lg .rk-criteria-row {
   font-size: var(--fs-label);
 }
@@ -378,6 +406,31 @@
 .rk-btn-reject:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.rk-btn-view-cv {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 5px 10px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+.rk-btn-view-cv i {
+  font-size: 14px;
+}
+
+.rk-btn-view-cv:hover {
+  background: var(--color-indigo-light);
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
 }
 
 /* Empty / loading state */
@@ -873,6 +926,39 @@
   border-radius: var(--radius-md);
   padding: var(--space-3);
   white-space: pre-line;
+}
+
+.rk-explanation-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.rk-explanation-card {
+  background: var(--bg-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  border-left: 3px solid var(--color-indigo);
+}
+
+.rk-explanation-card--experience { border-left-color: var(--color-teal); }
+.rk-explanation-card--education { border-left-color: var(--color-amber); }
+
+.rk-explanation-card-title {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  margin-bottom: 4px;
+  color: var(--color-indigo);
+}
+
+.rk-explanation-card--experience .rk-explanation-card-title { color: var(--color-teal); }
+.rk-explanation-card--education .rk-explanation-card-title { color: var(--color-amber); }
+
+.rk-explanation-card-text {
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* --- Toast --- */

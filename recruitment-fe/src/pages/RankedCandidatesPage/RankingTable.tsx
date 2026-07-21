@@ -58,6 +58,7 @@ interface Props {
   pendingApplicationId: string | null
   onSelectRow: (row: RankedRow) => void
   onAction: (row: RankedRow, action: 'interviewed' | 'rejected') => void
+  onViewCv: (row: RankedRow) => void
 }
 
 export default function RankingTable({
@@ -68,6 +69,7 @@ export default function RankingTable({
   pendingApplicationId,
   onSelectRow,
   onAction,
+  onViewCv,
 }: Props) {
   return (
     <div className="rk-table-container">
@@ -212,6 +214,14 @@ export default function RankingTable({
                         onClick={() => onAction(row, 'rejected')}
                       >
                         <i className="ti ti-x" /> Từ chối
+                      </button>
+                      {/* Nút chevron cũ — xem chi tiết CV & báo cáo */}
+                      <button
+                        className="rk-btn-view-cv"
+                        title="Xem chi tiết CV & Báo cáo"
+                        onClick={() => onViewCv(row)}
+                      >
+                        <i className="ti ti-chevron-right" />
                       </button>
                     </div>
                   </td>
