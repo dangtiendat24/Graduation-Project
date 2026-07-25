@@ -144,6 +144,7 @@ export const QUEUE_NAMES = {
   APPLICATION_CV_PARSE: 'application-cv-parse',
   CV_MATCHING: 'cv-matching',
   INTERVIEW: 'interview',
+  INTERVIEW_SCORING: 'interview-scoring',
   SCHEDULING: 'scheduling',
   REPORT: 'report',
   EMAIL: 'send-schedule-email',
