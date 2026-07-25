@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
-from .graph import interview_graph
+from .graph import interview_graph, score_answers_graph
 
 router = APIRouter(prefix="/api/ai/interview", tags=["Agent 3 — AI Interviewer"])
 
@@ -22,13 +22,14 @@ class GenerateQuestionsResponse(BaseModel):
 
 class ScoreAnswersRequest(BaseModel):
     session_id: str
-    answers: list[dict]  # [{question_id, answer_text, audio_url?}]
+    questions: list[dict]  # [{id, question, category, difficulty, expected_keywords?}] — bộ câu hỏi đã sinh ở /generate-questions cho session này, dùng để lấy nội dung câu hỏi và validate question_id
+    answers: list[dict]    # [{question_id, answer_text, audio_url?}]
 
 
 class ScoreAnswersResponse(BaseModel):
     session_id: str
-    scored_answers: list[dict]   # [{question_id, scores, total}]
-    overall_score: float         # AVG(answers[*].total)
+    scored_answers: list[dict]   # [{question_id, question, answer_text, scores: {relevance, clarity, depth, correctness}, total, comment}]
+    overall_score: float         # Công thức B1: AVG(answers[*].total), mỗi total = tổng 4 tiêu chí thang 0-25 (0-100), KHÔNG chia 4
     transcript: str
     success: bool
     error: str | None = None
@@ -75,11 +76,51 @@ async def generate_questions(body: GenerateQuestionsRequest):
 @router.post("/score-answers", response_model=ScoreAnswersResponse)
 async def score_answers(body: ScoreAnswersRequest):
     """
-    Agent 3 Step 2: Chấm điểm câu trả lời (relevance + clarity + depth + correctness)
-    Công thức B1: overall = AVG(answers[*].total), KHÔNG chia 4
+    Agent 3 Step 2: Chấm điểm câu trả lời phỏng vấn.
+    Mỗi câu chấm theo 4 tiêu chí phụ (relevance, clarity, depth, correctness), MỖI tiêu chí
+    thang điểm 0-25 (PRD v3.1 Section 8) → total/câu = tổng 4 tiêu chí (thang 0-100).
+    Công thức B1 (đã chốt): overall_score = AVG(answers[*].total), KHÔNG chia 4.
     """
-    # TODO: implement graph.ainvoke()
-    raise HTTPException(status_code=501, detail="Agent 3 score-answers not yet implemented")
+    if not body.answers:
+        return ScoreAnswersResponse(
+            session_id=body.session_id,
+            scored_answers=[],
+            overall_score=0,
+            transcript="",
+            success=False,
+            error="answers rỗng, không có câu trả lời nào để chấm điểm",
+        )
+
+    result = await score_answers_graph.ainvoke(
+        {
+            "session_id": body.session_id,
+            "questions": body.questions,
+            "answers": body.answers,
+            "scored_answers": None,
+            "overall_score": None,
+            "transcript": None,
+            "error": None,
+        }
+    )
+
+    if result.get("error") or result.get("scored_answers") is None:
+        return ScoreAnswersResponse(
+            session_id=body.session_id,
+            scored_answers=[],
+            overall_score=0,
+            transcript="",
+            success=False,
+            error=result.get("error") or "Không thể chấm điểm câu trả lời phỏng vấn",
+        )
+
+    return ScoreAnswersResponse(
+        session_id=body.session_id,
+        scored_answers=result["scored_answers"],
+        overall_score=result["overall_score"],
+        transcript=result["transcript"] or "",
+        success=True,
+        error=None,
+    )
 
 
 @router.get("/health")
