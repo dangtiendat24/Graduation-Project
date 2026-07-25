@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from .graph import interview_graph
+
 router = APIRouter(prefix="/api/ai/interview", tags=["Agent 3 — AI Interviewer"])
 
 
@@ -37,8 +39,37 @@ async def generate_questions(body: GenerateQuestionsRequest):
     """
     Agent 3 Step 1: Sinh câu hỏi phỏng vấn dựa trên CV và JD
     """
-    # TODO: implement graph.ainvoke()
-    raise HTTPException(status_code=501, detail="Agent 3 generate-questions not yet implemented")
+    if not body.parsed_data or not body.job_requirements.strip():
+        return GenerateQuestionsResponse(
+            session_id=body.session_id,
+            questions=[],
+            success=False,
+            error="parsed_data hoặc job_requirements rỗng, không thể sinh câu hỏi",
+        )
+
+    result = await interview_graph.ainvoke(
+        {
+            "parsed_data": body.parsed_data,
+            "job_requirements": body.job_requirements,
+            "questions": None,
+            "error": None,
+        }
+    )
+
+    if result.get("error") or result.get("questions") is None:
+        return GenerateQuestionsResponse(
+            session_id=body.session_id,
+            questions=[],
+            success=False,
+            error=result.get("error") or "Không thể sinh câu hỏi phỏng vấn",
+        )
+
+    return GenerateQuestionsResponse(
+        session_id=body.session_id,
+        questions=result["questions"],
+        success=True,
+        error=None,
+    )
 
 
 @router.post("/score-answers", response_model=ScoreAnswersResponse)
