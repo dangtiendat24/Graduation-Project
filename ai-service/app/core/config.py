@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     BE_INTERNAL_URL: str = "http://localhost:3000"
     BE_INTERNAL_SECRET: str = ""
 
+    # Google Calendar (agent4_scheduling) — Service Account + domain-wide delegation.
+    # Đọc lịch freebusy của bất kỳ hr_email nào trong Workspace bằng cách impersonate qua
+    # with_subject(hr_email), thay vì bắt từng HR tự OAuth thủ công. Giá trị là nội dung JSON
+    # key của service account (không hard-code, không commit — set qua .env/.env.example).
+    # Cần Workspace admin bật domain-wide delegation cho client_id của service account với
+    # scope https://www.googleapis.com/auth/calendar.readonly.
+    GOOGLE_CALENDAR_SERVICE_ACCOUNT_JSON: str = ""
+
     @property
     def database_url(self) -> str:
         return (
