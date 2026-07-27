@@ -198,14 +198,14 @@ export default function CandidateApplicationsPage() {
                         </div>
                         <div className="ca-progress-wrap">
                           <div className="ca-progress-bar">
-                            <motion.div 
+                            <motion.div
                               initial={{ width: 0 }}
-                              animate={{ width: `${app.interview.overallScore * 10}%` }}
+                              animate={{ width: `${app.interview.overallScore}%` }}
                               transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
-                              className="ca-progress-fill ca-bg-teal" 
+                              className="ca-progress-fill ca-bg-teal"
                             />
                           </div>
-                          <span className="ca-progress-text ca-text-teal">{app.interview.overallScore}/10</span>
+                          <span className="ca-progress-text ca-text-teal">{app.interview.overallScore}%</span>
                         </div>
                       </div>
                     )}

@@ -267,6 +267,7 @@ export class RecruiterApplicationsService {
         answerText: a.answerText,
         subScores: a.subScores,
         totalScore: a.totalScore,
+        comment: a.comment,
       })),
     };
   }
