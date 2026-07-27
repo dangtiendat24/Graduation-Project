@@ -18,7 +18,11 @@ export class InterviewScoringService {
     await this.queue.add(
       'score',
       { sessionId },
-      { attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
+      {
+        jobId: sessionId,
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 2000 },
+      },
     );
   }
 }

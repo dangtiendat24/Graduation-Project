@@ -18,6 +18,8 @@ import { InterviewSessionService } from './interview-session.service';
 import { InterviewSessionController } from './interview-session.controller';
 import { InterviewScoringService } from './interview-scoring.service';
 import { InterviewScoringProcessor } from './interview-scoring.processor';
+import { InterviewGenerationService } from './interview-generation.service';
+import { InterviewGenerationProcessor } from './interview-generation.processor';
 
 @Module({
   imports: [
@@ -30,9 +32,10 @@ import { InterviewScoringProcessor } from './interview-scoring.processor';
     ]),
     BullModule.registerQueue(
       { name: QUEUE_NAMES.APPLICATION_CV_PARSE },
+      { name: QUEUE_NAMES.INTERVIEW },
       { name: QUEUE_NAMES.INTERVIEW_SCORING },
     ),
-    HttpModule,
+    HttpModule.register({ timeout: 20000, maxRedirects: 3 }),
     StorageModule,
     MatchingModule,
   ],
@@ -44,6 +47,9 @@ import { InterviewScoringProcessor } from './interview-scoring.processor';
     InterviewSessionService,
     InterviewScoringService,
     InterviewScoringProcessor,
+    InterviewGenerationService,
+    InterviewGenerationProcessor,
   ],
+  exports: [InterviewGenerationService],
 })
 export class ApplicationsModule {}

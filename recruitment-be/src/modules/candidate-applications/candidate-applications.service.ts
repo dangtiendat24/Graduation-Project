@@ -27,6 +27,7 @@ interface ApplicationRow {
   companyLogoUrl: string | null
   overallScore: string | null
   recommendation: MatchRecommendation | null
+  interviewSessionId: string | null
   interviewStatus: InterviewSessionStatus | null
   interviewOverallScore: string | null
   scheduleStatus: ScheduleStatus | null
@@ -50,7 +51,11 @@ export interface MyApplicationListItem {
     company: { name: string; logoUrl: string | null } | null
   }
   matching: { overallScore: number | null; recommendation: MatchRecommendation | null } | null
-  interview: { status: InterviewSessionStatus | null; overallScore: number | null } | null
+  interview: {
+    sessionId: string | null
+    status: InterviewSessionStatus | null
+    overallScore: number | null
+  } | null
   schedule: {
     status: ScheduleStatus | null
     confirmedStartTime: string | null
@@ -170,6 +175,7 @@ export class CandidateApplicationsService {
       .addSelect('company.logoUrl', 'companyLogoUrl')
       .addSelect('match.overallScore', 'overallScore')
       .addSelect('match.recommendation', 'recommendation')
+      .addSelect('interview.id', 'interviewSessionId')
       .addSelect('interview.status', 'interviewStatus')
       .addSelect('interview.overallScore', 'interviewOverallScore')
       .addSelect('schedule.status', 'scheduleStatus')
@@ -202,6 +208,7 @@ export class CandidateApplicationsService {
       interview:
         row.interviewStatus !== null
           ? {
+              sessionId: row.interviewSessionId,
               status: row.interviewStatus,
               overallScore: row.interviewOverallScore !== null ? parseFloat(row.interviewOverallScore) : null,
             }

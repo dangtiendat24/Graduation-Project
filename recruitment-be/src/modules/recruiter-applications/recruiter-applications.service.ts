@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,6 +18,9 @@ import {
   MatchRecommendation,
   MatchingCriteria,
 } from '../applications/matching-result.entity';
+import { InterviewSession } from '../applications/interview-session.entity';
+import { InterviewAnswer } from '../applications/interview-answer.entity';
+import { InterviewGenerationService } from '../applications/interview-generation.service';
 import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
 import {
@@ -85,6 +89,8 @@ export interface GetJobApplicationsResponse {
 
 @Injectable()
 export class RecruiterApplicationsService {
+  private readonly logger = new Logger(RecruiterApplicationsService.name);
+
   constructor(
     @InjectRepository(Application)
     private readonly appRepo: Repository<Application>,
@@ -92,7 +98,12 @@ export class RecruiterApplicationsService {
     private readonly historyRepo: Repository<ApplicationStatusHistory>,
     @InjectRepository(Job)
     private readonly jobRepo: Repository<Job>,
+    @InjectRepository(InterviewSession)
+    private readonly interviewSessionRepo: Repository<InterviewSession>,
+    @InjectRepository(InterviewAnswer)
+    private readonly interviewAnswerRepo: Repository<InterviewAnswer>,
     private readonly mailService: MailService,
+    private readonly interviewGenerationService: InterviewGenerationService,
   ) {}
 
   async getJobApplications(
@@ -198,7 +209,66 @@ export class RecruiterApplicationsService {
       await this.sendStatusEmail(application, toStatus);
     }
 
+    if (toStatus === 'interviewed') {
+      // Không để lỗi enqueue (vd Redis tạm thời down) làm hỏng request đổi trạng thái của recruiter
+      try {
+        await this.interviewGenerationService.enqueueGeneration(saved.id);
+      } catch (err) {
+        this.logger.error(
+          `Enqueue sinh câu hỏi phỏng vấn thất bại cho application ${saved.id}: ${(err as Error).message}`,
+        );
+      }
+    }
+
     return saved;
+  }
+
+  async getInterviewResult(
+    recruiterId: string,
+    jobId: string,
+    applicationId: string,
+  ) {
+    await this.findOwnedJob(recruiterId, jobId);
+
+    const application = await this.appRepo.findOne({
+      where: { id: applicationId, jobId },
+    });
+    if (!application) {
+      throw new NotFoundException('Không tìm thấy đơn ứng tuyển');
+    }
+
+    const session = await this.interviewSessionRepo.findOne({
+      where: { applicationId },
+    });
+    if (!session) {
+      throw new NotFoundException(
+        'Ứng viên chưa có buổi phỏng vấn AI nào cho đơn ứng tuyển này',
+      );
+    }
+
+    const answers = await this.interviewAnswerRepo.find({
+      where: { sessionId: session.id },
+    });
+
+    return {
+      sessionId: session.id,
+      status: session.status,
+      questionsStatus: session.questionsStatus,
+      scoringStatus: session.scoringStatus,
+      scoringError: session.scoringError,
+      overallScore: session.overallScore,
+      transcript: session.transcript,
+      questions: session.questions,
+      answers: answers.map((a) => ({
+        questionId: a.questionId,
+        questionText: a.questionText,
+        category: a.category,
+        difficulty: a.difficulty,
+        answerText: a.answerText,
+        subScores: a.subScores,
+        totalScore: a.totalScore,
+      })),
+    };
   }
 
   private async sendStatusEmail(
