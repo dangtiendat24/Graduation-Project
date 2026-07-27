@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
 import { Job as BullJob } from 'bullmq';
@@ -49,6 +49,11 @@ export class InterviewScoringProcessor extends WorkerHost {
   async process(job: BullJob<InterviewScoringJobData>): Promise<void> {
     const { sessionId } = job.data;
 
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+    });
+    if (!session) return;
+
     const answers = await this.answerRepo.find({ where: { sessionId } });
     if (answers.length === 0) {
       this.logger.warn(
@@ -57,48 +62,90 @@ export class InterviewScoringProcessor extends WorkerHost {
       return;
     }
 
+    session.scoringStatus = 'processing';
+    await this.sessionRepo.save(session);
+
     const aiServiceUrl = this.config.get<string>(
       'AI_SERVICE_URL',
       'http://localhost:8000',
     );
 
-    const { data } = await firstValueFrom(
-      this.httpService.post<AiScoreAnswersResponse>(
-        `${aiServiceUrl}/api/ai/interview/score-answers`,
-        {
-          session_id: sessionId,
-          questions: answers.map((a) => ({
-            id: a.questionId,
-            question: a.questionText,
-            category: a.category,
-            difficulty: a.difficulty,
-          })),
-          answers: answers.map((a) => ({
-            question_id: a.questionId,
-            answer_text: a.answerText,
-          })),
-        },
-      ),
-    );
+    try {
+      // questions luôn lấy từ session.questions (nguồn chân lý do /generate-questions sinh ra) —
+      // không dựng lại từ answers, vì answers.questionText có thể bị client cũ gửi lên tuỳ ý
+      const { data } = await firstValueFrom(
+        this.httpService.post<AiScoreAnswersResponse>(
+          `${aiServiceUrl}/api/ai/interview/score-answers`,
+          {
+            session_id: sessionId,
+            questions: session.questions ?? [],
+            answers: answers.map((a) => ({
+              question_id: a.questionId,
+              answer_text: a.answerText,
+            })),
+          },
+          {
+            headers: {
+              'x-internal-secret': this.config.get<string>(
+                'AI_SERVICE_INTERNAL_SECRET',
+                '',
+              ),
+            },
+          },
+        ),
+      );
 
-    if (!data.success) {
-      throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
+      if (!data.success) {
+        throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
+      }
+
+      const scoresByQuestionId = new Map(
+        data.scored_answers.map((s) => [s.question_id, s]),
+      );
+
+      for (const answer of answers) {
+        const scored = scoresByQuestionId.get(answer.questionId);
+        if (!scored) {
+          this.logger.warn(
+            `Session ${sessionId}: AI service không trả điểm cho question_id=${answer.questionId}`,
+          );
+          continue;
+        }
+        answer.subScores = scored.scores;
+        answer.totalScore = scored.total;
+      }
+      await this.answerRepo.save(answers);
+
+      session.overallScore = data.overall_score;
+      session.transcript = data.transcript;
+      session.scoringStatus = 'done';
+      session.scoringError = null;
+      await this.sessionRepo.save(session);
+    } catch (err) {
+      session.scoringStatus = 'error';
+      session.scoringError = (err as Error).message;
+      await this.sessionRepo.save(session);
+      this.logger.error(
+        `Chấm điểm phỏng vấn thất bại cho session ${sessionId}: ${(err as Error).message}`,
+      );
+      throw err;
     }
+  }
 
-    const scoresByQuestionId = new Map(
-      data.scored_answers.map((s) => [s.question_id, s]),
+  @OnWorkerEvent('failed')
+  async onFailed(job: BullJob<InterviewScoringJobData>): Promise<void> {
+    const attemptsMade = job.attemptsMade;
+    const maxAttempts =
+      typeof job.opts.attempts === 'number' ? job.opts.attempts : 1;
+    if (attemptsMade < maxAttempts) return;
+
+    const { sessionId } = job.data;
+    this.logger.error(
+      `Session ${sessionId}: chấm điểm thất bại vĩnh viễn sau ${attemptsMade} lần thử`,
     );
-
-    for (const answer of answers) {
-      const scored = scoresByQuestionId.get(answer.questionId);
-      if (!scored) continue;
-      answer.subScores = scored.scores;
-      answer.totalScore = scored.total;
-    }
-    await this.answerRepo.save(answers);
-
-    await this.sessionRepo.update(sessionId, {
-      overallScore: data.overall_score,
-    });
+    await this.sessionRepo.update(
+      { id: sessionId, scoringStatus: 'processing' },
+      { scoringStatus: 'error', scoringError: 'Hết số lần retry chấm điểm' },
+    );
   }
 }

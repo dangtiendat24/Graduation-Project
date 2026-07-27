@@ -69,6 +69,24 @@ export class RecruiterApplicationsController {
     );
   }
 
+  @ApiOperation({
+    summary:
+      'Kết quả buổi phỏng vấn AI của 1 ứng viên (điểm từng câu, nhận xét, transcript) — recruiter chủ sở hữu tin tuyển dụng',
+  })
+  @Get(':applicationId/interview')
+  getInterviewResult(
+    @Request() req: { user: JwtUser },
+    @Param('jobId', ParseUUIDPipe) jobId: string,
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+  ) {
+    this.assertRecruiter(req.user);
+    return this.recruiterApplicationsService.getInterviewResult(
+      req.user.id,
+      jobId,
+      applicationId,
+    );
+  }
+
   private assertRecruiter(user: JwtUser): void {
     if (user.role !== 'recruiter') {
       throw new ForbiddenException(

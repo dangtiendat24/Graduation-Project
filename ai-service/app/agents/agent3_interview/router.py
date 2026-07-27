@@ -1,9 +1,23 @@
-from fastapi import APIRouter
+import secrets
+
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
+from app.core.config import settings
 from .graph import interview_graph, score_answers_graph
 
 router = APIRouter(prefix="/api/ai/interview", tags=["Agent 3 — AI Interviewer"])
+
+
+def verify_internal_secret(x_internal_secret: str = Header(default="")) -> None:
+    """
+    Chỉ NestJS BE mới được gọi 2 endpoint sinh câu hỏi / chấm điểm (tốn phí Groq API).
+    So sánh bằng secrets.compare_digest để tránh timing attack.
+    """
+    if not settings.BE_INTERNAL_SECRET or not secrets.compare_digest(
+        x_internal_secret, settings.BE_INTERNAL_SECRET
+    ):
+        raise HTTPException(status_code=403, detail="Thiếu hoặc sai X-Internal-Secret")
 
 
 class GenerateQuestionsRequest(BaseModel):
@@ -35,7 +49,11 @@ class ScoreAnswersResponse(BaseModel):
     error: str | None = None
 
 
-@router.post("/generate-questions", response_model=GenerateQuestionsResponse)
+@router.post(
+    "/generate-questions",
+    response_model=GenerateQuestionsResponse,
+    dependencies=[Depends(verify_internal_secret)],
+)
 async def generate_questions(body: GenerateQuestionsRequest):
     """
     Agent 3 Step 1: Sinh câu hỏi phỏng vấn dựa trên CV và JD
@@ -73,7 +91,11 @@ async def generate_questions(body: GenerateQuestionsRequest):
     )
 
 
-@router.post("/score-answers", response_model=ScoreAnswersResponse)
+@router.post(
+    "/score-answers",
+    response_model=ScoreAnswersResponse,
+    dependencies=[Depends(verify_internal_secret)],
+)
 async def score_answers(body: ScoreAnswersRequest):
     """
     Agent 3 Step 2: Chấm điểm câu trả lời phỏng vấn.

@@ -11,6 +11,8 @@ import { InterviewAnswer } from './interview-answer.entity';
 import { SubmitInterviewAnswerDto } from './dto/submit-interview-answer.dto';
 import { InterviewScoringService } from './interview-scoring.service';
 
+const CLOSED_STATUSES = ['completed', 'timeout', 'cancelled'];
+
 @Injectable()
 export class InterviewSessionService {
   constructor(
@@ -21,6 +23,31 @@ export class InterviewSessionService {
     private readonly scoringQueue: InterviewScoringService,
   ) {}
 
+  /** Dùng bởi InterviewGenerationProcessor — tạo session nếu chưa có, idempotent nếu gọi lại. */
+  async getOrCreateForApplication(
+    applicationId: string,
+  ): Promise<InterviewSession> {
+    const existing = await this.sessionRepo.findOne({
+      where: { applicationId },
+    });
+    if (existing) return existing;
+
+    const created = this.sessionRepo.create({
+      applicationId,
+      status: 'pending',
+    });
+    return this.sessionRepo.save(created);
+  }
+
+  async getSessionDetail(
+    candidateId: string,
+    sessionId: string,
+  ): Promise<{ session: InterviewSession; answers: InterviewAnswer[] }> {
+    const session = await this.findOwnedSession(candidateId, sessionId);
+    const answers = await this.answerRepo.find({ where: { sessionId } });
+    return { session, answers };
+  }
+
   async submitAnswer(
     candidateId: string,
     sessionId: string,
@@ -28,9 +55,22 @@ export class InterviewSessionService {
   ): Promise<InterviewAnswer> {
     const session = await this.findOwnedSession(candidateId, sessionId);
 
-    if (session.status === 'completed' || session.status === 'timeout') {
+    if (CLOSED_STATUSES.includes(session.status)) {
       throw new BadRequestException(
         `Buổi phỏng vấn đã ở trạng thái "${session.status}", không thể nộp thêm câu trả lời`,
+      );
+    }
+
+    if (session.questionsStatus !== 'done' || !session.questions) {
+      throw new BadRequestException(
+        'Câu hỏi phỏng vấn chưa sẵn sàng, vui lòng thử lại sau',
+      );
+    }
+
+    const question = session.questions.find((q) => q.id === dto.questionId);
+    if (!question) {
+      throw new BadRequestException(
+        `questionId "${dto.questionId}" không khớp bộ câu hỏi của buổi phỏng vấn này`,
       );
     }
 
@@ -40,19 +80,23 @@ export class InterviewSessionService {
       await this.sessionRepo.save(session);
     }
 
-    let answer = await this.answerRepo.findOne({
-      where: { sessionId, questionId: dto.questionId },
-    });
-    if (!answer) {
-      answer = this.answerRepo.create({ sessionId });
-    }
-    answer.questionId = dto.questionId;
-    answer.questionText = dto.questionText;
-    answer.category = dto.category;
-    answer.difficulty = dto.difficulty;
-    answer.answerText = dto.answerText;
+    // Nội dung câu hỏi luôn lấy từ session.questions (nguồn chân lý) — không tin questionText/category/difficulty từ client
+    await this.answerRepo.upsert(
+      {
+        sessionId,
+        questionId: question.id,
+        questionText: question.question,
+        category: question.category,
+        difficulty: question.difficulty,
+        answerText: dto.answerText,
+      },
+      ['sessionId', 'questionId'],
+    );
 
-    return this.answerRepo.save(answer);
+    return this.answerRepo.findOneByOrFail({
+      sessionId,
+      questionId: question.id,
+    });
   }
 
   async completeSession(
@@ -61,7 +105,7 @@ export class InterviewSessionService {
   ): Promise<InterviewSession> {
     const session = await this.findOwnedSession(candidateId, sessionId);
 
-    if (session.status === 'completed' || session.status === 'timeout') {
+    if (CLOSED_STATUSES.includes(session.status)) {
       throw new BadRequestException(
         `Buổi phỏng vấn đã ở trạng thái "${session.status}"`,
       );
@@ -74,13 +118,13 @@ export class InterviewSessionService {
       );
     }
 
-    session.status = 'completed';
-    session.completedAt = new Date();
-    await this.sessionRepo.save(session);
-
+    // Enqueue trước khi lưu status=completed: nếu enqueue lỗi (vd Redis down), session vẫn
+    // ở trạng thái cũ nên candidate có thể gọi lại complete thay vì bị kẹt vĩnh viễn.
     await this.scoringQueue.enqueueScoring(session.id);
 
-    return session;
+    session.status = 'completed';
+    session.completedAt = new Date();
+    return this.sessionRepo.save(session);
   }
 
   private async findOwnedSession(

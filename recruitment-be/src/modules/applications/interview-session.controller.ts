@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   Param,
   Post,
   Request,
@@ -26,6 +27,38 @@ export class InterviewSessionController {
   constructor(
     private readonly interviewSessionService: InterviewSessionService,
   ) {}
+
+  @ApiOperation({
+    summary:
+      'Lấy chi tiết buổi phỏng vấn (câu hỏi + câu trả lời đã nộp) cho ứng viên — không lộ điểm/nhận xét/transcript',
+  })
+  @Get(':sessionId')
+  async getSession(
+    @Request() req: { user: JwtUser },
+    @Param('sessionId') sessionId: string,
+  ) {
+    this.assertCandidate(req.user);
+    const { session, answers } =
+      await this.interviewSessionService.getSessionDetail(
+        req.user.id,
+        sessionId,
+      );
+
+    return {
+      id: session.id,
+      applicationId: session.applicationId,
+      status: session.status,
+      questionsStatus: session.questionsStatus,
+      questionsError: session.questionsError,
+      questions: session.questions,
+      scoringStatus: session.scoringStatus,
+      overallScore: session.overallScore,
+      answers: answers.map((a) => ({
+        questionId: a.questionId,
+        answerText: a.answerText,
+      })),
+    };
+  }
 
   @ApiOperation({
     summary:
