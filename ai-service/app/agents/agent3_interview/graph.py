@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional, TypedDict, cast
 
 from langchain_groq import ChatGroq
@@ -5,7 +6,7 @@ from langgraph.graph import END, StateGraph
 from pydantic import SecretStr
 
 from app.core.config import settings
-from .schemas import GeneratedQuestions
+from .schemas import AnswerScoreItem, GeneratedQuestions
 
 REQUIRED_CATEGORIES = {"technical", "situational", "behavioral"}
 
@@ -36,12 +37,13 @@ class InterviewState(TypedDict):
     error: Optional[str]
 
 
-def _build_llm():
+def _build_llm(output_schema):
+    """Tạo ChatGroq client với structured output theo `output_schema` — dùng chung cho mọi node của agent3."""
     return ChatGroq(
         model=settings.GROQ_MODEL,
         api_key=SecretStr(settings.GROQ_API_KEY),
         temperature=0.3,
-    ).with_structured_output(GeneratedQuestions)
+    ).with_structured_output(output_schema)
 
 
 def _format_parsed_data(parsed_data: dict) -> str:
@@ -84,7 +86,7 @@ def _format_parsed_data(parsed_data: dict) -> str:
 
 async def generate_questions_node(state: InterviewState) -> InterviewState:
     try:
-        llm = _build_llm()
+        llm = _build_llm(GeneratedQuestions)
         human_message = (
             f"--- Hồ sơ ứng viên (CV đã trích xuất) ---\n{_format_parsed_data(state['parsed_data'])}\n\n"
             f"--- Mô tả công việc (JD) ---\n{state['job_requirements']}"
@@ -125,3 +127,139 @@ def _build_graph():
 
 
 interview_graph = _build_graph()
+
+
+# =============================================================
+# Scoring flow (Agent 3 Step 2) — PRD v3.1 Section 8:
+#   - Mỗi câu trả lời chấm theo 4 tiêu chí phụ: relevance, clarity, depth, correctness
+#   - MỖI tiêu chí trên thang 0-25 (không phải 0-10) → total/câu tối đa 100
+#   - Công thức B1 (đã chốt): overall_score = AVG(answers[*].total), KHÔNG chia 4
+# =============================================================
+
+SCORE_COMPONENTS = ("relevance", "clarity", "depth", "correctness")
+
+SCORING_SYSTEM_PROMPT = (
+    "Bạn là chuyên gia phỏng vấn kỹ thuật (technical interviewer) giàu kinh nghiệm, "
+    "đang chấm điểm một câu trả lời phỏng vấn của ứng viên.\n\n"
+    "Chấm theo đúng 4 tiêu chí sau, MỖI tiêu chí trên thang điểm nguyên 0-25 (không phải 0-10):\n"
+    "- relevance: câu trả lời có bám sát và giải quyết đúng trọng tâm câu hỏi không\n"
+    "- clarity: câu trả lời có rõ ràng, mạch lạc, dễ hiểu không\n"
+    "- depth: câu trả lời có đủ chiều sâu, chi tiết, ví dụ cụ thể không, hay chỉ hời hợt\n"
+    "- correctness: nội dung có chính xác về mặt kỹ thuật/kiến thức không\n\n"
+    "Nếu ứng viên không trả lời hoặc trả lời không liên quan gì đến câu hỏi, chấm điểm thấp "
+    "(gần 0) ở tất cả tiêu chí, không chấm nương tay.\n"
+    "Nếu đề bài có gợi ý 'từ khóa kỳ vọng', chỉ dùng chúng như TÍN HIỆU PHỤ để đánh giá depth/correctness, "
+    "KHÔNG chấm rớt chỉ vì ứng viên không nhắc đúng từ khóa — ý đúng diễn đạt khác từ vẫn được điểm.\n"
+    "Viết một nhận xét (comment) ngắn gọn 1-2 câu bằng tiếng Việt, nêu điểm mạnh/yếu chính của câu trả lời."
+)
+
+
+class ScoreAnswersState(TypedDict):
+    session_id: str
+    questions: list[dict]           # [{id, question, category, difficulty, expected_keywords?}]
+    answers: list[dict]             # [{question_id, answer_text, audio_url?}]
+    scored_answers: Optional[list[dict]]
+    overall_score: Optional[float]
+    transcript: Optional[str]
+    error: Optional[str]
+
+
+def _build_scoring_human_message(question: dict, answer_text: str) -> str:
+    lines = [f"Câu hỏi: {question.get('question', '')}"]
+
+    expected_keywords = question.get("expected_keywords")
+    if expected_keywords:
+        lines.append(f"Từ khóa kỳ vọng (chỉ tham khảo, không bắt buộc khớp): {', '.join(str(k) for k in expected_keywords)}")
+
+    lines.append(f"Câu trả lời của ứng viên: {answer_text}")
+    return "\n".join(lines)
+
+
+async def _score_single_answer(question: dict, answer_text: str) -> AnswerScoreItem:
+    llm = _build_llm(AnswerScoreItem)
+    human_message = _build_scoring_human_message(question, answer_text)
+    result = await llm.ainvoke([("system", SCORING_SYSTEM_PROMPT), ("human", human_message)])
+    return cast(AnswerScoreItem, result)
+
+
+async def score_answers_node(state: ScoreAnswersState) -> ScoreAnswersState:
+    answers = state["answers"]
+    if not answers:
+        return {**state, "error": "answers rỗng, không có câu trả lời nào để chấm điểm"}
+
+    questions_by_id = {q["id"]: q for q in state["questions"]}
+
+    for answer in answers:
+        question_id = answer.get("question_id")
+        answer_text = answer.get("answer_text")
+
+        if not answer_text or not str(answer_text).strip():
+            return {
+                **state,
+                "error": f"answer_text rỗng cho question_id={question_id}",
+            }
+
+        if question_id not in questions_by_id:
+            return {
+                **state,
+                "error": f"question_id={question_id} không khớp bộ câu hỏi đã sinh trong session {state['session_id']}",
+            }
+
+    try:
+        score_items = await asyncio.gather(
+            *[
+                _score_single_answer(questions_by_id[answer["question_id"]], answer["answer_text"])
+                for answer in answers
+            ]
+        )
+    except Exception as exc:  # noqa: BLE001 — muốn bắt mọi lỗi từ LLM call để trả về success=False
+        return {**state, "error": str(exc)}
+
+    scored_answers = []
+    transcript_parts = []
+    totals = []
+
+    for answer, score in zip(answers, score_items):
+        question = questions_by_id[answer["question_id"]]
+        total = score.relevance + score.clarity + score.depth + score.correctness
+        totals.append(total)
+
+        scored_answers.append(
+            {
+                "question_id": answer["question_id"],
+                "question": question.get("question", ""),
+                "answer_text": answer["answer_text"],
+                "scores": {
+                    "relevance": score.relevance,
+                    "clarity": score.clarity,
+                    "depth": score.depth,
+                    "correctness": score.correctness,
+                },
+                "total": total,
+                "comment": score.comment,
+            }
+        )
+        transcript_parts.append(f"Q: {question.get('question', '')}\nA: {answer['answer_text']}")
+
+    # Công thức B1 (đã chốt): overall = AVG(total của tất cả câu), KHÔNG chia 4
+    overall_score = round(sum(totals) / len(totals), 2)
+    transcript = "\n\n".join(transcript_parts)
+
+    return {
+        **state,
+        "scored_answers": scored_answers,
+        "overall_score": overall_score,
+        "transcript": transcript,
+        "error": None,
+    }
+
+
+def _build_score_answers_graph():
+    graph = StateGraph(ScoreAnswersState)
+    graph.add_node("score_answers", score_answers_node)
+    graph.set_entry_point("score_answers")
+    graph.add_edge("score_answers", END)
+    return graph.compile()
+
+
+score_answers_graph = _build_score_answers_graph()
