@@ -20,6 +20,7 @@ interface AiScoredAnswer {
     correctness: number;
   };
   total: number;
+  comment: string;
 }
 
 interface AiScoreAnswersResponse {
@@ -113,6 +114,7 @@ export class InterviewScoringProcessor extends WorkerHost {
         }
         answer.subScores = scored.scores;
         answer.totalScore = scored.total;
+        answer.comment = scored.comment;
       }
       await this.answerRepo.save(answers);
 

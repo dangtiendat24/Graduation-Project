@@ -63,6 +63,10 @@ export class InterviewAnswer {
   })
   totalScore!: number | null;
 
+  /** Nhận xét ngắn (1-2 câu) do Agent 3 sinh cho riêng câu trả lời này */
+  @Column({ type: 'text', nullable: true })
+  comment!: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 }
