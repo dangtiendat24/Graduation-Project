@@ -50,6 +50,13 @@ function isSkillMatched(skill: string, requiredSkills: string[]): boolean {
   return requiredSkills.some((r) => r.trim().toLowerCase() === normalized)
 }
 
+// Ngưỡng khớp với getScoreBand ở api/rankings.ts (cùng thang 0-100 với điểm matching)
+function getInterviewScoreBand(score: number): ScoreBand {
+  if (score >= 80) return 'high'
+  if (score >= 60) return 'medium'
+  return 'low'
+}
+
 interface Props {
   rows: RankedRow[]
   requiredSkills: string[]
@@ -59,6 +66,7 @@ interface Props {
   onSelectRow: (row: RankedRow) => void
   onAction: (row: RankedRow, action: 'interviewed' | 'rejected') => void
   onViewCv: (row: RankedRow) => void
+  onViewInterview: (row: RankedRow) => void
 }
 
 export default function RankingTable({
@@ -70,6 +78,7 @@ export default function RankingTable({
   onSelectRow,
   onAction,
   onViewCv,
+  onViewInterview,
 }: Props) {
   return (
     <div className="rk-table-container">
@@ -81,6 +90,7 @@ export default function RankingTable({
             <th style={{ width: '24%' }}>Kỹ năng</th>
             <th style={{ width: '16%' }}>Điểm chi tiết</th>
             <th>Điểm số</th>
+            <th>Điểm phỏng vấn AI</th>
             <th>Trạng thái</th>
             <th>Hành động</th>
           </tr>
@@ -88,7 +98,7 @@ export default function RankingTable({
         <tbody>
           {isLoading ? (
             <tr>
-              <td colSpan={7}>
+              <td colSpan={8}>
                 <div className="rk-empty-state">
                   <i className="ti ti-loader-2 rk-spin" />
                   <div>Đang tải danh sách xếp hạng…</div>
@@ -97,7 +107,7 @@ export default function RankingTable({
             </tr>
           ) : isError ? (
             <tr>
-              <td colSpan={7}>
+              <td colSpan={8}>
                 <div className="rk-empty-state">
                   <i className="ti ti-alert-circle" />
                   <div>Không tải được danh sách ứng viên. Vui lòng thử lại.</div>
@@ -106,7 +116,7 @@ export default function RankingTable({
             </tr>
           ) : rows.length === 0 ? (
             <tr>
-              <td colSpan={7}>
+              <td colSpan={8}>
                 <div className="rk-empty-state">
                   <div className="rk-empty-icon"><i className="ti ti-mood-empty" /></div>
                   <div>Chưa có ứng viên nào được chấm điểm ở nhóm này</div>
@@ -145,7 +155,7 @@ export default function RankingTable({
                   <td onClick={(e) => e.stopPropagation()}>
                     {row.skills.length > 0 ? (
                       <div className="rk-skills-wrap">
-                        {row.skills.slice(0, 4).map((skill, i) => (
+                        {row.skills.slice(0, 3).map((skill, i) => (
                           <span
                             key={i}
                             className={`rk-skill-tag${isSkillMatched(skill, requiredSkills) ? ' rk-skill-tag--match' : ''}`}
@@ -153,8 +163,8 @@ export default function RankingTable({
                             {skill}
                           </span>
                         ))}
-                        {row.skills.length > 4 && (
-                          <span className="rk-skill-tag more">+{row.skills.length - 4}</span>
+                        {row.skills.length > 3 && (
+                          <span className="rk-skill-tag more">+{row.skills.length - 3}</span>
                         )}
                       </div>
                     ) : (
@@ -191,6 +201,26 @@ export default function RankingTable({
                     ) : (
                       <span className="rk-cand-meta">Chưa có điểm</span>
                     )}
+                  </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <div className="rk-interview-cell">
+                      {row.interview?.overallScore != null ? (
+                        <button className="rk-interview-btn" onClick={() => onViewInterview(row)}>
+                          <span className={`rk-score-pill rk-band-${getInterviewScoreBand(row.interview.overallScore)}`}>
+                            {Math.round(row.interview.overallScore)}
+                          </span>
+                          <i className="ti ti-chevron-right" />
+                        </button>
+                      ) : row.interview?.scoringStatus === 'processing' || row.interview?.scoringStatus === 'pending' ? (
+                        <span className="rk-interview-pending">Đang chấm điểm…</span>
+                      ) : row.interview?.status === 'in_progress' ? (
+                        <span className="rk-interview-pending">Ứng viên đang làm bài</span>
+                      ) : row.interview ? (
+                        <span className="rk-interview-pending">Chưa hoàn thành</span>
+                      ) : (
+                        <span className="rk-cand-meta">Chưa phỏng vấn</span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span className={`badge badge-${STATUS_BADGE_CLASS[row.status]}`}>

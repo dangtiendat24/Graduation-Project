@@ -4,7 +4,7 @@ import { ApplicationStatus } from '../applications/application.entity';
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   pending: 'Đã nộp đơn',
   matched: 'Hồ sơ phù hợp',
-  interviewed: 'Đã phỏng vấn AI',
+  interviewed: 'Được mời phỏng vấn',
   schedule_sent: 'Đang chờ xác nhận lịch',
   scheduled: 'Đã xác nhận lịch',
   completed: 'Đã hoàn thành phỏng vấn',

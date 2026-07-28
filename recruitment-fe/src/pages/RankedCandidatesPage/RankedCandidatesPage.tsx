@@ -11,6 +11,7 @@ import ScoreBandFilter, { type BandFilterValue } from './ScoreBandFilter'
 import RankingTable, { type RankedRow } from './RankingTable'
 import ConfirmActionModal from './ConfirmActionModal'
 import CandidateDetailDrawer from './CandidateDetailDrawer'
+import InterviewResultDrawer from './InterviewResultDrawer'
 import Top3Podium, { type PodiumItem } from './Top3Podium'
 import ScoreSummaryCard from './ScoreSummaryCard'
 import './RankedCandidatesPage.css'
@@ -46,6 +47,7 @@ export default function RankedCandidatesPage() {
   const [bandFilter, setBandFilter] = useState<BandFilterValue>('all')
   const [page, setPage] = useState(1)
   const [selectedRow, setSelectedRow] = useState<RankedRow | null>(null)
+  const [interviewRow, setInterviewRow] = useState<RankedRow | null>(null)
   const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
 
@@ -233,6 +235,7 @@ export default function RankedCandidatesPage() {
               onSelectRow={setSelectedRow}
               onAction={handleAction}
               onViewCv={(row) => navigate(`/recruiter/candidates/${row.applicationId}`)}
+              onViewInterview={setInterviewRow}
             />
 
             {meta && meta.totalPages > 1 && (
@@ -279,6 +282,14 @@ export default function RankedCandidatesPage() {
           row={selectedRow}
           requiredSkills={job?.requiredSkills ?? []}
           onClose={() => setSelectedRow(null)}
+        />
+      )}
+
+      {interviewRow && jobId && (
+        <InterviewResultDrawer
+          row={interviewRow}
+          jobId={jobId}
+          onClose={() => setInterviewRow(null)}
         />
       )}
 

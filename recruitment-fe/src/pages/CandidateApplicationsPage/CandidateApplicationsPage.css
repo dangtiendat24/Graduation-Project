@@ -347,6 +347,33 @@
   background: #D1FAE5;
 }
 
+.ca-btn-interview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #E6FAF8;
+  color: var(--color-teal);
+  border: 1px solid #99E6DD;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  transition: background 0.2s;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .ca-btn-interview {
+    width: auto;
+  }
+}
+
+.ca-btn-interview:hover {
+  background: #CFF5EF;
+}
+
 .ca-applied-date {
   font-size: 12px;
   font-weight: var(--fw-medium);

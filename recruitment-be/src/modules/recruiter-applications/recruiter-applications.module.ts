@@ -6,7 +6,6 @@ import { InterviewSession } from '../applications/interview-session.entity';
 import { InterviewAnswer } from '../applications/interview-answer.entity';
 import { Job } from '../jobs/job.entity';
 import { MailModule } from '../mail/mail.module';
-import { ApplicationsModule } from '../applications/applications.module';
 import { RecruiterApplicationsService } from './recruiter-applications.service';
 import { RecruiterApplicationsController } from './recruiter-applications.controller';
 
@@ -20,7 +19,6 @@ import { RecruiterApplicationsController } from './recruiter-applications.contro
       Job,
     ]),
     MailModule,
-    ApplicationsModule,
   ],
   controllers: [RecruiterApplicationsController],
   providers: [RecruiterApplicationsService],

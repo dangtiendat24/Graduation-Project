@@ -22,6 +22,7 @@ import RecruiterCandidatesPage from './pages/RecruiterCandidatesPage/RecruiterCa
 import RecruiterCandidateDetailPage from './pages/RecruiterCandidateDetailPage/RecruiterCandidateDetailPage'
 import RankedCandidatesPage from './pages/RankedCandidatesPage/RankedCandidatesPage'
 import CandidateApplicationsPage from './pages/CandidateApplicationsPage/CandidateApplicationsPage'
+import CandidateInterviewPage from './pages/CandidateInterviewPage/CandidateInterviewPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
 function App() {
@@ -180,6 +181,15 @@ function App() {
           element={
             <ProtectedRoute role="candidate">
               <CandidateApplicationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/candidate/interview"
+          element={
+            <ProtectedRoute role="candidate">
+              <CandidateInterviewPage />
             </ProtectedRoute>
           }
         />
