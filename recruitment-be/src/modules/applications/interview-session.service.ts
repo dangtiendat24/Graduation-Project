@@ -7,11 +7,22 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { InterviewSession } from './interview-session.entity';
-import { InterviewAnswer } from './interview-answer.entity';
+import {
+  InterviewAnswer,
+  InterviewAnswerSubScores,
+} from './interview-answer.entity';
 import { SubmitInterviewAnswerDto } from './dto/submit-interview-answer.dto';
 import { InterviewScoringService } from './interview-scoring.service';
 
 const CLOSED_STATUSES = ['completed', 'timeout', 'cancelled'];
+/** Số câu tối thiểu phải trả lời mới được nộp bài — câu còn lại tính 0 điểm */
+const MIN_ANSWERS_TO_COMPLETE = 1;
+const ZERO_SUB_SCORES: InterviewAnswerSubScores = {
+  relevance: 0,
+  clarity: 0,
+  depth: 0,
+  correctness: 0,
+};
 
 @Injectable()
 export class InterviewSessionService {
@@ -112,19 +123,63 @@ export class InterviewSessionService {
     }
 
     const answerCount = await this.answerRepo.count({ where: { sessionId } });
-    if (answerCount === 0) {
+    if (answerCount < MIN_ANSWERS_TO_COMPLETE) {
       throw new BadRequestException(
-        'Chưa có câu trả lời nào được nộp cho buổi phỏng vấn này',
+        `Cần trả lời ít nhất ${MIN_ANSWERS_TO_COMPLETE} câu hỏi trước khi nộp bài (hiện đã trả lời ${answerCount})`,
       );
     }
+
+    await this.fillSkippedQuestionsWithZeroScore(session);
 
     // Enqueue trước khi lưu status=completed: nếu enqueue lỗi (vd Redis down), session vẫn
     // ở trạng thái cũ nên candidate có thể gọi lại complete thay vì bị kẹt vĩnh viễn.
     await this.scoringQueue.enqueueScoring(session.id);
 
+    // Dùng update() có chủ đích (chỉ ghi 2 cột này) thay vì save() cả entity — BullMQ worker
+    // có thể đã bắt đầu xử lý job chấm điểm song song và ghi scoringStatus/overallScore lên
+    // cùng dòng này; save() cả entity ở đây sẽ đè mất field đó bằng bản snapshot cũ trong tay,
+    // và ngược lại save() cả entity ở processor cũng sẽ đè mất status='completed' vừa ghi.
+    const completedAt = new Date();
+    await this.sessionRepo.update(session.id, {
+      status: 'completed',
+      completedAt,
+    });
     session.status = 'completed';
-    session.completedAt = new Date();
-    return this.sessionRepo.save(session);
+    session.completedAt = completedAt;
+    return session;
+  }
+
+  /**
+   * Câu hỏi trong session.questions mà ứng viên bỏ qua (không nộp) được ghi nhận ngay với
+   * điểm 0 — không chờ Agent 3 chấm vì AI service từ chối answer_text rỗng.
+   */
+  private async fillSkippedQuestionsWithZeroScore(
+    session: InterviewSession,
+  ): Promise<void> {
+    const questions = session.questions ?? [];
+    if (questions.length === 0) return;
+
+    const existing = await this.answerRepo.find({
+      where: { sessionId: session.id },
+    });
+    const answeredIds = new Set(existing.map((a) => a.questionId));
+    const skipped = questions.filter((q) => !answeredIds.has(q.id));
+    if (skipped.length === 0) return;
+
+    const rows = skipped.map((q) =>
+      this.answerRepo.create({
+        sessionId: session.id,
+        questionId: q.id,
+        questionText: q.question,
+        category: q.category,
+        difficulty: q.difficulty,
+        answerText: '',
+        subScores: ZERO_SUB_SCORES,
+        totalScore: 0,
+        comment: 'Ứng viên không trả lời câu hỏi này',
+      }),
+    );
+    await this.answerRepo.save(rows);
   }
 
   private async findOwnedSession(

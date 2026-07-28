@@ -23,6 +23,7 @@ import {
   MatchRecommendation,
 } from '../applications/matching-result.entity';
 import { Job as JobEntity } from '../jobs/job.entity';
+import { InterviewGenerationService } from '../applications/interview-generation.service';
 import { CvMatchJobData } from './matching.service';
 
 /** Shape thô trả về từ ai-service (Python/Pydantic dùng snake_case, kể cả nested skill_breakdown) */
@@ -55,6 +56,7 @@ export class MatchingProcessor extends WorkerHost {
     private readonly historyRepo: Repository<ApplicationStatusHistory>,
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
+    private readonly interviewGenerationService: InterviewGenerationService,
   ) {
     super();
   }
@@ -134,6 +136,19 @@ export class MatchingProcessor extends WorkerHost {
         metadata: { source: 'agent2_matching', overallScore },
       }),
     );
+
+    // Ứng viên qua ngưỡng auto-reject (không bị "matched") → tự động mở phỏng vấn AI ngay,
+    // không chờ recruiter thao tác gì. Không để lỗi enqueue (vd Redis tạm down) làm hỏng
+    // luồng matching chính.
+    if (nextStatus === 'matched') {
+      try {
+        await this.interviewGenerationService.enqueueGeneration(application.id);
+      } catch (err) {
+        this.logger.error(
+          `Enqueue sinh câu hỏi phỏng vấn thất bại cho application ${application.id}: ${(err as Error).message}`,
+        );
+      }
+    }
   }
 
   /** ai-service trả wire format snake_case — chuẩn hoá sang camelCase trước khi lưu/hiển thị cho FE */

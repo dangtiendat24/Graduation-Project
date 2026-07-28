@@ -63,8 +63,10 @@ export class InterviewScoringProcessor extends WorkerHost {
       return;
     }
 
-    session.scoringStatus = 'processing';
-    await this.sessionRepo.save(session);
+    // update() có chủ đích (chỉ ghi scoring_status), không dùng save() cả entity — completeSession()
+    // có thể ghi status/completedAt lên cùng dòng này gần như đồng thời; nếu cả 2 phía đều save()
+    // cả entity dựa trên bản snapshot đã fetch trước đó, bên ghi sau sẽ đè mất field của bên kia.
+    await this.sessionRepo.update(sessionId, { scoringStatus: 'processing' });
 
     const aiServiceUrl = this.config.get<string>(
       'AI_SERVICE_URL',
@@ -72,61 +74,73 @@ export class InterviewScoringProcessor extends WorkerHost {
     );
 
     try {
-      // questions luôn lấy từ session.questions (nguồn chân lý do /generate-questions sinh ra) —
-      // không dựng lại từ answers, vì answers.questionText có thể bị client cũ gửi lên tuỳ ý
-      const { data } = await firstValueFrom(
-        this.httpService.post<AiScoreAnswersResponse>(
-          `${aiServiceUrl}/api/ai/interview/score-answers`,
-          {
-            session_id: sessionId,
-            questions: session.questions ?? [],
-            answers: answers.map((a) => ({
-              question_id: a.questionId,
-              answer_text: a.answerText,
-            })),
-          },
-          {
-            headers: {
-              'x-internal-secret': this.config.get<string>(
-                'AI_SERVICE_INTERNAL_SECRET',
-                '',
-              ),
+      // Chỉ gửi câu THỰC SỰ có trả lời cho AI chấm — AI service từ chối cả batch nếu có
+      // answer_text rỗng, và câu bị bỏ qua đã được ghi nhận 0 điểm sẵn ở completeSession().
+      const scorable = answers.filter(
+        (a) => a.answerText && a.answerText.trim().length > 0,
+      );
+
+      if (scorable.length > 0) {
+        // questions luôn lấy từ session.questions (nguồn chân lý do /generate-questions sinh ra) —
+        // không dựng lại từ answers, vì answers.questionText có thể bị client cũ gửi lên tuỳ ý
+        const { data } = await firstValueFrom(
+          this.httpService.post<AiScoreAnswersResponse>(
+            `${aiServiceUrl}/api/ai/interview/score-answers`,
+            {
+              session_id: sessionId,
+              questions: session.questions ?? [],
+              answers: scorable.map((a) => ({
+                question_id: a.questionId,
+                answer_text: a.answerText,
+              })),
             },
-          },
-        ),
-      );
+            {
+              headers: {
+                'x-internal-secret': this.config.get<string>(
+                  'AI_SERVICE_INTERNAL_SECRET',
+                  '',
+                ),
+              },
+            },
+          ),
+        );
 
-      if (!data.success) {
-        throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
-      }
-
-      const scoresByQuestionId = new Map(
-        data.scored_answers.map((s) => [s.question_id, s]),
-      );
-
-      for (const answer of answers) {
-        const scored = scoresByQuestionId.get(answer.questionId);
-        if (!scored) {
-          this.logger.warn(
-            `Session ${sessionId}: AI service không trả điểm cho question_id=${answer.questionId}`,
-          );
-          continue;
+        if (!data.success) {
+          throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
         }
-        answer.subScores = scored.scores;
-        answer.totalScore = scored.total;
-        answer.comment = scored.comment;
-      }
-      await this.answerRepo.save(answers);
 
-      session.overallScore = data.overall_score;
-      session.transcript = data.transcript;
-      session.scoringStatus = 'done';
-      session.scoringError = null;
-      await this.sessionRepo.save(session);
+        const scoresByQuestionId = new Map(
+          data.scored_answers.map((s) => [s.question_id, s]),
+        );
+
+        for (const answer of scorable) {
+          const scored = scoresByQuestionId.get(answer.questionId);
+          if (!scored) {
+            this.logger.warn(
+              `Session ${sessionId}: AI service không trả điểm cho question_id=${answer.questionId}`,
+            );
+            continue;
+          }
+          answer.subScores = scored.scores;
+          answer.totalScore = scored.total;
+          answer.comment = scored.comment;
+        }
+        await this.answerRepo.save(scorable);
+      }
+
+      // overallScore/transcript luôn tự tính trên TOÀN BỘ answers (kể cả câu bỏ qua = 0 điểm) —
+      // không dùng overall_score/transcript của AI vì AI chỉ biết phần đã gửi lên chấm (scorable).
+      await this.sessionRepo.update(sessionId, {
+        overallScore: this.calcOverallScore(answers),
+        transcript: this.buildTranscript(answers),
+        scoringStatus: 'done',
+        scoringError: null,
+      });
     } catch (err) {
-      session.scoringStatus = 'error';
-      session.scoringError = (err as Error).message;
-      await this.sessionRepo.save(session);
+      await this.sessionRepo.update(sessionId, {
+        scoringStatus: 'error',
+        scoringError: (err as Error).message,
+      });
       this.logger.error(
         `Chấm điểm phỏng vấn thất bại cho session ${sessionId}: ${(err as Error).message}`,
       );
@@ -149,5 +163,24 @@ export class InterviewScoringProcessor extends WorkerHost {
       { id: sessionId, scoringStatus: 'processing' },
       { scoringStatus: 'error', scoringError: 'Hết số lần retry chấm điểm' },
     );
+  }
+
+  /** answerRepo.find() trả totalScore (cột numeric) dạng string — luôn ép về number trước khi cộng */
+  private calcOverallScore(answers: InterviewAnswer[]): number {
+    if (answers.length === 0) return 0;
+    const total = answers.reduce(
+      (sum, a) => sum + Number(a.totalScore ?? 0),
+      0,
+    );
+    return Math.round((total / answers.length) * 100) / 100;
+  }
+
+  private buildTranscript(answers: InterviewAnswer[]): string {
+    return answers
+      .map(
+        (a) =>
+          `Q: ${a.questionText}\nA: ${a.answerText && a.answerText.trim() ? a.answerText : '(Không trả lời)'}`,
+      )
+      .join('\n\n');
   }
 }

@@ -2,7 +2,6 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,9 +17,12 @@ import {
   MatchRecommendation,
   MatchingCriteria,
 } from '../applications/matching-result.entity';
-import { InterviewSession } from '../applications/interview-session.entity';
+import {
+  InterviewSession,
+  InterviewSessionStatus,
+  InterviewPipelineStatus,
+} from '../applications/interview-session.entity';
 import { InterviewAnswer } from '../applications/interview-answer.entity';
-import { InterviewGenerationService } from '../applications/interview-generation.service';
 import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
 import {
@@ -55,6 +57,10 @@ interface ApplicationRow {
   recommendation: MatchRecommendation | null;
   criteria: MatchingCriteria | null;
   explanation: string | null;
+  interviewSessionId: string | null;
+  interviewStatus: InterviewSessionStatus | null;
+  interviewScoringStatus: InterviewPipelineStatus | null;
+  interviewOverallScore: string | null;
 }
 
 export interface JobApplicationListItem {
@@ -75,6 +81,12 @@ export interface JobApplicationListItem {
     criteria: MatchingCriteria | null;
     explanation: string | null;
   } | null;
+  interview: {
+    sessionId: string;
+    status: InterviewSessionStatus;
+    scoringStatus: InterviewPipelineStatus;
+    overallScore: number | null;
+  } | null;
 }
 
 export interface GetJobApplicationsResponse {
@@ -89,8 +101,6 @@ export interface GetJobApplicationsResponse {
 
 @Injectable()
 export class RecruiterApplicationsService {
-  private readonly logger = new Logger(RecruiterApplicationsService.name);
-
   constructor(
     @InjectRepository(Application)
     private readonly appRepo: Repository<Application>,
@@ -103,7 +113,6 @@ export class RecruiterApplicationsService {
     @InjectRepository(InterviewAnswer)
     private readonly interviewAnswerRepo: Repository<InterviewAnswer>,
     private readonly mailService: MailService,
-    private readonly interviewGenerationService: InterviewGenerationService,
   ) {}
 
   async getJobApplications(
@@ -120,6 +129,11 @@ export class RecruiterApplicationsService {
       .createQueryBuilder('app')
       .innerJoin('app.candidate', 'candidate')
       .leftJoin(MatchingResult, 'match', 'match.applicationId = app.id')
+      .leftJoin(
+        InterviewSession,
+        'interview',
+        'interview.applicationId = app.id',
+      )
       .where('app.jobId = :jobId', { jobId })
       .select('app.id', 'applicationId')
       .addSelect('app.createdAt', 'appliedAt')
@@ -133,7 +147,11 @@ export class RecruiterApplicationsService {
       .addSelect('match.overallScore', 'overallScore')
       .addSelect('match.recommendation', 'recommendation')
       .addSelect('match.criteria', 'criteria')
-      .addSelect('match.explanation', 'explanation');
+      .addSelect('match.explanation', 'explanation')
+      .addSelect('interview.id', 'interviewSessionId')
+      .addSelect('interview.status', 'interviewStatus')
+      .addSelect('interview.scoringStatus', 'interviewScoringStatus')
+      .addSelect('interview.overallScore', 'interviewOverallScore');
 
     if (query.scoreBand) {
       const range = SCORE_BAND_RANGES[query.scoreBand];
@@ -207,17 +225,6 @@ export class RecruiterApplicationsService {
 
     if (EMAIL_NOTIFY_STATUSES.includes(toStatus)) {
       await this.sendStatusEmail(application, toStatus);
-    }
-
-    if (toStatus === 'interviewed') {
-      // Không để lỗi enqueue (vd Redis tạm thời down) làm hỏng request đổi trạng thái của recruiter
-      try {
-        await this.interviewGenerationService.enqueueGeneration(saved.id);
-      } catch (err) {
-        this.logger.error(
-          `Enqueue sinh câu hỏi phỏng vấn thất bại cho application ${saved.id}: ${(err as Error).message}`,
-        );
-      }
     }
 
     return saved;
@@ -332,6 +339,17 @@ export class RecruiterApplicationsService {
               explanation: row.explanation,
             }
           : null,
+      interview: row.interviewSessionId
+        ? {
+            sessionId: row.interviewSessionId,
+            status: row.interviewStatus!,
+            scoringStatus: row.interviewScoringStatus!,
+            overallScore:
+              row.interviewOverallScore !== null
+                ? parseFloat(row.interviewOverallScore)
+                : null,
+          }
+        : null,
     };
   }
 }
