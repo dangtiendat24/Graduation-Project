@@ -17,6 +17,12 @@ import {
   MatchRecommendation,
   MatchingCriteria,
 } from '../applications/matching-result.entity';
+import {
+  InterviewSession,
+  InterviewSessionStatus,
+  InterviewPipelineStatus,
+} from '../applications/interview-session.entity';
+import { InterviewAnswer } from '../applications/interview-answer.entity';
 import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
 import {
@@ -51,6 +57,10 @@ interface ApplicationRow {
   recommendation: MatchRecommendation | null;
   criteria: MatchingCriteria | null;
   explanation: string | null;
+  interviewSessionId: string | null;
+  interviewStatus: InterviewSessionStatus | null;
+  interviewScoringStatus: InterviewPipelineStatus | null;
+  interviewOverallScore: string | null;
 }
 
 export interface JobApplicationListItem {
@@ -70,6 +80,12 @@ export interface JobApplicationListItem {
     recommendation: MatchRecommendation | null;
     criteria: MatchingCriteria | null;
     explanation: string | null;
+  } | null;
+  interview: {
+    sessionId: string;
+    status: InterviewSessionStatus;
+    scoringStatus: InterviewPipelineStatus;
+    overallScore: number | null;
   } | null;
 }
 
@@ -92,6 +108,10 @@ export class RecruiterApplicationsService {
     private readonly historyRepo: Repository<ApplicationStatusHistory>,
     @InjectRepository(Job)
     private readonly jobRepo: Repository<Job>,
+    @InjectRepository(InterviewSession)
+    private readonly interviewSessionRepo: Repository<InterviewSession>,
+    @InjectRepository(InterviewAnswer)
+    private readonly interviewAnswerRepo: Repository<InterviewAnswer>,
     private readonly mailService: MailService,
   ) {}
 
@@ -109,6 +129,11 @@ export class RecruiterApplicationsService {
       .createQueryBuilder('app')
       .innerJoin('app.candidate', 'candidate')
       .leftJoin(MatchingResult, 'match', 'match.applicationId = app.id')
+      .leftJoin(
+        InterviewSession,
+        'interview',
+        'interview.applicationId = app.id',
+      )
       .where('app.jobId = :jobId', { jobId })
       .select('app.id', 'applicationId')
       .addSelect('app.createdAt', 'appliedAt')
@@ -122,7 +147,11 @@ export class RecruiterApplicationsService {
       .addSelect('match.overallScore', 'overallScore')
       .addSelect('match.recommendation', 'recommendation')
       .addSelect('match.criteria', 'criteria')
-      .addSelect('match.explanation', 'explanation');
+      .addSelect('match.explanation', 'explanation')
+      .addSelect('interview.id', 'interviewSessionId')
+      .addSelect('interview.status', 'interviewStatus')
+      .addSelect('interview.scoringStatus', 'interviewScoringStatus')
+      .addSelect('interview.overallScore', 'interviewOverallScore');
 
     if (query.scoreBand) {
       const range = SCORE_BAND_RANGES[query.scoreBand];
@@ -201,6 +230,55 @@ export class RecruiterApplicationsService {
     return saved;
   }
 
+  async getInterviewResult(
+    recruiterId: string,
+    jobId: string,
+    applicationId: string,
+  ) {
+    await this.findOwnedJob(recruiterId, jobId);
+
+    const application = await this.appRepo.findOne({
+      where: { id: applicationId, jobId },
+    });
+    if (!application) {
+      throw new NotFoundException('Không tìm thấy đơn ứng tuyển');
+    }
+
+    const session = await this.interviewSessionRepo.findOne({
+      where: { applicationId },
+    });
+    if (!session) {
+      throw new NotFoundException(
+        'Ứng viên chưa có buổi phỏng vấn AI nào cho đơn ứng tuyển này',
+      );
+    }
+
+    const answers = await this.interviewAnswerRepo.find({
+      where: { sessionId: session.id },
+    });
+
+    return {
+      sessionId: session.id,
+      status: session.status,
+      questionsStatus: session.questionsStatus,
+      scoringStatus: session.scoringStatus,
+      scoringError: session.scoringError,
+      overallScore: session.overallScore,
+      transcript: session.transcript,
+      questions: session.questions,
+      answers: answers.map((a) => ({
+        questionId: a.questionId,
+        questionText: a.questionText,
+        category: a.category,
+        difficulty: a.difficulty,
+        answerText: a.answerText,
+        subScores: a.subScores,
+        totalScore: a.totalScore,
+        comment: a.comment,
+      })),
+    };
+  }
+
   private async sendStatusEmail(
     application: Application,
     status: ApplicationStatus,
@@ -261,6 +339,17 @@ export class RecruiterApplicationsService {
               explanation: row.explanation,
             }
           : null,
+      interview: row.interviewSessionId
+        ? {
+            sessionId: row.interviewSessionId,
+            status: row.interviewStatus!,
+            scoringStatus: row.interviewScoringStatus!,
+            overallScore:
+              row.interviewOverallScore !== null
+                ? parseFloat(row.interviewOverallScore)
+                : null,
+          }
+        : null,
     };
   }
 }

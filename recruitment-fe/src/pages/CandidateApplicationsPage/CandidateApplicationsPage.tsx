@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import type { ApplicationStatus } from '../../api/applications'
 import ApplicationDetailModal from '../../components/ApplicationDetailModal/ApplicationDetailModal'
@@ -12,6 +13,7 @@ import {
   MapPin,
   Sparkles,
   Bot,
+  UserCheck,
   Video,
   ChevronRight,
   CheckCircle2,
@@ -25,7 +27,7 @@ import './CandidateApplicationsPage.css'
 const STATUS_CONFIG: Record<ApplicationStatus, { label: string; clsPrefix: string; icon: LucideIcon }> = {
   pending: { label: 'Đã nộp đơn', clsPrefix: 'st-pending', icon: Clock3 },
   matched: { label: 'Hồ sơ phù hợp', clsPrefix: 'st-matched', icon: Sparkles },
-  interviewed: { label: 'Đã phỏng vấn AI', clsPrefix: 'st-interviewed', icon: Bot },
+  interviewed: { label: 'Được mời phỏng vấn', clsPrefix: 'st-interviewed', icon: UserCheck },
   schedule_sent: { label: 'Chờ xác nhận lịch', clsPrefix: 'st-schedule_sent', icon: Calendar },
   scheduled: { label: 'Đã xác nhận lịch', clsPrefix: 'st-scheduled', icon: CalendarCheck },
   completed: { label: 'Đã phỏng vấn xong', clsPrefix: 'st-completed', icon: CheckCircle2 },
@@ -191,21 +193,21 @@ export default function CandidateApplicationsPage() {
                       )}
                     </div>
 
-                    {['interviewed', 'schedule_sent', 'scheduled', 'completed', 'hired', 'rejected'].includes(app.status) && app.interview?.overallScore != null && (
+                    {app.interview?.overallScore != null && (
                       <div className="ca-score-group">
                         <div className="ca-score-label">
                           <Bot size={14} className="ca-text-teal" /> Điểm phỏng vấn AI
                         </div>
                         <div className="ca-progress-wrap">
                           <div className="ca-progress-bar">
-                            <motion.div 
+                            <motion.div
                               initial={{ width: 0 }}
-                              animate={{ width: `${app.interview.overallScore * 10}%` }}
+                              animate={{ width: `${app.interview.overallScore}%` }}
                               transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
-                              className="ca-progress-fill ca-bg-teal" 
+                              className="ca-progress-fill ca-bg-teal"
                             />
                           </div>
-                          <span className="ca-progress-text ca-text-teal">{app.interview.overallScore}/10</span>
+                          <span className="ca-progress-text ca-text-teal">{app.interview.overallScore}%</span>
                         </div>
                       </div>
                     )}
@@ -217,6 +219,14 @@ export default function CandidateApplicationsPage() {
                       <StatusIcon size={16} strokeWidth={2.5} />
                       {config.label}
                     </div>
+
+                    {app.interview?.sessionId &&
+                      (app.interview.status === 'pending' || app.interview.status === 'in_progress') && (
+                        <Link to={`/candidate/interview?sessionId=${app.interview.sessionId}`} className="ca-btn-interview">
+                          <Bot size={16} />
+                          {app.interview.status === 'in_progress' ? 'Tiếp tục phỏng vấn' : 'Vào phỏng vấn'}
+                        </Link>
+                      )}
 
                     {app.schedule && app.schedule.status !== 'cancelled' ? (
                       <div className="ca-schedule-info">

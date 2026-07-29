@@ -17,7 +17,7 @@ import { ApplicationCvParserProcessor } from './application-cv-parser.processor'
   imports: [
     TypeOrmModule.forFeature([Application, ApplicationStatusHistory, Job]),
     BullModule.registerQueue({ name: QUEUE_NAMES.APPLICATION_CV_PARSE }),
-    HttpModule,
+    HttpModule.register({ timeout: 20000, maxRedirects: 3 }),
     StorageModule,
     MatchingModule,
   ],

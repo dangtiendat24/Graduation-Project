@@ -2,7 +2,7 @@ import { apiClient } from './client'
 import type { ApplicationStatus } from './applications'
 
 export type MatchRecommendation = 'strong_match' | 'good_match' | 'partial_match' | 'poor_match'
-export type InterviewSessionStatus = 'pending' | 'in_progress' | 'completed' | 'timeout'
+export type InterviewSessionStatus = 'pending' | 'in_progress' | 'completed' | 'timeout' | 'cancelled'
 export type ScheduleStatus = 'pending' | 'confirmed' | 'cancelled'
 
 export interface MyApplicationListItem {
@@ -21,7 +21,11 @@ export interface MyApplicationListItem {
     company: { name: string; logoUrl: string | null } | null
   }
   matching: { overallScore: number | null; recommendation: MatchRecommendation | null } | null
-  interview: { status: InterviewSessionStatus | null; overallScore: number | null } | null
+  interview: {
+    sessionId: string | null
+    status: InterviewSessionStatus | null
+    overallScore: number | null
+  } | null
   schedule: {
     status: ScheduleStatus | null
     confirmedStartTime: string | null

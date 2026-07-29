@@ -6,6 +6,7 @@ import { QUEUE_NAMES } from '@smart-recruitment/shared';
 import { Application } from '../applications/application.entity';
 import { ApplicationStatusHistory } from '../applications/application-status-history.entity';
 import { MatchingResult } from '../applications/matching-result.entity';
+import { InterviewModule } from '../applications/interview.module';
 import { MatchingService } from './matching.service';
 import { MatchingProcessor } from './matching.processor';
 
@@ -14,6 +15,7 @@ import { MatchingProcessor } from './matching.processor';
     TypeOrmModule.forFeature([Application, ApplicationStatusHistory, MatchingResult]),
     BullModule.registerQueue({ name: QUEUE_NAMES.CV_MATCHING }),
     HttpModule,
+    InterviewModule,
   ],
   providers: [MatchingService, MatchingProcessor],
   exports: [MatchingService],

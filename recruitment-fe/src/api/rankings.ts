@@ -23,6 +23,16 @@ export interface JobApplicationMatching {
   explanation: string | null
 }
 
+export type InterviewSessionStatus = 'pending' | 'in_progress' | 'completed' | 'timeout' | 'cancelled'
+export type InterviewPipelineStatus = 'pending' | 'processing' | 'done' | 'error'
+
+export interface JobApplicationInterview {
+  sessionId: string
+  status: InterviewSessionStatus
+  scoringStatus: InterviewPipelineStatus
+  overallScore: number | null
+}
+
 export interface JobApplicationListItem {
   applicationId: string
   appliedAt: string
@@ -36,6 +46,37 @@ export interface JobApplicationListItem {
     avatarUrl: string | null
   }
   matching: JobApplicationMatching | null
+  interview: JobApplicationInterview | null
+}
+
+export interface InterviewQuestion {
+  id: string
+  question: string
+  category: 'technical' | 'situational' | 'behavioral'
+  difficulty: 'easy' | 'medium' | 'hard'
+}
+
+export interface InterviewAnswerResult {
+  questionId: string
+  questionText: string
+  category: 'technical' | 'situational' | 'behavioral'
+  difficulty: 'easy' | 'medium' | 'hard'
+  answerText: string
+  subScores: { relevance: number; clarity: number; depth: number; correctness: number } | null
+  totalScore: number | null
+  comment: string | null
+}
+
+export interface ApplicationInterviewResult {
+  sessionId: string
+  status: InterviewSessionStatus
+  questionsStatus: InterviewPipelineStatus
+  scoringStatus: InterviewPipelineStatus
+  scoringError: string | null
+  overallScore: number | null
+  transcript: string | null
+  questions: InterviewQuestion[] | null
+  answers: InterviewAnswerResult[]
 }
 
 export interface GetJobApplicationsResponse {
@@ -81,4 +122,14 @@ export async function updateApplicationStatus(
   status: 'interviewed' | 'rejected',
 ): Promise<void> {
   await apiClient.patch(`/jobs/${jobId}/applications/${applicationId}/status`, { status })
+}
+
+export async function getApplicationInterviewResult(
+  jobId: string,
+  applicationId: string,
+): Promise<ApplicationInterviewResult> {
+  const { data } = await apiClient.get<ApplicationInterviewResult>(
+    `/jobs/${jobId}/applications/${applicationId}/interview`,
+  )
+  return data
 }

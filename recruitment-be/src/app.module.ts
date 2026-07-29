@@ -11,6 +11,7 @@ import { CompaniesModule } from './modules/companies/companies.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
+import { InterviewModule } from './modules/applications/interview.module';
 import { ResumeParserModule } from './modules/resume-parser/resume-parser.module';
 import { MatchingModule } from './modules/matching/matching.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
@@ -49,6 +50,7 @@ import { BullMQConfigService } from './config/bullmq.config';
     ProfileModule,
     JobsModule,
     ApplicationsModule,
+    InterviewModule,
     ResumeParserModule,
     MatchingModule,
     CandidatesModule,
