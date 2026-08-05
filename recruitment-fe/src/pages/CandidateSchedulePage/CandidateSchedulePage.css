@@ -1,0 +1,286 @@
+.cs-header {
+  margin-bottom: 20px;
+}
+
+.cs-title {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.cs-sub {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+}
+
+/* ===================== STATS ===================== */
+.cs-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.cs-stat-box {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cs-stat-num {
+  font-size: 26px;
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.cs-stat-box--amber .cs-stat-num { color: var(--color-amber); }
+.cs-stat-box--teal .cs-stat-num { color: var(--color-teal); }
+
+.cs-stat-label {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  font-weight: var(--fw-medium);
+}
+
+/* ===================== EMPTY / LOADING ===================== */
+.cs-empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-default);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.cs-empty--error {
+  color: var(--color-danger);
+}
+
+/* ===================== LIST / CARD ===================== */
+.cs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cs-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.cs-card--expanded {
+  border-color: var(--color-indigo-light);
+}
+
+.cs-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.cs-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-indigo), var(--color-teal));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: var(--fw-bold);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.cs-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cs-job-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-job-title {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.cs-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+}
+
+.cs-job-meta span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cs-st-interviewed-bg { background: #E6FAF8; color: var(--color-teal); }
+.cs-st-schedule_sent-bg { background: var(--status-schedule-bg); color: var(--color-amber); }
+.cs-st-scheduled-bg { background: var(--status-schedule-bg); color: var(--color-amber); }
+.cs-st-completed-bg { background: var(--status-hired-bg); color: var(--color-hired); }
+
+.cs-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.cs-chevron--open {
+  transform: rotate(180deg);
+}
+
+/* ===================== EXPANDED BODY ===================== */
+.cs-card-body {
+  padding: 4px 20px 20px 84px;
+  border-top: 1px solid var(--border-default);
+  padding-top: 16px;
+}
+
+.cs-hint {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.cs-error {
+  font-size: var(--fs-label);
+  color: var(--color-danger);
+  margin: 10px 0 0;
+}
+
+/* Slot picker */
+.cs-slot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.cs-slot-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  transition: all 0.15s;
+}
+
+.cs-slot-item:hover {
+  border-color: var(--color-indigo-light);
+  background: var(--bg-subtle);
+}
+
+.cs-slot-item--selected {
+  border-color: var(--color-indigo);
+  background: var(--color-indigo-light);
+  font-weight: var(--fw-bold);
+}
+
+.cs-slot-item input[type='radio'] {
+  accent-color: var(--color-indigo);
+}
+
+.cs-btn-primary {
+  padding: 10px 20px;
+  background: var(--color-indigo);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cs-btn-primary:hover:not(:disabled) {
+  background: var(--color-indigo-hover);
+}
+
+.cs-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Confirmed schedule */
+.cs-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cs-confirmed-time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.cs-btn-meet {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.cs-btn-meet:hover {
+  background: #D1FAE5;
+}

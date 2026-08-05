@@ -1,0 +1,310 @@
+/* --------------------------------------------------------------------------
+   RECRUITER INTERVIEWS PAGE (SB3-05) — danh sách vị trí có lịch phỏng vấn
+   Kế thừa var(--) từ design-tokens.css
+   -------------------------------------------------------------------------- */
+
+.rig-page {
+  padding: var(--space-6);
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.rig-header {
+  margin-bottom: var(--space-6);
+}
+
+.rig-header--row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.rig-btn-calendar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  border: 1px solid var(--color-indigo);
+  background: var(--bg-surface);
+  color: var(--color-indigo);
+  border-radius: var(--radius-md);
+  padding: 9px 14px;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  font-family: var(--font-family);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rig-btn-calendar:hover {
+  background: var(--color-indigo-light);
+}
+
+.rig-title {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.rig-sub {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  max-width: 640px;
+  line-height: 1.5;
+}
+
+.rig-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.rig-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-surface);
+}
+
+.rig-stat-val {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.rig-stat-card--indigo .rig-stat-val {
+  color: var(--color-indigo);
+}
+
+.rig-stat-card--amber .rig-stat-val {
+  color: var(--color-amber);
+}
+
+.rig-stat-lbl {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  margin-top: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-bold);
+}
+
+.rig-search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-surface);
+}
+
+.rig-search-box:focus-within {
+  border-color: var(--color-indigo);
+  box-shadow: var(--shadow-focus);
+}
+
+.rig-search-box i {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.rig-search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  width: 100%;
+  font-size: var(--fs-input);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+}
+
+.rig-search-box input::placeholder {
+  color: var(--text-muted);
+}
+
+.rig-job-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.rig-job-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  box-shadow: var(--shadow-surface);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rig-job-card:hover {
+  border-color: var(--color-indigo);
+  box-shadow: var(--shadow-focus);
+}
+
+.rig-job-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.rig-job-title {
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.rig-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.rig-meta-item {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.rig-meta-item--pending {
+  background: var(--status-interviewed-bg);
+  color: var(--status-interviewed);
+}
+
+.rig-meta-item--waiting {
+  background: var(--status-schedule-bg);
+  color: var(--status-schedule);
+}
+
+.rig-meta-item--confirmed {
+  background: var(--status-scheduled-bg);
+  color: var(--status-scheduled);
+}
+
+.rig-job-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.rig-applicant-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 64px;
+}
+
+.rig-applicant-num {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--color-indigo);
+  line-height: 1.1;
+}
+
+.rig-applicant-lbl {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+}
+
+.rig-btn-view {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.rig-btn-view i {
+  font-size: 18px;
+}
+
+.rig-btn-view:hover {
+  background: var(--color-indigo-light);
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
+}
+
+.rig-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10) var(--space-4);
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  gap: var(--space-2);
+}
+
+.rig-empty-icon {
+  font-size: 48px;
+  margin-bottom: var(--space-2);
+  opacity: 0.5;
+}
+
+.rig-empty-title {
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.rig-empty-sub {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  max-width: 360px;
+}
+
+.rig-spin {
+  animation: rig-spin 1s linear infinite;
+}
+
+@keyframes rig-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 640px) {
+  .rig-stats {
+    grid-template-columns: 1fr;
+  }
+  .rig-job-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .rig-job-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .rig-applicant-count {
+    align-items: flex-start;
+  }
+}

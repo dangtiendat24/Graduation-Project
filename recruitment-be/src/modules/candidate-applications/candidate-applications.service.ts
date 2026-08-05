@@ -4,7 +4,7 @@ import { Repository } from 'typeorm'
 import { Application, ApplicationStatus } from '../applications/application.entity'
 import { MatchingResult, MatchRecommendation } from '../applications/matching-result.entity'
 import { InterviewSession, InterviewSessionStatus } from '../applications/interview-session.entity'
-import { Schedule, ScheduleStatus } from '../applications/schedule.entity'
+import { Schedule, ScheduleStatus, ProposedSlot } from '../applications/schedule.entity'
 import { ApplicationStatusHistory } from '../applications/application-status-history.entity'
 import { GetMyApplicationsQueryDto } from './dto/get-my-applications-query.dto'
 import { APPLICATION_STATUS_LABELS } from './application-status-label'
@@ -33,6 +33,7 @@ interface ApplicationRow {
   scheduleStatus: ScheduleStatus | null
   scheduleConfirmedStartTime: Date | null
   scheduleMeetLink: string | null
+  scheduleProposedSlots: ProposedSlot[] | null
 }
 
 export interface MyApplicationListItem {
@@ -60,6 +61,7 @@ export interface MyApplicationListItem {
     status: ScheduleStatus | null
     confirmedStartTime: string | null
     meetLink: string | null
+    proposedSlots: ProposedSlot[] | null
   } | null
   autoRejected?: true
 }
@@ -181,6 +183,7 @@ export class CandidateApplicationsService {
       .addSelect('schedule.status', 'scheduleStatus')
       .addSelect('schedule.confirmedStartTime', 'scheduleConfirmedStartTime')
       .addSelect('schedule.meetLink', 'scheduleMeetLink')
+      .addSelect('schedule.proposedSlots', 'scheduleProposedSlots')
   }
 
   private toResponseItem(row: ApplicationRow): MyApplicationListItem {
@@ -221,6 +224,7 @@ export class CandidateApplicationsService {
                 ? new Date(row.scheduleConfirmedStartTime).toISOString()
                 : null,
               meetLink: row.scheduleMeetLink,
+              proposedSlots: row.scheduleProposedSlots,
             }
           : null,
     }
