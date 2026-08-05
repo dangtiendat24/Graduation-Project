@@ -24,7 +24,7 @@ const STATS_SAMPLE_LIMIT = 100
 
 interface PendingConfirm {
   row: RankedRow
-  action: 'interviewed' | 'rejected'
+  action: 'rejected'
 }
 
 // Lỗi 4xx (403 không có quyền, 404 không tồn tại...) sẽ không đổi kết quả dù
@@ -153,7 +153,7 @@ export default function RankedCandidatesPage() {
   }, [rankingsQuery.data, page, skillsMap])
 
   const statusMutation = useMutation({
-    mutationFn: ({ applicationId, status }: { applicationId: string; status: 'interviewed' | 'rejected' }) =>
+    mutationFn: ({ applicationId, status }: { applicationId: string; status: 'rejected' }) =>
       updateApplicationStatus(jobId!, applicationId, status),
     onMutate: async ({ applicationId, status }) => {
       await queryClient.cancelQueries({ queryKey: ['job-rankings', jobId] })
@@ -176,13 +176,10 @@ export default function RankedCandidatesPage() {
       context?.previous?.forEach(([key, data]) => queryClient.setQueryData(key, data))
       setToast({ type: 'error', message: 'Cập nhật trạng thái thất bại. Vui lòng thử lại.' })
     },
-    onSuccess: (_data, vars) => {
+    onSuccess: () => {
       setToast({
         type: 'success',
-        message:
-          vars.status === 'interviewed'
-            ? 'Đã gửi lời mời phỏng vấn cho ứng viên.'
-            : 'Đã từ chối ứng viên, email thông báo đã được gửi.',
+        message: 'Đã từ chối ứng viên, email thông báo đã được gửi.',
       })
     },
     onSettled: () => {
@@ -190,7 +187,21 @@ export default function RankedCandidatesPage() {
     },
   })
 
-  function handleAction(row: RankedRow, action: 'interviewed' | 'rejected') {
+  function handleInvite(row: RankedRow) {
+    // Đi thẳng sang trang Lịch phỏng vấn, tự mở box chọn khung giờ — gửi khung giờ sẽ mời + đặt lịch
+    // trong 1 thao tác duy nhất (matched → schedule_sent), ứng viên chưa có schedule nào tồn tại.
+    navigate(`/recruiter/interviews/${jobId}`, {
+      state: {
+        inviteCandidate: {
+          applicationId: row.applicationId,
+          candidateName: row.candidate.fullName,
+          candidateEmail: row.candidate.email,
+        },
+      },
+    })
+  }
+
+  function handleAction(row: RankedRow, action: 'rejected') {
     setPendingConfirm({ row, action })
   }
 
@@ -233,6 +244,7 @@ export default function RankedCandidatesPage() {
               isError={rankingsQuery.isError}
               pendingApplicationId={statusMutation.isPending ? pendingConfirm?.row.applicationId ?? null : null}
               onSelectRow={setSelectedRow}
+              onInvite={handleInvite}
               onAction={handleAction}
               onViewCv={(row) => navigate(`/recruiter/candidates/${row.applicationId}`)}
               onViewInterview={setInterviewRow}

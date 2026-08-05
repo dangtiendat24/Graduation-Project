@@ -5,6 +5,11 @@ export type MatchRecommendation = 'strong_match' | 'good_match' | 'partial_match
 export type InterviewSessionStatus = 'pending' | 'in_progress' | 'completed' | 'timeout' | 'cancelled'
 export type ScheduleStatus = 'pending' | 'confirmed' | 'cancelled'
 
+export interface ProposedSlot {
+  start: string
+  end: string
+}
+
 export interface MyApplicationListItem {
   applicationId: string
   appliedAt: string
@@ -30,6 +35,7 @@ export interface MyApplicationListItem {
     status: ScheduleStatus | null
     confirmedStartTime: string | null
     meetLink: string | null
+    proposedSlots: ProposedSlot[] | null
   } | null
   autoRejected?: true
 }
@@ -71,4 +77,8 @@ export async function getMyApplications(
 export async function getMyApplicationDetail(applicationId: string): Promise<MyApplicationDetail> {
   const { data } = await apiClient.get<MyApplicationDetail>(`/candidate/applications/${applicationId}`)
   return data
+}
+
+export async function confirmScheduleSlot(applicationId: string, slot: ProposedSlot): Promise<void> {
+  await apiClient.post(`/candidate/applications/${applicationId}/schedule/confirm`, slot)
 }

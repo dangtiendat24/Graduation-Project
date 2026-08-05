@@ -153,9 +153,13 @@ export const QUEUE_NAMES = {
 
 // ── Application State Machine ─────────────────────────────────
 
+// matched → schedule_sent (trực tiếp): recruiter mời phỏng vấn và gửi khung giờ trong 1 thao tác
+// duy nhất (nút "Mời phỏng vấn" mở thẳng box chọn lịch) — không còn bước "đã mời, chưa gửi lịch"
+// hiển thị riêng cho recruiter. matched → interviewed vẫn giữ cho các luồng khác (vd. gọi PATCH
+// /status trực tiếp mà chưa có khung giờ).
 export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
   pending:       ['matched', 'rejected'],
-  matched:       ['interviewed', 'rejected'],
+  matched:       ['interviewed', 'schedule_sent', 'rejected'],
   interviewed:   ['schedule_sent', 'rejected'],
   schedule_sent: ['scheduled'],
   scheduled:     ['completed'],

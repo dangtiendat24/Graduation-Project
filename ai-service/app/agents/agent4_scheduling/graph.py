@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 from google.auth.exceptions import RefreshError
 from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials as OAuthCredentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from langgraph.graph import END, StateGraph
@@ -25,13 +26,15 @@ class SchedulingState(TypedDict):
     start_date: date
     end_date: date
     duration_minutes: int
-    credentials: Optional[service_account.Credentials]
+    access_token: Optional[str]
+    credentials: Optional[service_account.Credentials | OAuthCredentials]
+    calendar_id: Optional[str]
     busy_periods: Optional[list[tuple[datetime, datetime]]]
     slots: Optional[list[TimeSlot]]
     error: Optional[str]
 
 
-def _build_credentials(hr_email: str) -> service_account.Credentials:
+def _build_service_account_credentials(hr_email: str) -> service_account.Credentials:
     if not settings.GOOGLE_CALENDAR_SERVICE_ACCOUNT_JSON:
         raise ValueError(
             "Google Calendar chưa được cấu hình cho hệ thống (thiếu "
@@ -42,14 +45,28 @@ def _build_credentials(hr_email: str) -> service_account.Credentials:
         info, scopes=CALENDAR_SCOPES
     )
     # Domain-wide delegation: impersonate hr_email để đọc đúng lịch rảnh/bận của người đó
-    # mà không cần hr_email tự thực hiện OAuth thủ công.
+    # mà không cần hr_email tự thực hiện OAuth thủ công. Chỉ hoạt động với Google Workspace.
     return base_credentials.with_subject(hr_email)
 
 
 async def auth_check_node(state: SchedulingState) -> SchedulingState:
     try:
-        credentials = _build_credentials(state["hr_email"])
-        return {**state, "credentials": credentials, "error": None}
+        access_token = state.get("access_token")
+        if access_token:
+            # OAuth per-HR (BE quản lý refresh, luôn truyền access_token còn hạn) — hoạt động
+            # với mọi tài khoản Google, không cần Workspace. "primary" = calendar của chính
+            # chủ token, không cần biết hr_email để impersonate.
+            credentials = OAuthCredentials(token=access_token, scopes=CALENDAR_SCOPES)
+            calendar_id = "primary"
+        else:
+            credentials = _build_service_account_credentials(state["hr_email"])
+            calendar_id = state["hr_email"]
+        return {
+            **state,
+            "credentials": credentials,
+            "calendar_id": calendar_id,
+            "error": None,
+        }
     except (ValueError, json.JSONDecodeError, KeyError) as exc:
         return {**state, "error": str(exc)}
 
@@ -62,8 +79,22 @@ def _parse_google_datetime(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(VN_TZ)
 
 
+def _access_hint(state: SchedulingState) -> str:
+    """Gợi ý khắc phục phù hợp với chế độ auth đang dùng (OAuth per-HR hay service account)."""
+    if state.get("access_token"):
+        return (
+            "Có thể do: Google Calendar API chưa được bật cho project, hoặc HR chưa cấp đủ "
+            "quyền — vui lòng kết nối lại Google Calendar."
+        )
+    return (
+        "HR có thể chưa cấp quyền/chưa nằm trong domain được ủy quyền domain-wide delegation "
+        "— vui lòng liên hệ quản trị viên."
+    )
+
+
 async def fetch_busy_node(state: SchedulingState) -> SchedulingState:
     hr_email = state["hr_email"]
+    calendar_id = state["calendar_id"]
     time_min = datetime.combine(state["start_date"], time.min, tzinfo=VN_TZ)
     time_max = datetime.combine(state["end_date"] + timedelta(days=1), time.min, tzinfo=VN_TZ)
 
@@ -76,13 +107,13 @@ async def fetch_busy_node(state: SchedulingState) -> SchedulingState:
                     "timeMin": _to_rfc3339_utc(time_min),
                     "timeMax": _to_rfc3339_utc(time_max),
                     "timeZone": "UTC",
-                    "items": [{"id": hr_email}],
+                    "items": [{"id": calendar_id}],
                 }
             )
             .execute()
         )
 
-        calendar_result = response.get("calendars", {}).get(hr_email, {})
+        calendar_result = response.get("calendars", {}).get(calendar_id, {})
         api_errors = calendar_result.get("errors")
         if api_errors:
             reason = api_errors[0].get("reason", "unknown")
@@ -90,8 +121,7 @@ async def fetch_busy_node(state: SchedulingState) -> SchedulingState:
                 **state,
                 "error": (
                     f"Không thể đọc lịch Google Calendar của {hr_email} (lý do: {reason}). "
-                    "HR có thể chưa cấp quyền/chưa nằm trong domain được ủy quyền — vui lòng "
-                    "kết nối lại Google Calendar."
+                    f"{_access_hint(state)}"
                 ),
             }
 
@@ -106,8 +136,7 @@ async def fetch_busy_node(state: SchedulingState) -> SchedulingState:
             **state,
             "error": (
                 f"Google Calendar từ chối truy cập lịch của {hr_email}: {exc}. "
-                "HR email này có thể chưa được cấp quyền OAuth (domain-wide delegation) cho "
-                "hệ thống — vui lòng kết nối lại Google Calendar."
+                f"{_access_hint(state)}"
             ),
         }
     except Exception as exc:  # noqa: BLE001 — không để lộ 500 mập mờ, luôn trả success=False rõ ràng

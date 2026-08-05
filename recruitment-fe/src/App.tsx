@@ -21,7 +21,11 @@ import CandidateCompanyPage from './pages/CandidateCompanyPage/CandidateCompanyP
 import RecruiterCandidatesPage from './pages/RecruiterCandidatesPage/RecruiterCandidatesPage'
 import RecruiterCandidateDetailPage from './pages/RecruiterCandidateDetailPage/RecruiterCandidateDetailPage'
 import RankedCandidatesPage from './pages/RankedCandidatesPage/RankedCandidatesPage'
+import RecruiterInterviewsPage from './pages/RecruiterInterviewsPage/RecruiterInterviewsPage'
+import RecruiterInterviewJobDetailPage from './pages/RecruiterInterviewsPage/RecruiterInterviewJobDetailPage'
+import RecruiterScheduleCalendarPage from './pages/RecruiterInterviewsPage/RecruiterScheduleCalendarPage'
 import CandidateApplicationsPage from './pages/CandidateApplicationsPage/CandidateApplicationsPage'
+import CandidateSchedulePage from './pages/CandidateSchedulePage/CandidateSchedulePage'
 import CandidateInterviewPage from './pages/CandidateInterviewPage/CandidateInterviewPage'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -123,6 +127,33 @@ function App() {
         />
 
         <Route
+          path="/recruiter/interviews"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterInterviewsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/interviews/calendar"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterScheduleCalendarPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/interviews/:jobId"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterInterviewJobDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/recruiter/jobs/create"
           element={
             <ProtectedRoute role="recruiter">
@@ -181,6 +212,15 @@ function App() {
           element={
             <ProtectedRoute role="candidate">
               <CandidateApplicationsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/candidate/schedule"
+          element={
+            <ProtectedRoute role="candidate">
+              <CandidateSchedulePage />
             </ProtectedRoute>
           }
         />
