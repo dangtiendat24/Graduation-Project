@@ -14,7 +14,8 @@ openai==2.43.0
 # Vector DB
 qdrant-client==1.8.0
 
-# Google Calendar API (agent4_scheduling — freebusy lookup qua Service Account domain-wide delegation)
+# Google Calendar API (agent4_scheduling — freebusy lookup qua OAuth per-HR access_token,
+# hoặc Service Account domain-wide delegation nếu có Google Workspace)
 google-auth==2.35.0
 google-api-python-client==2.149.0
 

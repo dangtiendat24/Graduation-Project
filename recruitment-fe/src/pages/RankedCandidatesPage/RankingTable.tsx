@@ -64,7 +64,8 @@ interface Props {
   isError: boolean
   pendingApplicationId: string | null
   onSelectRow: (row: RankedRow) => void
-  onAction: (row: RankedRow, action: 'interviewed' | 'rejected') => void
+  onInvite: (row: RankedRow) => void
+  onAction: (row: RankedRow, action: 'rejected') => void
   onViewCv: (row: RankedRow) => void
   onViewInterview: (row: RankedRow) => void
 }
@@ -76,6 +77,7 @@ export default function RankingTable({
   isError,
   pendingApplicationId,
   onSelectRow,
+  onInvite,
   onAction,
   onViewCv,
   onViewInterview,
@@ -233,7 +235,7 @@ export default function RankingTable({
                         className="rk-btn-interview"
                         disabled={!canInterview(row.status) || isTerminalPending}
                         title={canInterview(row.status) ? 'Mời phỏng vấn' : 'Không thể mời phỏng vấn ở trạng thái hiện tại'}
-                        onClick={() => onAction(row, 'interviewed')}
+                        onClick={() => onInvite(row)}
                       >
                         <i className="ti ti-calendar-event" /> Mời phỏng vấn
                       </button>

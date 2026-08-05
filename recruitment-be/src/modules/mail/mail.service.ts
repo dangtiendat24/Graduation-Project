@@ -99,6 +99,60 @@ export class MailService implements OnModuleInit {
       buildRejectionEmailHtml(fullName, jobTitle),
     );
   }
+
+  async sendScheduleConfirmedEmail(
+    to: string,
+    fullName: string,
+    jobTitle: string,
+    scheduledTimeLabel: string,
+    meetLink: string,
+  ) {
+    if (this.devMode) {
+      this.logger.log(
+        `[DEV] Schedule confirmed email for ${to} — job: ${jobTitle} at ${scheduledTimeLabel}`,
+      );
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] Xác nhận lịch phỏng vấn vị trí ${jobTitle}`,
+      buildScheduleConfirmedEmailHtml(
+        fullName,
+        jobTitle,
+        scheduledTimeLabel,
+        meetLink,
+      ),
+    );
+  }
+
+  /** Mời phỏng vấn + đề xuất khung giờ trong 1 email duy nhất — gửi khi recruiter gửi khung giờ lần đầu */
+  async sendScheduleProposedEmail(
+    to: string,
+    fullName: string,
+    jobTitle: string,
+    slotCount: number,
+    isResend = false,
+  ) {
+    if (this.devMode) {
+      this.logger.log(
+        `[DEV] Schedule ${isResend ? 're-proposed' : 'proposed'} email for ${to} — job: ${jobTitle}, ${slotCount} slot(s)`,
+      );
+      return;
+    }
+    await this.sendEmail(
+      to,
+      isResend
+        ? `[RecruitAI] Cập nhật khung giờ phỏng vấn vị trí ${jobTitle}`
+        : `[RecruitAI] Mời phỏng vấn vị trí ${jobTitle} — chọn lịch phù hợp`,
+      buildScheduleProposedEmailHtml(
+        fullName,
+        jobTitle,
+        slotCount,
+        this.frontendUrl,
+        isResend,
+      ),
+    );
+  }
 }
 
 function buildVerifyEmailHtml(fullName: string, verifyUrl: string): string {
@@ -225,6 +279,72 @@ function buildInterviewInviteEmailHtml(
 </html>`;
 }
 
+function buildScheduleProposedEmailHtml(
+  fullName: string,
+  jobTitle: string,
+  slotCount: number,
+  frontendUrl: string,
+  isResend: boolean,
+): string {
+  const introText = isResend
+    ? `Nhà tuyển dụng đã cập nhật lại khung giờ phỏng vấn cho vị trí <strong>${jobTitle}</strong> — đề xuất cũ không còn hiệu lực.
+       Chúng tôi đã đề xuất <strong>${slotCount} khung giờ</strong> mới — vui lòng chọn 1 khung giờ phù hợp với bạn.`
+    : `Nhà tuyển dụng đã xem xét hồ sơ của bạn cho vị trí <strong>${jobTitle}</strong> và muốn mời bạn tham gia vòng phỏng vấn tiếp theo.
+       Chúng tôi đã đề xuất <strong>${slotCount} khung giờ</strong> phỏng vấn — vui lòng chọn 1 khung giờ phù hợp với bạn.`;
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mời phỏng vấn</title></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#0C2340 0%,#0F172A 48%,#1E1065 100%);padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:.04em;">
+              RECRUIT<span style="color:#5EEAD4;">.AI</span>
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">${isResend ? `Xin chào, ${fullName}!` : `Chúc mừng, ${fullName}!`}</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              ${introText}
+            </p>
+
+            <table cellpadding="0" cellspacing="0"><tr><td>
+              <a href="${frontendUrl}/candidate/schedule"
+                style="display:inline-block;background:#4338CA;color:#FFFFFF;font-size:15px;font-weight:600;padding:13px 32px;border-radius:8px;text-decoration:none;letter-spacing:.02em;">
+                Xem khung giờ & xác nhận →
+              </a>
+            </td></tr></table>
+
+            <p style="margin:24px 0 0;font-size:13px;color:#94A3B8;line-height:1.6;">
+              Sau khi bạn chọn khung giờ, chúng tôi sẽ gửi email xác nhận kèm liên kết Google Meet để bạn chuẩn bị.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;padding:16px 40px;border-top:1px solid #E2E8F0;">
+            <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+              © 2026 RecruitAI — Nền tảng tuyển dụng thông minh
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 function buildRejectionEmailHtml(fullName: string, jobTitle: string): string {
   return `<!DOCTYPE html>
 <html lang="vi">
@@ -253,6 +373,76 @@ function buildRejectionEmailHtml(fullName: string, jobTitle: string): string {
             </p>
             <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
               Chúng tôi đánh giá cao sự quan tâm của bạn và mong sẽ có cơ hội hợp tác trong tương lai với các vị trí phù hợp hơn.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;padding:16px 40px;border-top:1px solid #E2E8F0;">
+            <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+              © 2026 RecruitAI — Nền tảng tuyển dụng thông minh
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildScheduleConfirmedEmailHtml(
+  fullName: string,
+  jobTitle: string,
+  scheduledTimeLabel: string,
+  meetLink: string,
+): string {
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Xác nhận lịch phỏng vấn</title></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#0C2340 0%,#0F172A 48%,#1E1065 100%);padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:.04em;">
+              RECRUIT<span style="color:#5EEAD4;">.AI</span>
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Lịch phỏng vấn đã được xác nhận!</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              Xin chào ${fullName}, buổi phỏng vấn của bạn cho vị trí <strong>${jobTitle}</strong> đã được xác nhận.
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border-radius:8px;margin:0 0 24px;">
+              <tr><td style="padding:20px 24px;">
+                <p style="margin:0 0 6px;font-size:13px;color:#94A3B8;">Thời gian</p>
+                <p style="margin:0 0 16px;font-size:16px;font-weight:600;color:#0F172A;">${scheduledTimeLabel}</p>
+                <p style="margin:0 0 6px;font-size:13px;color:#94A3B8;">Hình thức</p>
+                <p style="margin:0;font-size:15px;color:#0F172A;">Phỏng vấn trực tuyến qua Google Meet</p>
+              </td></tr>
+            </table>
+
+            <table cellpadding="0" cellspacing="0"><tr><td>
+              <a href="${meetLink}"
+                style="display:inline-block;background:#4338CA;color:#FFFFFF;font-size:15px;font-weight:600;padding:13px 32px;border-radius:8px;text-decoration:none;letter-spacing:.02em;">
+                Tham gia Google Meet →
+              </a>
+            </td></tr></table>
+
+            <p style="margin:24px 0 0;font-size:13px;color:#94A3B8;line-height:1.6;">
+              Để chuẩn bị tốt nhất: kiểm tra kết nối mạng, camera, micro trước giờ hẹn; tham gia đúng giờ;
+              xem lại mô tả công việc và chuẩn bị vài câu hỏi cho nhà tuyển dụng.
             </p>
           </td>
         </tr>

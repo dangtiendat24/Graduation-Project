@@ -14,6 +14,14 @@ class SuggestSlotsRequest(BaseModel):
     duration_minutes: int = Field(
         default=45, ge=15, le=240, description="Độ dài mỗi slot phỏng vấn được đề xuất (phút)"
     )
+    access_token: str | None = Field(
+        default=None,
+        description=(
+            "OAuth access_token còn hạn của hr_email (BE quản lý refresh) — nếu có, dùng "
+            "credentials OAuth thay vì service account domain-wide delegation. Là cách duy nhất "
+            "hoạt động khi không có Google Workspace."
+        ),
+    )
 
 
 class TimeSlot(BaseModel):
