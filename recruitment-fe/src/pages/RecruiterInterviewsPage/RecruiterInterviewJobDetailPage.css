@@ -72,6 +72,53 @@
   color: var(--color-danger);
 }
 
+/* --- Tab: Sắp phỏng vấn / Đã phỏng vấn --- */
+.ri-tab-bar {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.ri-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--fs-label);
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ri-tab:hover {
+  border-color: var(--color-indigo);
+  color: var(--color-indigo);
+}
+
+.ri-tab.active {
+  background: var(--color-indigo);
+  border-color: var(--color-indigo);
+  color: #fff;
+  font-weight: var(--fw-bold);
+}
+
+.ri-tab-count {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-full);
+  padding: 1px 7px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+
+.ri-tab.active .ri-tab-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 .ri-candidate-list {
   display: flex;
   flex-direction: column;
@@ -148,6 +195,15 @@
   font-size: var(--fs-label);
 }
 
+.ri-candidate-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  min-width: 150px;
+}
+
 .ri-btn-schedule {
   display: flex;
   align-items: center;
@@ -162,12 +218,52 @@
   font-weight: var(--fw-bold);
   font-family: var(--font-family);
   cursor: pointer;
-  flex-shrink: 0;
-  min-width: 150px;
 }
 
 .ri-btn-schedule:hover {
   background: var(--color-indigo-light);
+}
+
+/* --- Đánh dấu kết quả phỏng vấn (đã xác nhận lịch → tuyển/từ chối) --- */
+.ri-outcome-buttons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.ri-btn-hire,
+.ri-btn-reject {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  font-family: var(--font-family);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ri-btn-hire {
+  border: 1px solid var(--status-hired);
+  background: var(--bg-surface);
+  color: var(--status-hired);
+}
+
+.ri-btn-hire:hover {
+  background: var(--status-hired-bg);
+}
+
+.ri-btn-reject {
+  border: 1px solid var(--color-danger);
+  background: var(--bg-surface);
+  color: var(--color-danger);
+}
+
+.ri-btn-reject:hover {
+  background: rgba(239, 68, 68, 0.08);
 }
 
 /* --- Scheduling box (modal) --- */
@@ -412,4 +508,58 @@
 .ri-btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* --- Modal xác nhận kết quả phỏng vấn --- */
+.ri-outcome-box {
+  max-width: 420px;
+}
+
+.ri-btn-success,
+.ri-btn-danger {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  font-family: var(--font-family);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  color: #fff;
+}
+
+.ri-btn-success {
+  background: var(--status-hired);
+}
+
+.ri-btn-success:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.ri-btn-danger {
+  background: var(--color-danger);
+}
+
+.ri-btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.ri-btn-success:disabled,
+.ri-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ri-spin {
+  animation: ri-spin 1s linear infinite;
+}
+
+@keyframes ri-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

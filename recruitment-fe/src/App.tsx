@@ -9,6 +9,8 @@ import AuthPage from './pages/AuthPage/AuthPage'
 import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage'
 import AuthCallbackPage from './pages/AuthCallbackPage/AuthCallbackPage'
 import RecruiterDashboardPage from './pages/RecruiterDashboardPage/RecruiterDashboardPage'
+import RecruiterReportsPage from './pages/RecruiterReportsPage/RecruiterReportsPage'
+import RecruiterHiringResultsPage from './pages/RecruiterHiringResultsPage/RecruiterHiringResultsPage'
 import RecruiterCompanyPage from './pages/RecruiterCompanyPage/RecruiterCompanyPage'
 import RecruiterJobsPage from './pages/RecruiterJobsPage/RecruiterJobsPage'
 import RecruiterJobCreatePage from './pages/RecruiterJobCreatePage/RecruiterJobCreatePage'
@@ -82,6 +84,15 @@ function App() {
         />
 
         <Route
+          path="/recruiter/reports"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/recruiter/company"
           element={
             <ProtectedRoute role="recruiter">
@@ -113,6 +124,15 @@ function App() {
           element={
             <ProtectedRoute role="recruiter">
               <RecruiterCandidateDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/hiring-results"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterHiringResultsPage />
             </ProtectedRoute>
           }
         />

@@ -90,6 +90,7 @@ export default function DashboardLayout({ children, actions }: Props) {
         <NavItem to={`${prefix}/jobs`} icon="ti-briefcase" label="Tin tuyển dụng" />
         <NavItem to={`${prefix}/candidates`} icon="ti-users" label="Ứng viên" />
         <NavItem to={`${prefix}/interviews`} icon="ti-calendar" label="Lịch phỏng vấn" badge="3" />
+        <NavItem to={`${prefix}/hiring-results`} icon="ti-award" label="Kết quả tuyển dụng" />
 
         <div className="dl-nav-label">Hệ thống</div>
         <NavItem to={`${prefix}/agents`} icon="ti-robot" label="AI Agents" />

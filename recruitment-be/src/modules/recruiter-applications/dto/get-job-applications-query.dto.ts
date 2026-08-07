@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { APPLICATION_STATUSES } from '@smart-recruitment/shared';
+import type { ApplicationStatus } from '@smart-recruitment/shared';
 
 export const APPLICATION_SORT_FIELDS = ['score', 'date'] as const;
 export type ApplicationSortField = (typeof APPLICATION_SORT_FIELDS)[number];
@@ -27,6 +29,14 @@ export class GetJobApplicationsQueryDto {
   @IsOptional()
   @IsIn(SCORE_BANDS)
   scoreBand?: ScoreBand;
+
+  @ApiPropertyOptional({
+    enum: APPLICATION_STATUSES,
+    description: 'Lọc theo trạng thái đơn ứng tuyển',
+  })
+  @IsOptional()
+  @IsIn(APPLICATION_STATUSES)
+  status?: ApplicationStatus;
 
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()

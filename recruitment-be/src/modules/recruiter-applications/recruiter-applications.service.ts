@@ -41,7 +41,7 @@ const SCORE_BAND_RANGES: Record<
 };
 
 /** Chuyển sang các trạng thái này sẽ tự động gửi email thông báo cho ứng viên */
-const EMAIL_NOTIFY_STATUSES: ApplicationStatus[] = ['interviewed', 'rejected'];
+const EMAIL_NOTIFY_STATUSES: ApplicationStatus[] = ['interviewed', 'rejected', 'hired'];
 
 interface ApplicationRow {
   applicationId: string;
@@ -159,6 +159,10 @@ export class RecruiterApplicationsService {
       if (range.max !== null) {
         qb.andWhere('match.overallScore < :max', { max: range.max });
       }
+    }
+
+    if (query.status) {
+      qb.andWhere('app.status = :status', { status: query.status });
     }
 
     if (query.sort === 'date') {
@@ -294,6 +298,12 @@ export class RecruiterApplicationsService {
       );
     } else if (status === 'rejected') {
       await this.mailService.sendApplicationRejectedEmail(
+        email,
+        fullName,
+        jobTitle,
+      );
+    } else if (status === 'hired') {
+      await this.mailService.sendApplicationHiredEmail(
         email,
         fullName,
         jobTitle,

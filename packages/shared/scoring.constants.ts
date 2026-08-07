@@ -157,12 +157,19 @@ export const QUEUE_NAMES = {
 // duy nhất (nút "Mời phỏng vấn" mở thẳng box chọn lịch) — không còn bước "đã mời, chưa gửi lịch"
 // hiển thị riêng cho recruiter. matched → interviewed vẫn giữ cho các luồng khác (vd. gọi PATCH
 // /status trực tiếp mà chưa có khung giờ).
+//
+// scheduled → hired/rejected (trực tiếp): sau khi ứng viên xác nhận lịch và recruiter phỏng vấn
+// thực tế (ngoài hệ thống), recruiter tự đánh dấu kết quả — không bắt buộc qua bước trung gian
+// 'completed' (trạng thái này không có code path nào tự động gán).
+//
+// schedule_sent → rejected: recruiter có thể từ chối ứng viên trước khi họ xác nhận lịch (vd. đổi ý
+// sau khi đã gửi khung giờ) — nút "Từ chối" hiển thị cho mọi ứng viên chưa tới ngày phỏng vấn.
 export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
   pending:       ['matched', 'rejected'],
   matched:       ['interviewed', 'schedule_sent', 'rejected'],
   interviewed:   ['schedule_sent', 'rejected'],
-  schedule_sent: ['scheduled'],
-  scheduled:     ['completed'],
+  schedule_sent: ['scheduled', 'rejected'],
+  scheduled:     ['completed', 'hired', 'rejected'],
   completed:     ['hired', 'rejected'],
   hired:         [],
   rejected:      [],

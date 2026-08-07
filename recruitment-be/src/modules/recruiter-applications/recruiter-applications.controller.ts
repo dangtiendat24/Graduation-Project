@@ -55,7 +55,7 @@ export class RecruiterApplicationsController {
 
   @ApiOperation({
     summary:
-      'Cập nhật trạng thái đơn ứng tuyển (recruiter chủ sở hữu). Chuyển sang "interviewed" hoặc "rejected" sẽ tự động gửi email cho ứng viên.',
+      'Cập nhật trạng thái đơn ứng tuyển (recruiter chủ sở hữu). Chuyển sang "interviewed", "rejected" hoặc "hired" sẽ tự động gửi email cho ứng viên.',
   })
   @Patch(':applicationId/status')
   updateStatus(

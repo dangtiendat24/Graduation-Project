@@ -100,6 +100,22 @@ export class MailService implements OnModuleInit {
     );
   }
 
+  async sendApplicationHiredEmail(
+    to: string,
+    fullName: string,
+    jobTitle: string,
+  ) {
+    if (this.devMode) {
+      this.logger.log(`[DEV] Hired email for ${to} — job: ${jobTitle}`);
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] Chúc mừng bạn đã trúng tuyển vị trí ${jobTitle}!`,
+      buildHiredEmailHtml(fullName, jobTitle),
+    );
+  }
+
   async sendScheduleConfirmedEmail(
     to: string,
     fullName: string,
@@ -373,6 +389,54 @@ function buildRejectionEmailHtml(fullName: string, jobTitle: string): string {
             </p>
             <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
               Chúng tôi đánh giá cao sự quan tâm của bạn và mong sẽ có cơ hội hợp tác trong tương lai với các vị trí phù hợp hơn.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;padding:16px 40px;border-top:1px solid #E2E8F0;">
+            <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+              © 2026 RecruitAI — Nền tảng tuyển dụng thông minh
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildHiredEmailHtml(fullName: string, jobTitle: string): string {
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chúc mừng trúng tuyển</title></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#0C2340 0%,#0F172A 48%,#1E1065 100%);padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:.04em;">
+              RECRUIT<span style="color:#5EEAD4;">.AI</span>
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Chúc mừng, ${fullName}! 🎉</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              Chúng tôi vui mừng thông báo bạn đã <strong>trúng tuyển</strong> vị trí <strong>${jobTitle}</strong> tại RecruitAI.
+              Nhà tuyển dụng sẽ sớm liên hệ với bạn để trao đổi các bước tiếp theo.
+            </p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              Cảm ơn bạn đã dành thời gian tham gia quy trình tuyển dụng cùng chúng tôi. Chúc mừng bạn cho khởi đầu mới!
             </p>
           </td>
         </tr>
