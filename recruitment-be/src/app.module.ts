@@ -17,6 +17,7 @@ import { MatchingModule } from './modules/matching/matching.module';
 import { CandidatesModule } from './modules/candidates/candidates.module';
 import { CandidateApplicationsModule } from './modules/candidate-applications/candidate-applications.module';
 import { RecruiterApplicationsModule } from './modules/recruiter-applications/recruiter-applications.module';
+import { RecruiterReportsModule } from './modules/recruiter-reports/recruiter-reports.module';
 import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.module';
 import { HealthModule } from './health/health.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
@@ -57,6 +58,7 @@ import { BullMQConfigService } from './config/bullmq.config';
     CandidatesModule,
     CandidateApplicationsModule,
     RecruiterApplicationsModule,
+    RecruiterReportsModule,
     GoogleCalendarModule,
     HealthModule,
   ],

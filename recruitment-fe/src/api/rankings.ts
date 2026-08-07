@@ -92,6 +92,7 @@ export interface GetJobApplicationsResponse {
 export interface GetJobApplicationsParams {
   sort?: 'score' | 'date'
   scoreBand?: ScoreBand
+  status?: ApplicationStatus
   page?: number
   limit?: number
 }
@@ -119,7 +120,7 @@ export async function getJobApplications(
 export async function updateApplicationStatus(
   jobId: string,
   applicationId: string,
-  status: 'rejected',
+  status: 'hired' | 'rejected',
 ): Promise<void> {
   await apiClient.patch(`/jobs/${jobId}/applications/${applicationId}/status`, { status })
 }

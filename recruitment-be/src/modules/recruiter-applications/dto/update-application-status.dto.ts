@@ -7,7 +7,7 @@ export class UpdateApplicationStatusDto {
   @ApiProperty({
     enum: APPLICATION_STATUSES,
     description:
-      'Trạng thái mới. Chuyển sang "interviewed" (mời phỏng vấn) hoặc "rejected" (từ chối) sẽ tự động gửi email thông báo cho ứng viên. Chỉ chấp nhận nếu hợp lệ theo state machine (VALID_TRANSITIONS).',
+      'Trạng thái mới. Chuyển sang "interviewed" (mời phỏng vấn), "rejected" (từ chối) hoặc "hired" (trúng tuyển) sẽ tự động gửi email thông báo cho ứng viên. Chỉ chấp nhận nếu hợp lệ theo state machine (VALID_TRANSITIONS).',
   })
   @IsIn(APPLICATION_STATUSES)
   status!: ApplicationStatus;

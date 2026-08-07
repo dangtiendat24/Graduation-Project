@@ -75,11 +75,32 @@
   gap: var(--space-4);
 }
 
+/* --- Filters row (score band tabs + status select) --- */
+.rk-filters-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.rk-status-select {
+  font-size: var(--fs-label);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* --- Score band filter --- */
 .rk-band-filter {
   display: flex;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
 
