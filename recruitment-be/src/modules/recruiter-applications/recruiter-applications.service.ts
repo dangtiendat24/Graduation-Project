@@ -25,6 +25,7 @@ import {
 import { InterviewAnswer } from '../applications/interview-answer.entity';
 import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import {
   GetJobApplicationsQueryDto,
   ScoreBand,
@@ -113,6 +114,7 @@ export class RecruiterApplicationsService {
     @InjectRepository(InterviewAnswer)
     private readonly interviewAnswerRepo: Repository<InterviewAnswer>,
     private readonly mailService: MailService,
+    private readonly dashboardCache: DashboardCacheService,
   ) {}
 
   async getJobApplications(
@@ -222,6 +224,8 @@ export class RecruiterApplicationsService {
         changedBy: recruiterId,
       }),
     );
+
+    await this.dashboardCache.invalidate(recruiterId);
 
     if (EMAIL_NOTIFY_STATUSES.includes(toStatus)) {
       await this.sendStatusEmail(application, toStatus);

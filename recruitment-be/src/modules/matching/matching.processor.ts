@@ -24,6 +24,7 @@ import {
 } from '../applications/matching-result.entity';
 import { Job as JobEntity } from '../jobs/job.entity';
 import { InterviewGenerationService } from '../applications/interview-generation.service';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { CvMatchJobData } from './matching.service';
 
 /** Shape thô trả về từ ai-service (Python/Pydantic dùng snake_case, kể cả nested skill_breakdown) */
@@ -57,6 +58,7 @@ export class MatchingProcessor extends WorkerHost {
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
     private readonly interviewGenerationService: InterviewGenerationService,
+    private readonly dashboardCache: DashboardCacheService,
   ) {
     super();
   }
@@ -137,6 +139,8 @@ export class MatchingProcessor extends WorkerHost {
       }),
     );
 
+    await this.dashboardCache.invalidate(application.job.recruiterId);
+
     // Ứng viên qua ngưỡng auto-reject (không bị "matched") → tự động mở phỏng vấn AI ngay,
     // không chờ recruiter thao tác gì. Không để lỗi enqueue (vd Redis tạm down) làm hỏng
     // luồng matching chính.
@@ -152,7 +156,9 @@ export class MatchingProcessor extends WorkerHost {
   }
 
   /** ai-service trả wire format snake_case — chuẩn hoá sang camelCase trước khi lưu/hiển thị cho FE */
-  private toPersistedCriteria(criteria: AiMatchResponse['criteria']): MatchingCriteria {
+  private toPersistedCriteria(
+    criteria: AiMatchResponse['criteria'],
+  ): MatchingCriteria {
     return {
       skills: criteria.skills,
       experience: criteria.experience,

@@ -6,6 +6,7 @@ import { Schedule } from './schedule.entity';
 import { Job } from '../jobs/job.entity';
 import { GoogleCalendarModule } from '../google-calendar/google-calendar.module';
 import { MailModule } from '../mail/mail.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 import { ScheduleService } from './schedule.service';
 import { RecruiterScheduleController } from './recruiter-schedule.controller';
 
@@ -24,6 +25,7 @@ import { RecruiterScheduleController } from './recruiter-schedule.controller';
     ]),
     GoogleCalendarModule,
     MailModule,
+    DashboardModule,
   ],
   controllers: [RecruiterScheduleController],
   providers: [ScheduleService],
