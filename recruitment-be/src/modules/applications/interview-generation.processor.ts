@@ -15,6 +15,7 @@ import {
 } from './interview-session.entity';
 import { InterviewSessionService } from './interview-session.service';
 import { InterviewGenerationJobData } from './interview-generation.service';
+import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
 
 interface AiGenerateQuestionsResponse {
   session_id: string;
@@ -35,6 +36,7 @@ export class InterviewGenerationProcessor extends WorkerHost {
     private readonly sessionService: InterviewSessionService,
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
+    private readonly agentLogger: AgentExecutionLoggerService,
   ) {
     super();
   }
@@ -62,29 +64,38 @@ export class InterviewGenerationProcessor extends WorkerHost {
     );
 
     try {
-      const { data } = await firstValueFrom(
-        this.httpService.post<AiGenerateQuestionsResponse>(
-          `${aiServiceUrl}/api/ai/interview/generate-questions`,
-          {
-            session_id: session.id,
-            application_id: application.id,
-            parsed_data: this.buildParsedData(application),
-            job_requirements: this.buildJobRequirements(application.job),
-          },
-          {
-            headers: {
-              'x-internal-secret': this.config.get<string>(
-                'AI_SERVICE_INTERNAL_SECRET',
-                '',
-              ),
-            },
-          },
-        ),
-      );
+      const data = await this.agentLogger.track(
+        'agent3_interview',
+        application.id,
+        async () => {
+          const { data } = await firstValueFrom(
+            this.httpService.post<AiGenerateQuestionsResponse>(
+              `${aiServiceUrl}/api/ai/interview/generate-questions`,
+              {
+                session_id: session.id,
+                application_id: application.id,
+                parsed_data: this.buildParsedData(application),
+                job_requirements: this.buildJobRequirements(application.job),
+              },
+              {
+                headers: {
+                  'x-internal-secret': this.config.get<string>(
+                    'AI_SERVICE_INTERNAL_SECRET',
+                    '',
+                  ),
+                },
+              },
+            ),
+          );
 
-      if (!data.success) {
-        throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
-      }
+          if (!data.success) {
+            throw new Error(
+              data.error ?? 'AI service trả về lỗi không xác định',
+            );
+          }
+          return data;
+        },
+      );
 
       session.questions = data.questions;
       session.questionsStatus = 'done';

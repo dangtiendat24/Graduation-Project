@@ -8,6 +8,7 @@ import { ApplicationStatusHistory } from '../applications/application-status-his
 import { MatchingResult } from '../applications/matching-result.entity';
 import { InterviewModule } from '../applications/interview.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { AdminModule } from '../admin/admin.module';
 import { MatchingService } from './matching.service';
 import { MatchingProcessor } from './matching.processor';
 
@@ -22,6 +23,7 @@ import { MatchingProcessor } from './matching.processor';
     HttpModule,
     InterviewModule,
     DashboardModule,
+    AdminModule,
   ],
   providers: [MatchingService, MatchingProcessor],
   exports: [MatchingService],

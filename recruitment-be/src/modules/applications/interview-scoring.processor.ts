@@ -10,6 +10,7 @@ import { QUEUE_NAMES } from '@smart-recruitment/shared';
 import { InterviewSession } from './interview-session.entity';
 import { InterviewAnswer } from './interview-answer.entity';
 import { InterviewScoringJobData } from './interview-scoring.service';
+import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
 
 interface AiScoredAnswer {
   question_id: string;
@@ -43,6 +44,7 @@ export class InterviewScoringProcessor extends WorkerHost {
     private readonly answerRepo: Repository<InterviewAnswer>,
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
+    private readonly agentLogger: AgentExecutionLoggerService,
   ) {
     super();
   }
@@ -83,31 +85,40 @@ export class InterviewScoringProcessor extends WorkerHost {
       if (scorable.length > 0) {
         // questions luôn lấy từ session.questions (nguồn chân lý do /generate-questions sinh ra) —
         // không dựng lại từ answers, vì answers.questionText có thể bị client cũ gửi lên tuỳ ý
-        const { data } = await firstValueFrom(
-          this.httpService.post<AiScoreAnswersResponse>(
-            `${aiServiceUrl}/api/ai/interview/score-answers`,
-            {
-              session_id: sessionId,
-              questions: session.questions ?? [],
-              answers: scorable.map((a) => ({
-                question_id: a.questionId,
-                answer_text: a.answerText,
-              })),
-            },
-            {
-              headers: {
-                'x-internal-secret': this.config.get<string>(
-                  'AI_SERVICE_INTERNAL_SECRET',
-                  '',
-                ),
-              },
-            },
-          ),
-        );
+        const data = await this.agentLogger.track(
+          'agent3_interview',
+          session.applicationId,
+          async () => {
+            const { data } = await firstValueFrom(
+              this.httpService.post<AiScoreAnswersResponse>(
+                `${aiServiceUrl}/api/ai/interview/score-answers`,
+                {
+                  session_id: sessionId,
+                  questions: session.questions ?? [],
+                  answers: scorable.map((a) => ({
+                    question_id: a.questionId,
+                    answer_text: a.answerText,
+                  })),
+                },
+                {
+                  headers: {
+                    'x-internal-secret': this.config.get<string>(
+                      'AI_SERVICE_INTERNAL_SECRET',
+                      '',
+                    ),
+                  },
+                },
+              ),
+            );
 
-        if (!data.success) {
-          throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
-        }
+            if (!data.success) {
+              throw new Error(
+                data.error ?? 'AI service trả về lỗi không xác định',
+              );
+            }
+            return data;
+          },
+        );
 
         const scoresByQuestionId = new Map(
           data.scored_answers.map((s) => [s.question_id, s]),

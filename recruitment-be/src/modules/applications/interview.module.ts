@@ -12,6 +12,7 @@ import { InterviewScoringService } from './interview-scoring.service';
 import { InterviewScoringProcessor } from './interview-scoring.processor';
 import { InterviewGenerationService } from './interview-generation.service';
 import { InterviewGenerationProcessor } from './interview-generation.processor';
+import { AdminModule } from '../admin/admin.module';
 
 /**
  * Module riêng cho pipeline phỏng vấn AI (Agent 3) — tách khỏi ApplicationsModule để
@@ -27,6 +28,7 @@ import { InterviewGenerationProcessor } from './interview-generation.processor';
       { name: QUEUE_NAMES.INTERVIEW_SCORING },
     ),
     HttpModule.register({ timeout: 20000, maxRedirects: 3 }),
+    AdminModule,
   ],
   controllers: [InterviewSessionController],
   providers: [
