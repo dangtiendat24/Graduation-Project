@@ -25,6 +25,7 @@ import {
 import { Job as JobEntity } from '../jobs/job.entity';
 import { InterviewGenerationService } from '../applications/interview-generation.service';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
+import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
 import { CvMatchJobData } from './matching.service';
 
 /** Shape thô trả về từ ai-service (Python/Pydantic dùng snake_case, kể cả nested skill_breakdown) */
@@ -59,6 +60,7 @@ export class MatchingProcessor extends WorkerHost {
     private readonly config: ConfigService,
     private readonly interviewGenerationService: InterviewGenerationService,
     private readonly dashboardCache: DashboardCacheService,
+    private readonly agentLogger: AgentExecutionLoggerService,
   ) {
     super();
   }
@@ -81,25 +83,32 @@ export class MatchingProcessor extends WorkerHost {
       'AI_SERVICE_URL',
       'http://localhost:8000',
     );
-    const { data } = await firstValueFrom(
-      this.httpService.post<AiMatchResponse>(
-        `${aiServiceUrl}/api/ai/matching/match`,
-        {
-          application_id: application.id,
-          profile_id: application.id,
-          job_id: application.jobId,
-          cv_text: this.buildCvText(application),
-          job_text: this.buildJobText(application.job),
-          cv_skills: application.parsedSkills ?? [],
-          job_skills: application.job.requiredSkills ?? [],
-          weights: resolveMatchingWeights(application.job.scoringWeights),
-        },
-      ),
-    );
+    const data = await this.agentLogger.track(
+      'agent2_matching',
+      application.id,
+      async () => {
+        const { data } = await firstValueFrom(
+          this.httpService.post<AiMatchResponse>(
+            `${aiServiceUrl}/api/ai/matching/match`,
+            {
+              application_id: application.id,
+              profile_id: application.id,
+              job_id: application.jobId,
+              cv_text: this.buildCvText(application),
+              job_text: this.buildJobText(application.job),
+              cv_skills: application.parsedSkills ?? [],
+              job_skills: application.job.requiredSkills ?? [],
+              weights: resolveMatchingWeights(application.job.scoringWeights),
+            },
+          ),
+        );
 
-    if (!data.success) {
-      throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
-    }
+        if (!data.success) {
+          throw new Error(data.error ?? 'AI service trả về lỗi không xác định');
+        }
+        return data;
+      },
+    );
 
     let result = await this.matchRepo.findOne({
       where: { applicationId: application.id },
