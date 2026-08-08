@@ -13,6 +13,7 @@ import { Job } from '../jobs/job.entity';
 import { Schedule, ScheduleStatus, ProposedSlot } from './schedule.entity';
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 import { MailService } from '../mail/mail.service';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 
 const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
@@ -54,6 +55,7 @@ export class ScheduleService {
     private readonly jobRepo: Repository<Job>,
     private readonly googleCalendarService: GoogleCalendarService,
     private readonly mailService: MailService,
+    private readonly dashboardCache: DashboardCacheService,
   ) {}
 
   /**
@@ -118,6 +120,7 @@ export class ScheduleService {
       await this.transitionApplication(
         application,
         'schedule_sent',
+        recruiterId,
         recruiterId,
       );
     }
@@ -189,7 +192,12 @@ export class ScheduleService {
     schedule.meetLink = meetLink;
     const saved = await this.scheduleRepo.save(schedule);
 
-    await this.transitionApplication(application, 'scheduled', candidateId);
+    await this.transitionApplication(
+      application,
+      'scheduled',
+      candidateId,
+      application.job.recruiterId,
+    );
 
     await this.mailService.sendScheduleConfirmedEmail(
       application.candidate.email,
@@ -305,6 +313,7 @@ export class ScheduleService {
     application: Application,
     toStatus: ApplicationStatus,
     changedBy: string,
+    recruiterId: string,
   ): Promise<void> {
     const fromStatus = application.status;
     application.status = toStatus;
@@ -317,6 +326,7 @@ export class ScheduleService {
         changedBy,
       }),
     );
+    await this.dashboardCache.invalidate(recruiterId);
   }
 
   private async findOwnedJob(recruiterId: string, jobId: string): Promise<Job> {

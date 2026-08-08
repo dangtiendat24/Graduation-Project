@@ -8,6 +8,7 @@ import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Job } from '../jobs/job.entity';
 import { StorageModule } from '../storage/storage.module';
 import { MatchingModule } from '../matching/matching.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 import { ApplicationsService } from './applications.service';
 import { ApplicationsController } from './applications.controller';
 import { ApplicationCvParserService } from './application-cv-parser.service';
@@ -20,6 +21,7 @@ import { ApplicationCvParserProcessor } from './application-cv-parser.processor'
     HttpModule.register({ timeout: 20000, maxRedirects: 3 }),
     StorageModule,
     MatchingModule,
+    DashboardModule,
   ],
   controllers: [ApplicationsController],
   providers: [

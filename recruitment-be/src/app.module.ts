@@ -20,6 +20,7 @@ import { RecruiterApplicationsModule } from './modules/recruiter-applications/re
 import { RecruiterReportsModule } from './modules/recruiter-reports/recruiter-reports.module';
 import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthModule } from './health/health.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { BullMQConfigService } from './config/bullmq.config';
@@ -62,6 +63,7 @@ import { BullMQConfigService } from './config/bullmq.config';
     RecruiterReportsModule,
     GoogleCalendarModule,
     ReportsModule,
+    DashboardModule,
     HealthModule,
   ],
   controllers: [AppController],

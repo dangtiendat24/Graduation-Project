@@ -13,6 +13,7 @@ import { Job } from '../jobs/job.entity';
 import { StorageService } from '../storage/storage.service';
 import { ApplicationCvParserService } from './application-cv-parser.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 
 const NON_REAPPLICABLE_STATUSES: ApplicationStatus[] = ['hired', 'rejected'];
 
@@ -27,6 +28,7 @@ export class ApplicationsService {
     private readonly statusHistoryRepo: Repository<ApplicationStatusHistory>,
     private readonly storage: StorageService,
     private readonly cvParser: ApplicationCvParserService,
+    private readonly dashboardCache: DashboardCacheService,
   ) {}
 
   async apply(
@@ -68,6 +70,7 @@ export class ApplicationsService {
       }),
     );
 
+    await this.dashboardCache.invalidate(job.recruiterId);
     await this.cvParser.enqueueParse(saved.id);
 
     return saved;
