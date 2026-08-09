@@ -118,6 +118,31 @@ export class ReportsService {
     return { url };
   }
 
+  /**
+   * VD: "Backend Developer_Nguyen Van A.pdf" — đây là segment cuối của storage key (không phải
+   * Content-Disposition: attachment — nếu dùng Supabase `download` option thì file sẽ bị ép tải
+   * ngay thay vì mở xem trước trên tab mới). Supabase Storage validate key rất chặt, chỉ chấp nhận
+   * ASCII an toàn (từ chối cả dấu ngoặc lẫn ký tự Unicode có dấu), nên phải bỏ dấu tiếng Việt rồi
+   * mới lọc ký tự — nếu không "Đạt Đặng" bị strip trắng thay vì còn lại "Dat Dang".
+   */
+  private buildDownloadFilename(
+    jobTitle: string,
+    candidateName: string,
+  ): string {
+    const removeDiacritics = (s: string) =>
+      s
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D');
+    const sanitize = (s: string) =>
+      removeDiacritics(s)
+        .replace(/[^A-Za-z0-9 _-]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return `${sanitize(jobTitle)}_${sanitize(candidateName)}.pdf`;
+  }
+
   private async renderAndUpload(params: {
     application: Application;
     job: Job;
@@ -153,7 +178,11 @@ export class ReportsService {
     });
     const pdfBuffer = await this.renderPdf(html);
 
-    const storageKey = `reports/${application.id}.pdf`;
+    const filename = this.buildDownloadFilename(
+      job.title,
+      application.candidate.fullName,
+    );
+    const storageKey = `reports/${application.id}/${filename}`;
     await this.storageService.upload(storageKey, pdfBuffer, 'application/pdf');
     return storageKey;
   }

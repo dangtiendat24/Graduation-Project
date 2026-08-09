@@ -22,6 +22,18 @@ export interface AgentStatsItem {
   recentErrors: RecentAgentError[];
 }
 
+export interface AgentActivityItem {
+  id: string;
+  agentName: AgentName;
+  startedAt: Date;
+  success: boolean;
+  errorMessage: string | null;
+  candidateName: string;
+  jobTitle: string;
+}
+
+const RECENT_ACTIVITY_LIMIT = 10;
+
 @Injectable()
 export class AdminAgentStatsService {
   constructor(
@@ -46,6 +58,47 @@ export class AdminAgentStatsService {
         recentErrors: recentErrorsByAgent.get(agentName) ?? [],
       };
     });
+  }
+
+  /**
+   * Feed hoạt động Agent gần nhất, chỉ gồm log đã gắn với 1 application thuộc job của
+   * đúng recruiter đang xem (INNER JOIN, không show log applicationId=null của recruiter khác).
+   */
+  async getRecentActivity(
+    recruiterId: string,
+    limit = RECENT_ACTIVITY_LIMIT,
+  ): Promise<AgentActivityItem[]> {
+    const rows = await this.dataSource.query<
+      {
+        id: string;
+        agentName: AgentName;
+        startedAt: Date;
+        success: boolean;
+        errorMessage: string | null;
+        candidateName: string;
+        jobTitle: string;
+      }[]
+    >(
+      `
+      SELECT
+        log.id AS "id",
+        log.agent_name AS "agentName",
+        log.started_at AS "startedAt",
+        log.success AS "success",
+        log.error_message AS "errorMessage",
+        u.full_name AS "candidateName",
+        j.title AS "jobTitle"
+      FROM agent_execution_logs log
+      INNER JOIN applications app ON app.id = log.application_id
+      INNER JOIN jobs j ON j.id = app.job_id
+      INNER JOIN users u ON u.id = app.candidate_id
+      WHERE j.recruiter_id = $1
+      ORDER BY log.started_at DESC
+      LIMIT $2
+      `,
+      [recruiterId, limit],
+    );
+    return rows;
   }
 
   private async getAggregates(): Promise<

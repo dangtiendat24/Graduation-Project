@@ -6,9 +6,11 @@ import { QUEUE_NAMES } from '@smart-recruitment/shared';
 import { Application } from '../applications/application.entity';
 import { ApplicationStatusHistory } from '../applications/application-status-history.entity';
 import { MatchingResult } from '../applications/matching-result.entity';
+import { User } from '../users/user.entity';
 import { InterviewModule } from '../applications/interview.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { AdminModule } from '../admin/admin.module';
+import { MailModule } from '../mail/mail.module';
 import { MatchingService } from './matching.service';
 import { MatchingProcessor } from './matching.processor';
 
@@ -18,12 +20,14 @@ import { MatchingProcessor } from './matching.processor';
       Application,
       ApplicationStatusHistory,
       MatchingResult,
+      User,
     ]),
     BullModule.registerQueue({ name: QUEUE_NAMES.CV_MATCHING }),
     HttpModule,
     InterviewModule,
     DashboardModule,
     AdminModule,
+    MailModule,
   ],
   providers: [MatchingService, MatchingProcessor],
   exports: [MatchingService],

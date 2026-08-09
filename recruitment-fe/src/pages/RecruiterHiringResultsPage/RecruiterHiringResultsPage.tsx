@@ -5,6 +5,7 @@ import { isAxiosError } from 'axios'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { getRecruiterCandidates } from '../../api/candidates'
 import { getScoreBand } from '../../api/rankings'
+import { getMyJobs } from '../../api/jobs'
 import './RecruiterHiringResultsPage.css'
 
 const RESULT_LIMIT = 100
@@ -30,15 +31,34 @@ type ResultTab = 'all' | 'hired' | 'rejected'
 export default function RecruiterHiringResultsPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<ResultTab>('all')
+  const [jobId, setJobId] = useState('')
+
+  const jobsQuery = useQuery({
+    queryKey: ['my-jobs'],
+    queryFn: getMyJobs,
+  })
+  const jobs = jobsQuery.data ?? []
 
   const hiredQuery = useQuery({
-    queryKey: ['hiring-results', 'hired'],
-    queryFn: () => getRecruiterCandidates({ status: 'hired', limit: RESULT_LIMIT, sort: 'appliedAt' }),
+    queryKey: ['hiring-results', 'hired', jobId],
+    queryFn: () =>
+      getRecruiterCandidates({
+        status: 'hired',
+        jobId: jobId || undefined,
+        limit: RESULT_LIMIT,
+        sort: 'appliedAt',
+      }),
     retry: shouldRetry,
   })
   const rejectedQuery = useQuery({
-    queryKey: ['hiring-results', 'rejected'],
-    queryFn: () => getRecruiterCandidates({ status: 'rejected', limit: RESULT_LIMIT, sort: 'appliedAt' }),
+    queryKey: ['hiring-results', 'rejected', jobId],
+    queryFn: () =>
+      getRecruiterCandidates({
+        status: 'rejected',
+        jobId: jobId || undefined,
+        limit: RESULT_LIMIT,
+        sort: 'appliedAt',
+      }),
     retry: shouldRetry,
   })
 
@@ -62,6 +82,20 @@ export default function RecruiterHiringResultsPage() {
           <h1>Kết quả tuyển dụng</h1>
           <p>Tổng hợp ứng viên đã tuyển và từ chối trên tất cả tin tuyển dụng</p>
         </div>
+
+        {jobs.length > 0 && (
+          <div className="hr-filter-select">
+            <i className="ti ti-briefcase" />
+            <select value={jobId} onChange={(e) => setJobId(e.target.value)}>
+              <option value="">Tất cả vị trí</option>
+              {jobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.title}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {isLoading ? (

@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import LoginToast from '../../components/LoginToast/LoginToast'
+import { getRecruiterSchedules } from '../../api/schedule'
 import './DashboardLayout.css'
 
 interface NavItemProps {
@@ -67,6 +69,14 @@ export default function DashboardLayout({ children, actions }: Props) {
 
   const prefix = user?.role === 'recruiter' ? '/recruiter' : '/candidate'
 
+  // Số ứng viên đã mời phỏng vấn nhưng recruiter chưa gửi khung giờ — cần recruiter xử lý.
+  const { data: schedules } = useQuery({
+    queryKey: ['recruiter-schedules'],
+    queryFn: getRecruiterSchedules,
+    enabled: user?.role === 'recruiter',
+  })
+  const pendingScheduleCount = (schedules ?? []).filter((s) => !s.schedule).length
+
   function handleLogout() {
     clearAuth()
     window.location.replace('/')
@@ -89,11 +99,15 @@ export default function DashboardLayout({ children, actions }: Props) {
         <div className="dl-nav-label">Tuyển dụng</div>
         <NavItem to={`${prefix}/jobs`} icon="ti-briefcase" label="Tin tuyển dụng" />
         <NavItem to={`${prefix}/candidates`} icon="ti-users" label="Ứng viên" />
-        <NavItem to={`${prefix}/interviews`} icon="ti-calendar" label="Lịch phỏng vấn" badge="3" />
+        <NavItem
+          to={`${prefix}/interviews`}
+          icon="ti-calendar"
+          label="Lịch phỏng vấn"
+          badge={pendingScheduleCount > 0 ? String(pendingScheduleCount) : undefined}
+        />
         <NavItem to={`${prefix}/hiring-results`} icon="ti-award" label="Kết quả tuyển dụng" />
 
         <div className="dl-nav-label">Hệ thống</div>
-        <NavItem to={`${prefix}/agents`} icon="ti-robot" label="AI Agents" />
         <NavItem to={`${prefix}/settings`} icon="ti-settings" label="Cài đặt" />
 
         {user?.role === 'recruiter' && (
@@ -105,7 +119,13 @@ export default function DashboardLayout({ children, actions }: Props) {
 
         <div className="dl-sidebar-footer">
           <div className="dl-avatar">
-            {user ? getInitials(user.fullName) : 'U'}
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.fullName} className="dl-avatar-img" />
+            ) : user ? (
+              getInitials(user.fullName)
+            ) : (
+              'U'
+            )}
           </div>
           <div className="dl-user-info">
             <div className="dl-user-name">{user?.fullName ?? 'Người dùng'}</div>

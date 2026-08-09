@@ -1,0 +1,311 @@
+.rst-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.rst-page-head {
+  padding-top: var(--space-6);
+}
+
+.rst-page-head h1 {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.rst-page-head p {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.rst-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-10);
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+}
+
+.rst-spin { animation: rst-spin 1s linear infinite; }
+@keyframes rst-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Card ── */
+.rst-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-surface);
+  overflow: hidden;
+}
+
+.rst-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.125rem 1.5rem;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.rst-card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.rst-icon-indigo { background: var(--color-indigo-light); color: var(--color-indigo); }
+.rst-icon-teal   { background: #E6FAF8; color: var(--color-teal); }
+.rst-icon-amber  { background: #FEF3C7; color: var(--color-amber); }
+
+.rst-card-title {
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+.rst-card-sub {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.rst-card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Form ── */
+.rst-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.rst-form-row--3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.rst-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rst-label {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+}
+
+/* ── Avatar upload ── */
+.rst-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.rst-avatar-drop {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 2px dashed var(--border-default);
+  background: var(--bg-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: border-color .15s, background .15s;
+}
+.rst-avatar-drop:hover,
+.rst-avatar-drop--over {
+  border-color: var(--color-indigo);
+  background: var(--color-indigo-light);
+}
+
+.rst-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rst-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-teal) 0%, var(--color-indigo) 100%);
+  color: #fff;
+  font-size: 28px;
+  font-weight: var(--fw-bold);
+}
+
+.rst-avatar-cam {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-indigo);
+  border: 2px solid var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #fff;
+  pointer-events: none;
+}
+
+.rst-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rst-avatar-hint {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+}
+.rst-avatar-hint--muted {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.rst-btn-remove {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 5px 12px;
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-family: var(--font-family);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.rst-btn-remove:hover:not(:disabled) { border-color: var(--color-danger); color: var(--color-danger); }
+.rst-btn-remove:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.rst-input {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: var(--fs-body);
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.rst-input:focus {
+  border-color: var(--color-indigo);
+  box-shadow: var(--shadow-focus);
+}
+.rst-input:disabled {
+  color: var(--text-muted);
+  background: var(--bg-muted);
+  cursor: not-allowed;
+}
+
+.rst-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.rst-hint-error {
+  font-size: var(--fs-xs);
+  color: var(--color-danger);
+}
+
+.rst-check-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-body);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+/* ── Notification toggle rows ── */
+.rst-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  cursor: pointer;
+}
+
+.rst-toggle-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--color-indigo);
+}
+
+.rst-toggle-title {
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+.rst-toggle-sub {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Actions ── */
+.rst-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border-default);
+  padding-top: 1.125rem;
+}
+
+.rst-save-hint {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+}
+
+.rst-btn-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--color-indigo);
+  color: #fff;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  font-family: var(--font-family);
+  cursor: pointer;
+}
+.rst-btn-save:hover:not(:disabled) { background: var(--color-indigo-hover); }
+.rst-btn-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .rst-form-row,
+  .rst-form-row--3 { grid-template-columns: 1fr; }
+}

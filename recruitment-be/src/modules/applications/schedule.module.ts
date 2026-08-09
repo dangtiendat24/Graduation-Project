@@ -4,6 +4,7 @@ import { Application } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Schedule } from './schedule.entity';
 import { Job } from '../jobs/job.entity';
+import { User } from '../users/user.entity';
 import { GoogleCalendarModule } from '../google-calendar/google-calendar.module';
 import { MailModule } from '../mail/mail.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
@@ -22,6 +23,7 @@ import { RecruiterScheduleController } from './recruiter-schedule.controller';
       ApplicationStatusHistory,
       Schedule,
       Job,
+      User,
     ]),
     GoogleCalendarModule,
     MailModule,

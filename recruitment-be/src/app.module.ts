@@ -22,6 +22,7 @@ import { GoogleCalendarModule } from './modules/google-calendar/google-calendar.
 import { ReportsModule } from './modules/reports/reports.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { HealthModule } from './health/health.module';
 import { getTypeOrmConfig } from './config/typeorm.config';
 import { BullMQConfigService } from './config/bullmq.config';
@@ -66,6 +67,7 @@ import { BullMQConfigService } from './config/bullmq.config';
     ReportsModule,
     DashboardModule,
     AdminModule,
+    SettingsModule,
     HealthModule,
   ],
   controllers: [AppController],
