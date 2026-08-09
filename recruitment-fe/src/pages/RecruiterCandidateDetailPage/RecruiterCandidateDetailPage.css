@@ -132,6 +132,47 @@
   cursor: not-allowed;
 }
 
+.rcd-btn-outline {
+  background: var(--bg-surface);
+  color: var(--color-indigo);
+  border: 1px solid var(--color-indigo);
+}
+
+.rcd-btn-outline:hover:not(:disabled) { background: var(--bg-muted); }
+.rcd-btn-outline:disabled { background: var(--bg-muted); color: var(--text-muted); }
+
+.rcd-toast {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  z-index: 200;
+  animation: rcd-toast-in 0.2s ease;
+}
+
+@keyframes rcd-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rcd-toast--success {
+  color: var(--color-teal);
+  border: 1px solid var(--status-matched-bg);
+}
+
+.rcd-toast--error {
+  color: var(--color-danger);
+  border: 1px solid var(--status-rejected-bg);
+}
+
 .rcd-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

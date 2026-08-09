@@ -1,3 +1,36 @@
+/* ===================== EMPTY / LOADING ===================== */
+.rd-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-10) 0;
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+}
+
+.rd-empty--inline {
+  padding: var(--space-5) 0;
+  justify-content: flex-start;
+}
+
+.rd-spin { animation: rd-spin 1s linear infinite; }
+@keyframes rd-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.rd-score-empty {
+  color: var(--text-muted);
+}
+
+.rd-row-clickable {
+  cursor: pointer;
+}
+.rd-row-clickable:hover {
+  background: var(--bg-subtle);
+}
+
 /* ===================== PAGE HEAD ===================== */
 .rd-page-head {
   display: flex;

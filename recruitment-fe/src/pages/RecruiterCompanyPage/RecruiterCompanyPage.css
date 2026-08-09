@@ -63,6 +63,20 @@
   gap: 8px;
 }
 
+.rcp-step--clickable {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: 2px 6px;
+  margin: -2px -6px;
+  transition: background .15s;
+}
+.rcp-step--clickable:hover {
+  background: var(--bg-subtle);
+}
+.rcp-step--clickable:hover .rcp-step-label {
+  color: var(--color-indigo);
+}
+
 .rcp-step-dot {
   width: 26px; height: 26px;
   border-radius: var(--radius-full);
@@ -179,6 +193,11 @@
 
 .rcp-required { color: var(--color-danger); }
 
+.rcp-hint-error {
+  font-size: var(--fs-xs);
+  color: var(--color-danger);
+}
+
 .rcp-input,
 .rcp-select,
 .rcp-textarea {
@@ -214,19 +233,38 @@
 
 /* ── Cover upload ── */
 .rcp-cover-upload {
+  position: relative;
   width: 100%; height: 120px;
   background: linear-gradient(135deg, var(--color-indigo-light), #E0E7FF);
+  background-size: cover;
+  background-position: center;
   border: 2px dashed var(--color-indigo);
   border-radius: var(--radius-lg);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 6px; cursor: pointer;
-  transition: background .15s;
+  transition: background .15s, border-color .15s;
+  overflow: hidden;
 }
-.rcp-cover-upload:hover { background: #DDE4FF; }
+.rcp-cover-upload:hover { background-color: #DDE4FF; }
 .rcp-cover-upload > i  { font-size: 30px; color: var(--color-indigo); }
 .rcp-cover-title { font-size: var(--fs-body); color: var(--color-indigo); font-weight: var(--fw-bold); }
 .rcp-cover-hint  { font-size: var(--fs-label); color: var(--text-muted); }
+
+.rcp-upload--over { border-color: var(--color-teal); }
+.rcp-upload--pending { cursor: wait; }
+.rcp-cover-upload .rcp-spin,
+.rcp-logo-preview .rcp-spin { font-size: 26px; color: var(--color-indigo); }
+
+.rcp-cover-overlay {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  border-radius: var(--radius-full);
+}
 
 /* ── Logo upload ── */
 .rcp-logo-area {
@@ -243,11 +281,18 @@
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 4px; cursor: pointer; flex-shrink: 0;
-  transition: background .15s;
+  overflow: hidden;
+  transition: background .15s, border-color .15s;
 }
 .rcp-logo-preview:hover { background: #DDE4FF; }
 .rcp-logo-preview > i   { font-size: 26px; color: var(--color-indigo); }
 .rcp-logo-preview > span { font-size: var(--fs-xs); color: var(--color-indigo); font-weight: var(--fw-bold); }
+
+.rcp-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .rcp-logo-meta { display: flex; flex-direction: column; gap: 8px; }
 .rcp-logo-title { font-size: var(--fs-body); font-weight: var(--fw-bold); color: var(--text-primary); }
@@ -274,6 +319,12 @@
   transition: border-color .15s, color .15s;
 }
 .rcp-btn-remove:hover { border-color: var(--color-danger); color: var(--color-danger); }
+.rcp-btn-remove:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.rcp-btn-remove--cover {
+  margin-top: 8px;
+  align-self: flex-start;
+}
 
 /* ── Tag input ── */
 .rcp-tag-wrap {
@@ -417,6 +468,12 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; font-weight: var(--fw-bold); color: var(--color-indigo);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+.rcp-mini-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .rcp-mini-body { padding: 28px 16px 14px; }
@@ -505,6 +562,8 @@
   width: 100%; height: 220px;
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, #4338CA 0%, #7C3AED 60%, #0D9488 100%);
+  background-size: cover;
+  background-position: center;
   position: relative; overflow: hidden; margin-bottom: 1.25rem;
 }
 .rcp-pv-cover-overlay {
@@ -537,6 +596,12 @@
   display: flex; align-items: center; justify-content: center;
   font-size: 36px; font-weight: var(--fw-bold); color: var(--color-indigo);
   border: 2px solid var(--border-default);
+  overflow: hidden;
+}
+.rcp-pv-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .rcp-pv-head-info { flex: 1; }
 .rcp-pv-name    { font-size: 24px; font-weight: var(--fw-bold); color: var(--text-primary); margin-bottom: 4px; }

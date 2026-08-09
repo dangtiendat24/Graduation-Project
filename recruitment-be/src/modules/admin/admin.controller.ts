@@ -9,6 +9,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   AdminAgentStatsService,
+  AgentActivityItem,
   AgentStatsItem,
 } from './admin-agent-stats.service';
 
@@ -38,6 +39,18 @@ export class AdminController {
   getAgentStats(@Request() req: { user: JwtUser }): Promise<AgentStatsItem[]> {
     this.assertRecruiter(req.user);
     return this.agentStatsService.getStats();
+  }
+
+  @ApiOperation({
+    summary:
+      'Feed hoạt động Agent gần nhất cho các ứng viên thuộc tin tuyển dụng của recruiter đang đăng nhập',
+  })
+  @Get('agent-activity')
+  getAgentActivity(
+    @Request() req: { user: JwtUser },
+  ): Promise<AgentActivityItem[]> {
+    this.assertRecruiter(req.user);
+    return this.agentStatsService.getRecentActivity(req.user.id);
   }
 
   private assertRecruiter(user: JwtUser): void {

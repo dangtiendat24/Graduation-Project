@@ -23,9 +23,12 @@ import {
   MatchRecommendation,
 } from '../applications/matching-result.entity';
 import { Job as JobEntity } from '../jobs/job.entity';
+import { User } from '../users/user.entity';
 import { InterviewGenerationService } from '../applications/interview-generation.service';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
+import { MailService } from '../mail/mail.service';
+import { shouldNotify } from '../settings/notification-preferences';
 import { CvMatchJobData } from './matching.service';
 
 /** Shape thô trả về từ ai-service (Python/Pydantic dùng snake_case, kể cả nested skill_breakdown) */
@@ -56,11 +59,14 @@ export class MatchingProcessor extends WorkerHost {
     private readonly matchRepo: Repository<MatchingResult>,
     @InjectRepository(ApplicationStatusHistory)
     private readonly historyRepo: Repository<ApplicationStatusHistory>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
     private readonly interviewGenerationService: InterviewGenerationService,
     private readonly dashboardCache: DashboardCacheService,
     private readonly agentLogger: AgentExecutionLoggerService,
+    private readonly mailService: MailService,
   ) {
     super();
   }
@@ -68,7 +74,7 @@ export class MatchingProcessor extends WorkerHost {
   async process(job: BullJob<CvMatchJobData>): Promise<void> {
     const application = await this.appRepo.findOne({
       where: { id: job.data.applicationId },
-      relations: ['job'],
+      relations: ['job', 'candidate'],
     });
     if (!application) return;
 
@@ -78,6 +84,15 @@ export class MatchingProcessor extends WorkerHost {
       );
       return;
     }
+
+    // Job không tự set scoringWeights riêng → dùng mặc định của recruiter (nếu có) → mới tới MATCHING_WEIGHTS toàn cục
+    const recruiter = await this.userRepo.findOne({
+      where: { id: application.job.recruiterId },
+    });
+    const weightsOverride =
+      application.job.scoringWeights ??
+      recruiter?.defaultScoringWeights ??
+      undefined;
 
     const aiServiceUrl = this.config.get<string>(
       'AI_SERVICE_URL',
@@ -98,7 +113,7 @@ export class MatchingProcessor extends WorkerHost {
               job_text: this.buildJobText(application.job),
               cv_skills: application.parsedSkills ?? [],
               job_skills: application.job.requiredSkills ?? [],
-              weights: resolveMatchingWeights(application.job.scoringWeights),
+              weights: resolveMatchingWeights(weightsOverride),
             },
           ),
         );
@@ -121,6 +136,12 @@ export class MatchingProcessor extends WorkerHost {
     result.criteria = this.toPersistedCriteria(data.criteria);
     result.explanation = data.explanation;
     await this.matchRepo.save(result);
+
+    await this.notifyRecruiterMatchingComplete(
+      recruiter,
+      application,
+      data.overall_score,
+    );
 
     await this.transitionApplication(application, data.overall_score);
   }
@@ -161,6 +182,33 @@ export class MatchingProcessor extends WorkerHost {
           `Enqueue sinh câu hỏi phỏng vấn thất bại cho application ${application.id}: ${(err as Error).message}`,
         );
       }
+    }
+  }
+
+  /** Không để lỗi gửi mail làm hỏng luồng matching chính — chỉ log lại nếu thất bại */
+  private async notifyRecruiterMatchingComplete(
+    recruiter: User | null,
+    application: Application,
+    overallScore: number,
+  ): Promise<void> {
+    try {
+      if (
+        !recruiter ||
+        !shouldNotify(recruiter.notificationPreferences, 'matchingComplete')
+      ) {
+        return;
+      }
+      await this.mailService.sendMatchingCompleteEmail(
+        recruiter.email,
+        recruiter.fullName,
+        application.candidate.fullName,
+        application.job.title,
+        overallScore,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Gửi email thông báo chấm điểm xong thất bại: ${(err as Error).message}`,
+      );
     }
   }
 

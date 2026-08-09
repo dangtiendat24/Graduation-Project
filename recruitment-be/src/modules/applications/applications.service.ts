@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,15 +11,20 @@ import 'multer';
 import { Application, ApplicationStatus } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Job } from '../jobs/job.entity';
+import { User } from '../users/user.entity';
 import { StorageService } from '../storage/storage.service';
+import { MailService } from '../mail/mail.service';
 import { ApplicationCvParserService } from './application-cv-parser.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
+import { shouldNotify } from '../settings/notification-preferences';
 
 const NON_REAPPLICABLE_STATUSES: ApplicationStatus[] = ['hired', 'rejected'];
 
 @Injectable()
 export class ApplicationsService {
+  private readonly logger = new Logger(ApplicationsService.name);
+
   constructor(
     @InjectRepository(Application)
     private readonly repo: Repository<Application>,
@@ -26,7 +32,10 @@ export class ApplicationsService {
     private readonly jobRepo: Repository<Job>,
     @InjectRepository(ApplicationStatusHistory)
     private readonly statusHistoryRepo: Repository<ApplicationStatusHistory>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly storage: StorageService,
+    private readonly mailService: MailService,
     private readonly cvParser: ApplicationCvParserService,
     private readonly dashboardCache: DashboardCacheService,
   ) {}
@@ -72,8 +81,45 @@ export class ApplicationsService {
 
     await this.dashboardCache.invalidate(job.recruiterId);
     await this.cvParser.enqueueParse(saved.id);
+    await this.notifyRecruiterNewApplication(
+      job.recruiterId,
+      candidateId,
+      job.title,
+    );
 
     return saved;
+  }
+
+  /** Không để lỗi gửi mail làm hỏng luồng nộp CV chính — chỉ log lại nếu thất bại */
+  private async notifyRecruiterNewApplication(
+    recruiterId: string,
+    candidateId: string,
+    jobTitle: string,
+  ): Promise<void> {
+    try {
+      const recruiter = await this.userRepo.findOne({
+        where: { id: recruiterId },
+      });
+      if (
+        !recruiter ||
+        !shouldNotify(recruiter.notificationPreferences, 'newApplication')
+      ) {
+        return;
+      }
+      const candidate = await this.userRepo.findOne({
+        where: { id: candidateId },
+      });
+      await this.mailService.sendNewApplicationEmail(
+        recruiter.email,
+        recruiter.fullName,
+        candidate?.fullName ?? 'Một ứng viên',
+        jobTitle,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Gửi email thông báo ứng viên mới thất bại: ${(err as Error).message}`,
+      );
+    }
   }
 
   async getStatusForJob(

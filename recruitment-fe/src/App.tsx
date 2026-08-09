@@ -12,6 +12,7 @@ import RecruiterDashboardPage from './pages/RecruiterDashboardPage/RecruiterDash
 import RecruiterReportsPage from './pages/RecruiterReportsPage/RecruiterReportsPage'
 import RecruiterHiringResultsPage from './pages/RecruiterHiringResultsPage/RecruiterHiringResultsPage'
 import RecruiterCompanyPage from './pages/RecruiterCompanyPage/RecruiterCompanyPage'
+import RecruiterSettingsPage from './pages/RecruiterSettingsPage/RecruiterSettingsPage'
 import RecruiterJobsPage from './pages/RecruiterJobsPage/RecruiterJobsPage'
 import RecruiterJobCreatePage from './pages/RecruiterJobCreatePage/RecruiterJobCreatePage'
 import RecruiterJobEditPage from './pages/RecruiterJobEditPage/RecruiterJobEditPage'
@@ -97,6 +98,15 @@ function App() {
           element={
             <ProtectedRoute role="recruiter">
               <RecruiterCompanyPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruiter/settings"
+          element={
+            <ProtectedRoute role="recruiter">
+              <RecruiterSettingsPage />
             </ProtectedRoute>
           }
         />

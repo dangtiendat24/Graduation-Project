@@ -1,9 +1,17 @@
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { getRecruiterCandidates, type ApplicationStatus } from '../../api/candidates'
+import { getCandidateReportPdfUrl } from '../../api/candidateReport'
 import { splitSummaryLines } from '../../utils/summary'
 import './RecruiterCandidateDetailPage.css'
+
+interface Toast {
+  type: 'success' | 'error'
+  message: string
+}
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   pending: 'Vừa nộp đơn',
@@ -34,6 +42,13 @@ function getInitials(name: string): string {
 export default function RecruiterCandidateDetailPage() {
   const { applicationId } = useParams<{ applicationId: string }>()
   const navigate = useNavigate()
+  const [toast, setToast] = useState<Toast | null>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 3500)
+    return () => clearTimeout(timer)
+  }, [toast])
 
   // BE chưa có GET theo applicationId — lấy từ danh sách (giới hạn 100).
   const { data, isLoading, isError } = useQuery({
@@ -43,6 +58,19 @@ export default function RecruiterCandidateDetailPage() {
   })
 
   const item = data?.data.find((c) => c.applicationId === applicationId) ?? null
+
+  const exportPdfMutation = useMutation({
+    mutationFn: () => getCandidateReportPdfUrl(applicationId!),
+    onSuccess: ({ url }) => {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    },
+    onError: (error) => {
+      const message = isAxiosError(error)
+        ? (error.response?.data as { message?: string })?.message
+        : undefined
+      setToast({ type: 'error', message: message ?? 'Không thể xuất báo cáo PDF. Vui lòng thử lại.' })
+    },
+  })
 
   return (
     <DashboardLayout>
@@ -105,6 +133,25 @@ export default function RecruiterCandidateDetailPage() {
                 ) : (
                   <button type="button" className="rcd-btn-primary" disabled>
                     <i className="ti ti-file-off" /> Chưa có file CV
+                  </button>
+                )}
+                {item.matching ? (
+                  <button
+                    type="button"
+                    className="rcd-btn-primary rcd-btn-outline"
+                    onClick={() => exportPdfMutation.mutate()}
+                    disabled={exportPdfMutation.isPending}
+                  >
+                    {exportPdfMutation.isPending ? (
+                      <i className="ti ti-loader-2 rcd-spin" />
+                    ) : (
+                      <i className="ti ti-file-type-pdf" />
+                    )}
+                    Xuất báo cáo PDF
+                  </button>
+                ) : (
+                  <button type="button" className="rcd-btn-primary rcd-btn-outline" disabled>
+                    <i className="ti ti-file-off" /> Chưa có điểm phù hợp
                   </button>
                 )}
               </div>
@@ -173,6 +220,13 @@ export default function RecruiterCandidateDetailPage() {
               </section>
             </div>
           </>
+        )}
+
+        {toast && (
+          <div className={`rcd-toast rcd-toast--${toast.type}`} role="status" aria-live="polite">
+            <i className={`ti ${toast.type === 'success' ? 'ti-circle-check' : 'ti-alert-circle'}`} />
+            <span>{toast.message}</span>
+          </div>
         )}
       </div>
     </DashboardLayout>
