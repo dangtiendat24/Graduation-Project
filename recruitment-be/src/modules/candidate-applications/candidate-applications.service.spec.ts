@@ -29,6 +29,7 @@ const FULL_ROW = {
   jobLocation: 'Hà Nội',
   jobWorkModel: 'hybrid',
   jobSalaryRange: '20-30tr',
+  jobRequiredSkills: ['NestJS', 'PostgreSQL'],
   companyName: 'Acme Corp',
   companyLogoUrl: 'https://cdn.example.com/logo.png',
   overallScore: '87.50',
@@ -37,6 +38,7 @@ const FULL_ROW = {
   interviewOverallScore: '75.00',
   scheduleStatus: 'confirmed',
   scheduleConfirmedStartTime: new Date('2026-01-05T09:00:00.000Z'),
+  scheduleConfirmedEndTime: new Date('2026-01-05T10:00:00.000Z'),
   scheduleMeetLink: 'https://meet.example.com/abc',
 }
 
@@ -52,6 +54,7 @@ const EMPTY_JOIN_ROW = {
   jobLocation: null,
   jobWorkModel: null,
   jobSalaryRange: null,
+  jobRequiredSkills: null,
   companyName: null,
   companyLogoUrl: null,
   overallScore: null,
@@ -123,6 +126,7 @@ describe('CandidateApplicationsService', () => {
       expect(item.schedule).toEqual({
         status: 'confirmed',
         confirmedStartTime: '2026-01-05T09:00:00.000Z',
+        confirmedEndTime: '2026-01-05T10:00:00.000Z',
         meetLink: 'https://meet.example.com/abc',
       })
       expect(item.autoRejected).toBeUndefined()

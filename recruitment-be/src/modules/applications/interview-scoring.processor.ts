@@ -6,11 +6,14 @@ import { HttpService } from '@nestjs/axios';
 import { Repository } from 'typeorm';
 import { Job as BullJob } from 'bullmq';
 import { firstValueFrom } from 'rxjs';
-import { QUEUE_NAMES } from '@smart-recruitment/shared';
+import { QUEUE_NAMES, VALID_TRANSITIONS } from '@smart-recruitment/shared';
 import { InterviewSession } from './interview-session.entity';
 import { InterviewAnswer } from './interview-answer.entity';
 import { InterviewScoringJobData } from './interview-scoring.service';
+import { Application } from './application.entity';
+import { ApplicationStatusHistory } from './application-status-history.entity';
 import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 
 interface AiScoredAnswer {
   question_id: string;
@@ -42,9 +45,14 @@ export class InterviewScoringProcessor extends WorkerHost {
     private readonly sessionRepo: Repository<InterviewSession>,
     @InjectRepository(InterviewAnswer)
     private readonly answerRepo: Repository<InterviewAnswer>,
+    @InjectRepository(Application)
+    private readonly appRepo: Repository<Application>,
+    @InjectRepository(ApplicationStatusHistory)
+    private readonly historyRepo: Repository<ApplicationStatusHistory>,
     private readonly httpService: HttpService,
     private readonly config: ConfigService,
     private readonly agentLogger: AgentExecutionLoggerService,
+    private readonly dashboardCache: DashboardCacheService,
   ) {
     super();
   }
@@ -147,6 +155,8 @@ export class InterviewScoringProcessor extends WorkerHost {
         scoringStatus: 'done',
         scoringError: null,
       });
+
+      await this.transitionApplicationToInterviewed(session.applicationId);
     } catch (err) {
       await this.sessionRepo.update(sessionId, {
         scoringStatus: 'error',
@@ -174,6 +184,40 @@ export class InterviewScoringProcessor extends WorkerHost {
       { id: sessionId, scoringStatus: 'processing' },
       { scoringStatus: 'error', scoringError: 'Hết số lần retry chấm điểm' },
     );
+  }
+
+  /**
+   * Chuyển application 'matched' → 'interviewed' sau khi Agent 3 chấm điểm xong — trước đây
+   * không có code path nào gán trạng thái này nên đơn ứng tuyển kẹt mãi ở 'matched' dù ứng
+   * viên đã phỏng vấn AI xong, khiến label trạng thái phía candidate và phễu tuyển dụng
+   * trong báo cáo đều sai. Theo đúng pattern transitionApplication() của matching.processor.ts
+   * (changedBy: null vì đây là transition hệ thống, không phải recruiter thao tác).
+   */
+  private async transitionApplicationToInterviewed(
+    applicationId: string,
+  ): Promise<void> {
+    const application = await this.appRepo.findOne({
+      where: { id: applicationId },
+      relations: ['job'],
+    });
+    if (!application) return;
+    if (!VALID_TRANSITIONS[application.status].includes('interviewed')) return;
+
+    const fromStatus = application.status;
+    application.status = 'interviewed';
+    await this.appRepo.save(application);
+
+    await this.historyRepo.save(
+      this.historyRepo.create({
+        applicationId: application.id,
+        fromStatus,
+        toStatus: 'interviewed',
+        changedBy: null,
+        metadata: { source: 'agent3_interview' },
+      }),
+    );
+
+    await this.dashboardCache.invalidate(application.job.recruiterId);
   }
 
   /** answerRepo.find() trả totalScore (cột numeric) dạng string — luôn ép về number trước khi cộng */

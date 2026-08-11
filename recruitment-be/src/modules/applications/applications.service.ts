@@ -12,6 +12,7 @@ import { Application, ApplicationStatus } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Job } from '../jobs/job.entity';
 import { User } from '../users/user.entity';
+import { CandidateResume } from '../profile/entities/candidate-resume.entity';
 import { StorageService } from '../storage/storage.service';
 import { MailService } from '../mail/mail.service';
 import { ApplicationCvParserService } from './application-cv-parser.service';
@@ -34,6 +35,8 @@ export class ApplicationsService {
     private readonly statusHistoryRepo: Repository<ApplicationStatusHistory>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(CandidateResume)
+    private readonly resumeRepo: Repository<CandidateResume>,
     private readonly storage: StorageService,
     private readonly mailService: MailService,
     private readonly cvParser: ApplicationCvParserService,
@@ -45,11 +48,55 @@ export class ApplicationsService {
     dto: CreateApplicationDto,
     file: Express.Multer.File,
   ): Promise<Application> {
-    const job = await this.jobRepo.findOne({ where: { id: dto.jobId } });
+    return this.createApplication(
+      candidateId,
+      dto.jobId,
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+    );
+  }
+
+  /** Ứng tuyển bằng CV đã có sẵn trong hồ sơ cá nhân — không bắt ứng viên chọn lại file từ máy. */
+  async applyWithProfileCv(
+    candidateId: string,
+    dto: CreateApplicationDto,
+  ): Promise<Application> {
+    const resume = await this.resumeRepo.findOne({ where: { candidateId } });
+    if (!resume) {
+      throw new NotFoundException(
+        'Bạn chưa có CV nào trong hồ sơ cá nhân — vui lòng tải CV lên trước.',
+      );
+    }
+
+    const buffer = await this.storage.download(resume.cvFileName);
+    const ext = path.extname(resume.cvFileName).toLowerCase();
+    const mimetype =
+      ext === '.docx'
+        ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        : 'application/pdf';
+
+    return this.createApplication(
+      candidateId,
+      dto.jobId,
+      buffer,
+      resume.cvOriginalName,
+      mimetype,
+    );
+  }
+
+  private async createApplication(
+    candidateId: string,
+    jobId: string,
+    fileBuffer: Buffer,
+    fileOriginalName: string,
+    fileMimetype: string,
+  ): Promise<Application> {
+    const job = await this.jobRepo.findOne({ where: { id: jobId } });
     if (!job) throw new NotFoundException('Không tìm thấy tin tuyển dụng');
 
     const existing = await this.repo.findOne({
-      where: { candidateId, jobId: dto.jobId },
+      where: { candidateId, jobId },
       order: { createdAt: 'DESC' },
     });
     if (existing && !NON_REAPPLICABLE_STATUSES.includes(existing.status)) {
@@ -58,13 +105,13 @@ export class ApplicationsService {
       );
     }
 
-    const ext = path.extname(file.originalname);
-    const key = `applications/${candidateId}/${dto.jobId}/${Date.now()}${ext}`;
-    const cvUrl = await this.storage.upload(key, file.buffer, file.mimetype);
+    const ext = path.extname(fileOriginalName);
+    const key = `applications/${candidateId}/${jobId}/${Date.now()}${ext}`;
+    const cvUrl = await this.storage.upload(key, fileBuffer, fileMimetype);
 
     const application = this.repo.create({
       candidateId,
-      jobId: dto.jobId,
+      jobId,
       cvUrl,
       status: 'pending',
     });

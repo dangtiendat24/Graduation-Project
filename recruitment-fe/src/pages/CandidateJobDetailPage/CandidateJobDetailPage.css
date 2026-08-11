@@ -343,6 +343,38 @@
   line-height: 1.6;
 }
 
+.cjd-cv-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cjd-cv-option:hover { border-color: var(--color-indigo); }
+.cjd-cv-option--selected {
+  border-color: var(--color-indigo);
+  background: var(--color-indigo-light);
+}
+.cjd-cv-option i:first-child { font-size: 20px; color: var(--text-muted); flex-shrink: 0; }
+.cjd-cv-option--selected i:first-child { color: var(--color-indigo); }
+.cjd-cv-option-body { flex: 1; min-width: 0; }
+.cjd-cv-option-title {
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+.cjd-cv-option-sub {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cjd-cv-option-check { font-size: 18px; color: var(--color-indigo); flex-shrink: 0; }
+
 .cjd-drop-zone {
   border: 2px dashed var(--border-default);
   border-radius: var(--radius-lg);
