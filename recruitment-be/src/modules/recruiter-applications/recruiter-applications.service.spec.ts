@@ -8,8 +8,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { RecruiterApplicationsService } from './recruiter-applications.service';
 import { Application } from '../applications/application.entity';
 import { ApplicationStatusHistory } from '../applications/application-status-history.entity';
+import { InterviewSession } from '../applications/interview-session.entity';
+import { InterviewAnswer } from '../applications/interview-answer.entity';
 import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 
 function createQueryBuilderMock(rawRows: unknown[], count: number) {
   const qb: Record<string, jest.Mock> = {};
@@ -64,10 +67,13 @@ describe('RecruiterApplicationsService', () => {
   };
   let historyRepo: { create: jest.Mock; save: jest.Mock };
   let jobRepo: { findOne: jest.Mock };
+  let interviewSessionRepo: { findOne: jest.Mock };
+  let interviewAnswerRepo: { find: jest.Mock };
   let mailService: {
     sendInterviewInviteEmail: jest.Mock;
     sendApplicationRejectedEmail: jest.Mock;
   };
+  let dashboardCache: { invalidate: jest.Mock };
   let qbMock: ReturnType<typeof createQueryBuilderMock>;
 
   const RECRUITER_ID = 'recruiter-1';
@@ -88,10 +94,13 @@ describe('RecruiterApplicationsService', () => {
       save: jest.fn(),
     };
     jobRepo = { findOne: jest.fn().mockResolvedValue(JOB) };
+    interviewSessionRepo = { findOne: jest.fn() };
+    interviewAnswerRepo = { find: jest.fn() };
     mailService = {
       sendInterviewInviteEmail: jest.fn(),
       sendApplicationRejectedEmail: jest.fn(),
     };
+    dashboardCache = { invalidate: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -102,7 +111,16 @@ describe('RecruiterApplicationsService', () => {
           useValue: historyRepo,
         },
         { provide: getRepositoryToken(Job), useValue: jobRepo },
+        {
+          provide: getRepositoryToken(InterviewSession),
+          useValue: interviewSessionRepo,
+        },
+        {
+          provide: getRepositoryToken(InterviewAnswer),
+          useValue: interviewAnswerRepo,
+        },
         { provide: MailService, useValue: mailService },
+        { provide: DashboardCacheService, useValue: dashboardCache },
       ],
     }).compile();
 
@@ -211,6 +229,7 @@ describe('RecruiterApplicationsService', () => {
           criteria: { skills: 90, experience: 80, education: 85 },
           explanation: 'Phù hợp cao',
         },
+        interview: null,
       });
     });
 
@@ -323,6 +342,7 @@ describe('RecruiterApplicationsService', () => {
         'Backend Engineer',
       );
       expect(mailService.sendApplicationRejectedEmail).not.toHaveBeenCalled();
+      expect(dashboardCache.invalidate).toHaveBeenCalledWith(RECRUITER_ID);
     });
 
     it('chuyển matched -> rejected, gửi email từ chối', async () => {

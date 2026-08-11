@@ -39,3 +39,26 @@ export async function upsertCompany(payload: CompanyData): Promise<CompanyData> 
   const { data } = await apiClient.put<CompanyData>('/companies/my', payload)
   return data
 }
+
+export async function updateCompany(payload: Partial<CompanyData>): Promise<CompanyData> {
+  const { data } = await apiClient.patch<CompanyData>('/companies/my', payload)
+  return data
+}
+
+export async function uploadCompanyLogo(file: File): Promise<CompanyData> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await apiClient.post<CompanyData>('/companies/my/logo', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
+export async function uploadCompanyCover(file: File): Promise<CompanyData> {
+  const form = new FormData()
+  form.append('file', file)
+  const { data } = await apiClient.post<CompanyData>('/companies/my/cover', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}

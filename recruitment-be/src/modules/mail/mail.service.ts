@@ -100,6 +100,22 @@ export class MailService implements OnModuleInit {
     );
   }
 
+  async sendApplicationHiredEmail(
+    to: string,
+    fullName: string,
+    jobTitle: string,
+  ) {
+    if (this.devMode) {
+      this.logger.log(`[DEV] Hired email for ${to} — job: ${jobTitle}`);
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] Chúc mừng bạn đã trúng tuyển vị trí ${jobTitle}!`,
+      buildHiredEmailHtml(fullName, jobTitle),
+    );
+  }
+
   async sendScheduleConfirmedEmail(
     to: string,
     fullName: string,
@@ -150,6 +166,83 @@ export class MailService implements OnModuleInit {
         slotCount,
         this.frontendUrl,
         isResend,
+      ),
+    );
+  }
+
+  /** Thông báo cho recruiter — ứng viên mới nộp CV vào 1 tin tuyển dụng của họ */
+  async sendNewApplicationEmail(
+    to: string,
+    recruiterName: string,
+    candidateName: string,
+    jobTitle: string,
+  ) {
+    if (this.devMode) {
+      this.logger.log(
+        `[DEV] New application email for ${to} — ${candidateName} applied to ${jobTitle}`,
+      );
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] ${candidateName} vừa ứng tuyển vị trí ${jobTitle}`,
+      buildRecruiterNotificationEmailHtml(
+        recruiterName,
+        `Ứng viên <strong>${candidateName}</strong> vừa nộp CV ứng tuyển vị trí <strong>${jobTitle}</strong>.`,
+        'Xem ứng viên →',
+        `${this.frontendUrl}/recruiter/candidates`,
+      ),
+    );
+  }
+
+  /** Thông báo cho recruiter — ứng viên đã xác nhận khung giờ phỏng vấn */
+  async sendRecruiterScheduleConfirmedEmail(
+    to: string,
+    recruiterName: string,
+    candidateName: string,
+    jobTitle: string,
+    scheduledTimeLabel: string,
+  ) {
+    if (this.devMode) {
+      this.logger.log(
+        `[DEV] Recruiter schedule confirmed email for ${to} — ${candidateName}, ${jobTitle} at ${scheduledTimeLabel}`,
+      );
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] ${candidateName} đã xác nhận lịch phỏng vấn vị trí ${jobTitle}`,
+      buildRecruiterNotificationEmailHtml(
+        recruiterName,
+        `Ứng viên <strong>${candidateName}</strong> đã xác nhận khung giờ phỏng vấn cho vị trí <strong>${jobTitle}</strong>: <strong>${scheduledTimeLabel}</strong>.`,
+        'Xem lịch phỏng vấn →',
+        `${this.frontendUrl}/recruiter/interviews`,
+      ),
+    );
+  }
+
+  /** Thông báo cho recruiter — AI vừa chấm điểm phù hợp xong cho 1 ứng viên */
+  async sendMatchingCompleteEmail(
+    to: string,
+    recruiterName: string,
+    candidateName: string,
+    jobTitle: string,
+    overallScore: number,
+  ) {
+    if (this.devMode) {
+      this.logger.log(
+        `[DEV] Matching complete email for ${to} — ${candidateName}, ${jobTitle}: ${overallScore}`,
+      );
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] AI đã chấm điểm CV của ${candidateName} — vị trí ${jobTitle}`,
+      buildRecruiterNotificationEmailHtml(
+        recruiterName,
+        `AI vừa chấm điểm phù hợp cho ứng viên <strong>${candidateName}</strong> ở vị trí <strong>${jobTitle}</strong>: <strong>${Math.round(overallScore)}/100</strong>.`,
+        'Xem chi tiết →',
+        `${this.frontendUrl}/recruiter/candidates`,
       ),
     );
   }
@@ -373,6 +466,113 @@ function buildRejectionEmailHtml(fullName: string, jobTitle: string): string {
             </p>
             <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
               Chúng tôi đánh giá cao sự quan tâm của bạn và mong sẽ có cơ hội hợp tác trong tương lai với các vị trí phù hợp hơn.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;padding:16px 40px;border-top:1px solid #E2E8F0;">
+            <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+              © 2026 RecruitAI — Nền tảng tuyển dụng thông minh
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildHiredEmailHtml(fullName: string, jobTitle: string): string {
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chúc mừng trúng tuyển</title></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#0C2340 0%,#0F172A 48%,#1E1065 100%);padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:.04em;">
+              RECRUIT<span style="color:#5EEAD4;">.AI</span>
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Chúc mừng, ${fullName}! 🎉</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              Chúng tôi vui mừng thông báo bạn đã <strong>trúng tuyển</strong> vị trí <strong>${jobTitle}</strong> tại RecruitAI.
+              Nhà tuyển dụng sẽ sớm liên hệ với bạn để trao đổi các bước tiếp theo.
+            </p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              Cảm ơn bạn đã dành thời gian tham gia quy trình tuyển dụng cùng chúng tôi. Chúc mừng bạn cho khởi đầu mới!
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;padding:16px 40px;border-top:1px solid #E2E8F0;">
+            <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+              © 2026 RecruitAI — Nền tảng tuyển dụng thông minh
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+/** Template dùng chung cho các email thông báo gửi tới recruiter (đơn giản hơn email candidate) */
+function buildRecruiterNotificationEmailHtml(
+  recruiterName: string,
+  bodyHtml: string,
+  ctaLabel: string,
+  ctaUrl: string,
+): string {
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Thông báo RecruitAI</title></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#0C2340 0%,#0F172A 48%,#1E1065 100%);padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:.04em;">
+              RECRUIT<span style="color:#5EEAD4;">.AI</span>
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Xin chào, ${recruiterName}</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">${bodyHtml}</p>
+
+            <table cellpadding="0" cellspacing="0"><tr><td>
+              <a href="${ctaUrl}"
+                style="display:inline-block;background:#4338CA;color:#FFFFFF;font-size:15px;font-weight:600;padding:13px 32px;border-radius:8px;text-decoration:none;letter-spacing:.02em;">
+                ${ctaLabel}
+              </a>
+            </td></tr></table>
+
+            <p style="margin:24px 0 0;font-size:13px;color:#94A3B8;line-height:1.6;">
+              Bạn có thể tắt loại thông báo này trong Cài đặt trên RecruitAI.
             </p>
           </td>
         </tr>

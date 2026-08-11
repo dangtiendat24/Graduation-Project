@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { getJob } from '../../api/jobs'
 import { getRecruiterSchedules } from '../../api/schedule'
 import type { RecruiterScheduleListItem } from '../../api/schedule'
+import { updateApplicationStatus } from '../../api/rankings'
 import ScheduleBox from './ScheduleBox'
+import InterviewOutcomeModal from './InterviewOutcomeModal'
 import './RecruiterInterviewJobDetailPage.css'
 
 interface NavState {
@@ -38,6 +40,24 @@ function getInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || '?'
 }
 
+// "Đã phỏng vấn" = đã qua giờ hẹn (confirmedEndTime/StartTime ở quá khứ), hoặc hiếm hơn đã ở
+// 'completed'. Recruiter chỉ đánh dấu kết quả (Đã tuyển/Từ chối) cho nhóm này — buổi phỏng vấn
+// thực tế diễn ra ngoài hệ thống nên không có cách tự động biết, chỉ suy ra từ mốc giờ đã đặt.
+function isInterviewDone(item: RecruiterScheduleListItem): boolean {
+  if (item.applicationStatus === 'completed') return true
+  if (item.applicationStatus !== 'scheduled') return false
+  const end = item.schedule?.confirmedEndTime ?? item.schedule?.confirmedStartTime
+  if (!end) return false
+  return new Date(end).getTime() < Date.now()
+}
+
+type InterviewTab = 'upcoming' | 'done'
+
+interface OutcomeTarget {
+  item: RecruiterScheduleListItem
+  action: 'hired' | 'rejected'
+}
+
 export default function RecruiterInterviewJobDetailPage() {
   const { jobId } = useParams<{ jobId: string }>()
   const location = useLocation()
@@ -45,6 +65,8 @@ export default function RecruiterInterviewJobDetailPage() {
   const queryClient = useQueryClient()
   const [manualSelection, setManualSelection] = useState<RecruiterScheduleListItem | null>(null)
   const [autoOpenDismissed, setAutoOpenDismissed] = useState(false)
+  const [outcomeTarget, setOutcomeTarget] = useState<OutcomeTarget | null>(null)
+  const [tab, setTab] = useState<InterviewTab>('upcoming')
 
   const { data: job } = useQuery({
     queryKey: ['job', jobId],
@@ -58,6 +80,9 @@ export default function RecruiterInterviewJobDetailPage() {
   })
 
   const items = useMemo(() => (data ?? []).filter((i) => i.jobId === jobId), [data, jobId])
+  const upcomingItems = useMemo(() => items.filter((i) => !isInterviewDone(i)), [items])
+  const doneItems = useMemo(() => items.filter((i) => isInterviewDone(i)), [items])
+  const visibleItems = tab === 'upcoming' ? upcomingItems : doneItems
 
   // Tự mở box lên lịch cho ứng viên vừa được mời phỏng vấn (điều hướng từ trang Xếp hạng ứng viên) —
   // dẫn xuất trực tiếp từ query data + location.state, không dùng effect/setState để tránh cascading render.
@@ -90,6 +115,15 @@ export default function RecruiterInterviewJobDetailPage() {
     setAutoOpenDismissed(true)
   }
 
+  const outcomeMutation = useMutation({
+    mutationFn: ({ item, action }: OutcomeTarget) =>
+      updateApplicationStatus(item.jobId, item.applicationId, action),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recruiter-schedules'] })
+      setOutcomeTarget(null)
+    },
+  })
+
   function goBackToList() {
     if (navState?.fromCalendarWeekStart) {
       navigate('/recruiter/interviews/calendar', { state: { weekStart: navState.fromCalendarWeekStart } })
@@ -121,6 +155,7 @@ export default function RecruiterInterviewJobDetailPage() {
 
         {isLoading && <div className="ri-empty">Đang tải…</div>}
         {isError && <div className="ri-empty ri-empty--error">Không tải được danh sách lịch phỏng vấn.</div>}
+
         {!isLoading && !isError && items.length === 0 && (
           <div className="ri-empty">
             <i className="ti ti-calendar-off" />
@@ -128,9 +163,37 @@ export default function RecruiterInterviewJobDetailPage() {
           </div>
         )}
 
-        {items.length > 0 && (
+        {!isLoading && !isError && items.length > 0 && (
+          <div className="ri-tab-bar">
+            <button
+              className={`ri-tab${tab === 'upcoming' ? ' active' : ''}`}
+              onClick={() => setTab('upcoming')}
+            >
+              Sắp phỏng vấn <span className="ri-tab-count">{upcomingItems.length}</span>
+            </button>
+            <button
+              className={`ri-tab${tab === 'done' ? ' active' : ''}`}
+              onClick={() => setTab('done')}
+            >
+              Đã phỏng vấn <span className="ri-tab-count">{doneItems.length}</span>
+            </button>
+          </div>
+        )}
+
+        {!isLoading && !isError && items.length > 0 && visibleItems.length === 0 && (
+          <div className="ri-empty">
+            <i className="ti ti-calendar-off" />
+            <p>
+              {tab === 'upcoming'
+                ? 'Không có ứng viên nào đang chờ tới lịch phỏng vấn.'
+                : 'Chưa có ứng viên nào đã qua giờ phỏng vấn.'}
+            </p>
+          </div>
+        )}
+
+        {visibleItems.length > 0 && (
           <div className="ri-candidate-list">
-            {items.map((item) => {
+            {visibleItems.map((item) => {
               const badge = STATUS_BADGE[item.applicationStatus]
               return (
                 <div key={item.applicationId} className="ri-candidate-row">
@@ -157,10 +220,30 @@ export default function RecruiterInterviewJobDetailPage() {
                     )}
                   </div>
 
-                  <button className="ri-btn-schedule" onClick={() => setManualSelection(item)}>
-                    <i className="ti ti-calendar-plus" />
-                    {item.schedule ? 'Xem / Sửa lịch' : 'Lên lịch'}
-                  </button>
+                  <div className="ri-candidate-actions">
+                    {!isInterviewDone(item) && (
+                      <button className="ri-btn-schedule" onClick={() => setManualSelection(item)}>
+                        <i className="ti ti-calendar-plus" />
+                        {item.schedule ? 'Xem / Sửa lịch' : 'Lên lịch'}
+                      </button>
+                    )}
+                    <div className="ri-outcome-buttons">
+                      {isInterviewDone(item) && (
+                        <button
+                          className="ri-btn-hire"
+                          onClick={() => setOutcomeTarget({ item, action: 'hired' })}
+                        >
+                          <i className="ti ti-user-check" /> Đã tuyển
+                        </button>
+                      )}
+                      <button
+                        className="ri-btn-reject"
+                        onClick={() => setOutcomeTarget({ item, action: 'rejected' })}
+                      >
+                        <i className="ti ti-user-x" /> Từ chối
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )
             })}
@@ -170,6 +253,17 @@ export default function RecruiterInterviewJobDetailPage() {
 
       {scheduleFor && (
         <ScheduleBox item={scheduleFor} onClose={closeBox} onSent={handleSent} />
+      )}
+
+      {outcomeTarget && (
+        <InterviewOutcomeModal
+          candidateName={outcomeTarget.item.candidateName}
+          jobTitle={outcomeTarget.item.jobTitle}
+          action={outcomeTarget.action}
+          isPending={outcomeMutation.isPending}
+          onConfirm={() => outcomeMutation.mutate(outcomeTarget)}
+          onCancel={() => setOutcomeTarget(null)}
+        />
       )}
     </DashboardLayout>
   )

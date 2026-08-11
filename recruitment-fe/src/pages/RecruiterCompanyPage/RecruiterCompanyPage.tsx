@@ -1,7 +1,15 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
-import { getMyCompany, upsertCompany, type CompanyData } from '../../api/companies'
+import {
+  getMyCompany,
+  upsertCompany,
+  updateCompany,
+  uploadCompanyLogo,
+  uploadCompanyCover,
+  type CompanyData,
+} from '../../api/companies'
 import './RecruiterCompanyPage.css'
 
 interface CompanyForm {
@@ -168,6 +176,63 @@ export default function RecruiterCompanyPage() {
     mutation.mutate(formToPayload(form, publish))
   }
 
+  // ── Scroll-to-section (stepper) ──────────────────────────
+  const imagesSectionRef = useRef<HTMLDivElement>(null)
+  const basicSectionRef = useRef<HTMLDivElement>(null)
+  const aboutSectionRef = useRef<HTMLDivElement>(null)
+  const contactSectionRef = useRef<HTMLDivElement>(null)
+  const stepRefs = [basicSectionRef, aboutSectionRef, contactSectionRef, imagesSectionRef]
+
+  function scrollToStep(index: number) {
+    stepRefs[index]?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  // ── Logo / cover upload ──────────────────────────────────
+  const logoInputRef = useRef<HTMLInputElement>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const [logoDragOver, setLogoDragOver] = useState(false)
+  const [coverDragOver, setCoverDragOver] = useState(false)
+  const [imageError, setImageError] = useState('')
+
+  function applyUploaded(saved: CompanyData) {
+    const f = serverToForm(saved)
+    setForm(f)
+    setSavedForm(f)
+    queryClient.setQueryData(['company-my'], saved)
+    setImageError('')
+  }
+
+  const logoMutation = useMutation({
+    mutationFn: uploadCompanyLogo,
+    onSuccess: applyUploaded,
+    onError: (err) =>
+      setImageError(isAxiosError(err) ? (err.response?.data as { message?: string })?.message ?? 'Tải logo thất bại' : 'Tải logo thất bại'),
+  })
+
+  const coverMutation = useMutation({
+    mutationFn: uploadCompanyCover,
+    onSuccess: applyUploaded,
+    onError: (err) =>
+      setImageError(isAxiosError(err) ? (err.response?.data as { message?: string })?.message ?? 'Tải ảnh bìa thất bại' : 'Tải ảnh bìa thất bại'),
+  })
+
+  const removeLogoMutation = useMutation({
+    mutationFn: () => updateCompany({ logoUrl: null }),
+    onSuccess: applyUploaded,
+  })
+
+  const removeCoverMutation = useMutation({
+    mutationFn: () => updateCompany({ coverUrl: null }),
+    onSuccess: applyUploaded,
+  })
+
+  function handleLogoFile(file: File | undefined) {
+    if (file) logoMutation.mutate(file)
+  }
+  function handleCoverFile(file: File | undefined) {
+    if (file) coverMutation.mutate(file)
+  }
+
   const setField =
     (key: StringField) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -278,15 +343,20 @@ export default function RecruiterCompanyPage() {
           </div>
 
           <div className="rcp-pv-wrapper">
-            <div className="rcp-pv-cover">
-              <div className="rcp-pv-cover-overlay" />
+            <div
+              className="rcp-pv-cover"
+              style={form.coverUrl ? { backgroundImage: `url(${form.coverUrl})` } : undefined}
+            >
+              {!form.coverUrl && <div className="rcp-pv-cover-overlay" />}
               <button className="rcp-pv-cover-edit" onClick={() => setMode('edit')}>
                 <i className="ti ti-camera" /> Đổi ảnh bìa
               </button>
             </div>
 
             <div className="rcp-pv-head">
-              <div className="rcp-pv-logo">{companyInitial}</div>
+              <div className="rcp-pv-logo">
+                {form.logoUrl ? <img src={form.logoUrl} alt={form.name} /> : companyInitial}
+              </div>
               <div className="rcp-pv-head-info">
                 <div className="rcp-pv-name">{form.name || 'Tên công ty'}</div>
                 {form.tagline && <div className="rcp-pv-tagline">{form.tagline}</div>}
@@ -512,8 +582,12 @@ export default function RecruiterCompanyPage() {
             const isDone = step.done
             const isCurr = i === activeStep
             return (
-              <>
-                <div key={`step-${i}`} className="rcp-step">
+              <Fragment key={`step-${i}`}>
+                <div
+                  className="rcp-step rcp-step--clickable"
+                  onClick={() => scrollToStep(i)}
+                  title={`Đi tới: ${step.label}`}
+                >
                   <div
                     className={`rcp-step-dot${isDone ? ' done' : isCurr ? ' curr' : ' pend'}`}
                   >
@@ -524,9 +598,9 @@ export default function RecruiterCompanyPage() {
                   </span>
                 </div>
                 {i < steps.length - 1 && (
-                  <div key={`line-${i}`} className={`rcp-step-line${isDone ? ' done' : ''}`} />
+                  <div className={`rcp-step-line${isDone ? ' done' : ''}`} />
                 )}
-              </>
+              </Fragment>
             )
           })}
         </div>
@@ -537,7 +611,7 @@ export default function RecruiterCompanyPage() {
           <div className="rcp-forms">
 
             {/* Brand images */}
-            <div className="rcp-card">
+            <div className="rcp-card" ref={imagesSectionRef}>
               <div className="rcp-card-head">
                 <div className="rcp-card-icon rcp-icon-indigo">
                   <i className="ti ti-photo" />
@@ -548,48 +622,126 @@ export default function RecruiterCompanyPage() {
                 </div>
               </div>
               <div className="rcp-card-body">
-                <div className="rcp-form-group">
-                  <label className="rcp-label">
-                    Ảnh bìa{' '}
-                    <span className="rcp-hint">Tỉ lệ 16:9 · khuyến nghị 1200×400px</span>
-                  </label>
-                  <div className="rcp-cover-upload">
-                    <i className="ti ti-photo-plus" />
-                    <div className="rcp-cover-title">Kéo thả hoặc nhấp để tải ảnh bìa</div>
-                    <div className="rcp-cover-hint">PNG, JPG · tối đa 5 MB</div>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  style={{ display: 'none' }}
+                  onChange={(e) => { handleCoverFile(e.target.files?.[0]); e.target.value = '' }}
+                />
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  style={{ display: 'none' }}
+                  onChange={(e) => { handleLogoFile(e.target.files?.[0]); e.target.value = '' }}
+                />
+
+                {!serverData ? (
+                  <div className="rcp-hint">
+                    Lưu tên công ty bên dưới trước, sau đó bạn có thể tải logo và ảnh bìa.
                   </div>
-                </div>
-                <div className="rcp-form-group">
-                  <label className="rcp-label">
-                    Logo công ty{' '}
-                    <span className="rcp-hint">Vuông · khuyến nghị 400×400px</span>
-                  </label>
-                  <div className="rcp-logo-area">
-                    <div className="rcp-logo-preview">
-                      <i className="ti ti-building" />
-                      <span>Logo</span>
-                    </div>
-                    <div className="rcp-logo-meta">
-                      <div className="rcp-logo-title">Tải lên logo công ty</div>
-                      <div className="rcp-logo-hint">
-                        Nền trong suốt (PNG) hoặc hình vuông.
-                        <br />
-                        Kích thước tối thiểu 200×200px, tối đa 2 MB.
+                ) : (
+                  <>
+                    <div className="rcp-form-group">
+                      <label className="rcp-label">
+                        Ảnh bìa{' '}
+                        <span className="rcp-hint">Tỉ lệ 16:9 · khuyến nghị 1200×400px</span>
+                      </label>
+                      <div
+                        className={`rcp-cover-upload${coverMutation.isPending ? ' rcp-upload--pending' : ''}${coverDragOver ? ' rcp-upload--over' : ''}`}
+                        style={form.coverUrl ? { backgroundImage: `url(${form.coverUrl})` } : undefined}
+                        onClick={() => coverInputRef.current?.click()}
+                        onDragOver={(e) => { e.preventDefault(); setCoverDragOver(true) }}
+                        onDragLeave={() => setCoverDragOver(false)}
+                        onDrop={(e) => { e.preventDefault(); setCoverDragOver(false); handleCoverFile(e.dataTransfer.files?.[0]) }}
+                      >
+                        {coverMutation.isPending ? (
+                          <i className="ti ti-loader-2 rcp-spin" />
+                        ) : !form.coverUrl ? (
+                          <>
+                            <i className="ti ti-photo-plus" />
+                            <div className="rcp-cover-title">Kéo thả hoặc nhấp để tải ảnh bìa</div>
+                            <div className="rcp-cover-hint">PNG, JPG, WEBP · tối đa 5 MB</div>
+                          </>
+                        ) : (
+                          <div className="rcp-cover-overlay">
+                            <i className="ti ti-camera" /> Đổi ảnh bìa
+                          </div>
+                        )}
                       </div>
-                      <div className="rcp-logo-btns">
-                        <button className="rcp-btn-upload">
-                          <i className="ti ti-upload" /> Tải lên
+                      {form.coverUrl && (
+                        <button
+                          type="button"
+                          className="rcp-btn-remove rcp-btn-remove--cover"
+                          onClick={(e) => { e.stopPropagation(); removeCoverMutation.mutate() }}
+                          disabled={removeCoverMutation.isPending}
+                        >
+                          Xoá ảnh bìa
                         </button>
-                        <button className="rcp-btn-remove">Xoá logo</button>
+                      )}
+                    </div>
+                    <div className="rcp-form-group">
+                      <label className="rcp-label">
+                        Logo công ty{' '}
+                        <span className="rcp-hint">Vuông · khuyến nghị 400×400px</span>
+                      </label>
+                      <div className="rcp-logo-area">
+                        <div
+                          className={`rcp-logo-preview${logoDragOver ? ' rcp-upload--over' : ''}`}
+                          onClick={() => logoInputRef.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); setLogoDragOver(true) }}
+                          onDragLeave={() => setLogoDragOver(false)}
+                          onDrop={(e) => { e.preventDefault(); setLogoDragOver(false); handleLogoFile(e.dataTransfer.files?.[0]) }}
+                        >
+                          {logoMutation.isPending ? (
+                            <i className="ti ti-loader-2 rcp-spin" />
+                          ) : form.logoUrl ? (
+                            <img src={form.logoUrl} alt="logo" className="rcp-logo-img" />
+                          ) : (
+                            <>
+                              <i className="ti ti-building" />
+                              <span>Logo</span>
+                            </>
+                          )}
+                        </div>
+                        <div className="rcp-logo-meta">
+                          <div className="rcp-logo-title">Tải lên logo công ty</div>
+                          <div className="rcp-logo-hint">
+                            Nền trong suốt (PNG) hoặc hình vuông.
+                            <br />
+                            Kích thước tối thiểu 200×200px, tối đa 2 MB.
+                          </div>
+                          <div className="rcp-logo-btns">
+                            <button
+                              type="button"
+                              className="rcp-btn-upload"
+                              onClick={() => logoInputRef.current?.click()}
+                            >
+                              <i className="ti ti-upload" /> Tải lên
+                            </button>
+                            {form.logoUrl && (
+                              <button
+                                type="button"
+                                className="rcp-btn-remove"
+                                onClick={() => removeLogoMutation.mutate()}
+                                disabled={removeLogoMutation.isPending}
+                              >
+                                Xoá logo
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                    {imageError && <div className="rcp-hint-error">{imageError}</div>}
+                  </>
+                )}
               </div>
             </div>
 
             {/* Basic info */}
-            <div className="rcp-card">
+            <div className="rcp-card" ref={basicSectionRef}>
               <div className="rcp-card-head">
                 <div className="rcp-card-icon rcp-icon-indigo">
                   <i className="ti ti-building" />
@@ -699,7 +851,7 @@ export default function RecruiterCompanyPage() {
             </div>
 
             {/* About */}
-            <div className="rcp-card">
+            <div className="rcp-card" ref={aboutSectionRef}>
               <div className="rcp-card-head">
                 <div className="rcp-card-icon rcp-icon-teal">
                   <i className="ti ti-file-text" />
@@ -832,7 +984,7 @@ export default function RecruiterCompanyPage() {
             </div>
 
             {/* Contact */}
-            <div className="rcp-card">
+            <div className="rcp-card" ref={contactSectionRef}>
               <div className="rcp-card-head">
                 <div className="rcp-card-icon rcp-icon-teal">
                   <i className="ti ti-map-pin" />
@@ -955,8 +1107,13 @@ export default function RecruiterCompanyPage() {
             {/* Mini preview */}
             <div className="rcp-card rcp-mini-card">
               <div className="rcp-mini-header">Xem trước (ứng viên thấy)</div>
-              <div className="rcp-mini-cover">
-                <div className="rcp-mini-logo">{companyInitial}</div>
+              <div
+                className="rcp-mini-cover"
+                style={form.coverUrl ? { backgroundImage: `url(${form.coverUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+              >
+                <div className="rcp-mini-logo">
+                  {form.logoUrl ? <img src={form.logoUrl} alt={form.name} /> : companyInitial}
+                </div>
               </div>
               <div className="rcp-mini-body">
                 <div className="rcp-mini-name">{form.name || 'Tên công ty'}</div>

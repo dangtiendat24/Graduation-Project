@@ -7,6 +7,7 @@ import { InterviewAnswer } from '../applications/interview-answer.entity';
 import { Job } from '../jobs/job.entity';
 import { MailModule } from '../mail/mail.module';
 import { ScheduleModule } from '../applications/schedule.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 import { RecruiterApplicationsService } from './recruiter-applications.service';
 import { RecruiterApplicationsController } from './recruiter-applications.controller';
 
@@ -21,6 +22,7 @@ import { RecruiterApplicationsController } from './recruiter-applications.contro
     ]),
     MailModule,
     ScheduleModule,
+    DashboardModule,
   ],
   controllers: [RecruiterApplicationsController],
   providers: [RecruiterApplicationsService],

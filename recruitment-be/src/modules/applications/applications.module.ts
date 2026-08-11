@@ -6,8 +6,11 @@ import { QUEUE_NAMES } from '@smart-recruitment/shared';
 import { Application } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Job } from '../jobs/job.entity';
+import { User } from '../users/user.entity';
 import { StorageModule } from '../storage/storage.module';
 import { MatchingModule } from '../matching/matching.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
+import { MailModule } from '../mail/mail.module';
 import { ApplicationsService } from './applications.service';
 import { ApplicationsController } from './applications.controller';
 import { ApplicationCvParserService } from './application-cv-parser.service';
@@ -15,11 +18,18 @@ import { ApplicationCvParserProcessor } from './application-cv-parser.processor'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Application, ApplicationStatusHistory, Job]),
+    TypeOrmModule.forFeature([
+      Application,
+      ApplicationStatusHistory,
+      Job,
+      User,
+    ]),
     BullModule.registerQueue({ name: QUEUE_NAMES.APPLICATION_CV_PARSE }),
     HttpModule.register({ timeout: 20000, maxRedirects: 3 }),
     StorageModule,
     MatchingModule,
+    DashboardModule,
+    MailModule,
   ],
   controllers: [ApplicationsController],
   providers: [

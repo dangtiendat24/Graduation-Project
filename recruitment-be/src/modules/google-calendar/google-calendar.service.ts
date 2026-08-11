@@ -17,6 +17,7 @@ import {
   randomUUID,
 } from 'node:crypto';
 import { GoogleCalendarCredential } from './google-calendar-credential.entity';
+import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
 
 const GOOGLE_AUTHORIZE_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -49,6 +50,7 @@ export class GoogleCalendarService {
     private readonly config: ConfigService,
     private readonly jwtService: JwtService,
     private readonly httpService: HttpService,
+    private readonly agentLogger: AgentExecutionLoggerService,
   ) {}
 
   private get clientId(): string {
@@ -278,23 +280,33 @@ export class GoogleCalendarService {
       'http://localhost:8000',
     );
 
-    const { data } = await firstValueFrom(
-      this.httpService.post<SuggestSlotsResponse>(
-        `${aiServiceUrl}/api/ai/scheduling/suggest-slots`,
-        {
-          hr_email: hrEmail,
-          date_range: { start_date: startDate, end_date: endDate },
-          duration_minutes: durationMinutes,
-          access_token: accessToken,
-        },
-      ),
-    );
+    // Agent 4 không chạy qua BullMQ processor — gọi ai-service đồng bộ ngay tại đây, nên
+    // đây cũng là điểm bọc agentLogger.track duy nhất cho scheduling. Không gắn với 1
+    // application cụ thể (suggest-slots là truy vấn lịch trống chung của recruiter).
+    const data = await this.agentLogger.track(
+      'agent4_scheduling',
+      null,
+      async () => {
+        const { data } = await firstValueFrom(
+          this.httpService.post<SuggestSlotsResponse>(
+            `${aiServiceUrl}/api/ai/scheduling/suggest-slots`,
+            {
+              hr_email: hrEmail,
+              date_range: { start_date: startDate, end_date: endDate },
+              duration_minutes: durationMinutes,
+              access_token: accessToken,
+            },
+          ),
+        );
 
-    if (!data.success) {
-      throw new BadRequestException(
-        data.error ?? 'ai-service trả về lỗi không xác định khi gợi ý lịch',
-      );
-    }
+        if (!data.success) {
+          throw new BadRequestException(
+            data.error ?? 'ai-service trả về lỗi không xác định khi gợi ý lịch',
+          );
+        }
+        return data;
+      },
+    );
     return data.slots;
   }
 

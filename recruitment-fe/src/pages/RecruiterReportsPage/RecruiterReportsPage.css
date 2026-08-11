@@ -1,0 +1,121 @@
+/* ===================== FILTERS ===================== */
+.rr-filters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.rr-select,
+.rr-date {
+  font-size: var(--fs-label);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-family: var(--font-family);
+}
+
+.rr-date-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+}
+
+/* ===================== FUNNEL STEPS (thẻ nối tiếp, thay cho thanh ngang dài) ===================== */
+.rr-funnel-steps {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.rr-step-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 170px;
+  min-width: 150px;
+}
+
+.rr-step-card {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.rr-step-label {
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rr-step-count {
+  font-size: 24px;
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-top: 2px;
+}
+
+.rr-step-bar-track {
+  height: 6px;
+  background: var(--bg-muted);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin: var(--space-3) 0;
+}
+
+.rr-step-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
+
+.rr-step-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.rr-step-stat strong {
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.rr-step-caption {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-default);
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.rr-step-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+@media (max-width: 1100px) {
+  .rr-step-arrow {
+    display: none;
+  }
+  .rr-step-wrap {
+    flex: 1 1 220px;
+  }
+}

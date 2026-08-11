@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,9 +11,12 @@ import { VALID_TRANSITIONS } from '@smart-recruitment/shared';
 import { Application, ApplicationStatus } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Job } from '../jobs/job.entity';
+import { User } from '../users/user.entity';
 import { Schedule, ScheduleStatus, ProposedSlot } from './schedule.entity';
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 import { MailService } from '../mail/mail.service';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
+import { shouldNotify } from '../settings/notification-preferences';
 
 const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
@@ -43,6 +47,8 @@ export interface RecruiterScheduleListItem {
 
 @Injectable()
 export class ScheduleService {
+  private readonly logger = new Logger(ScheduleService.name);
+
   constructor(
     @InjectRepository(Schedule)
     private readonly scheduleRepo: Repository<Schedule>,
@@ -52,8 +58,11 @@ export class ScheduleService {
     private readonly historyRepo: Repository<ApplicationStatusHistory>,
     @InjectRepository(Job)
     private readonly jobRepo: Repository<Job>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
     private readonly googleCalendarService: GoogleCalendarService,
     private readonly mailService: MailService,
+    private readonly dashboardCache: DashboardCacheService,
   ) {}
 
   /**
@@ -118,6 +127,7 @@ export class ScheduleService {
       await this.transitionApplication(
         application,
         'schedule_sent',
+        recruiterId,
         recruiterId,
       );
     }
@@ -189,20 +199,65 @@ export class ScheduleService {
     schedule.meetLink = meetLink;
     const saved = await this.scheduleRepo.save(schedule);
 
-    await this.transitionApplication(application, 'scheduled', candidateId);
+    await this.transitionApplication(
+      application,
+      'scheduled',
+      candidateId,
+      application.job.recruiterId,
+    );
+
+    const scheduledTimeLabel = this.formatScheduledTime(
+      saved.confirmedStartTime!,
+      saved.confirmedEndTime!,
+    );
 
     await this.mailService.sendScheduleConfirmedEmail(
       application.candidate.email,
       application.candidate.fullName,
       application.job.title,
-      this.formatScheduledTime(
-        saved.confirmedStartTime!,
-        saved.confirmedEndTime!,
-      ),
+      scheduledTimeLabel,
       meetLink ?? '',
     );
 
+    await this.notifyRecruiterScheduleConfirmed(
+      application.job.recruiterId,
+      application.candidate.fullName,
+      application.job.title,
+      scheduledTimeLabel,
+    );
+
     return saved;
+  }
+
+  /** Không để lỗi gửi mail làm hỏng luồng xác nhận lịch chính — chỉ log lại nếu thất bại */
+  private async notifyRecruiterScheduleConfirmed(
+    recruiterId: string,
+    candidateName: string,
+    jobTitle: string,
+    scheduledTimeLabel: string,
+  ): Promise<void> {
+    try {
+      const recruiter = await this.userRepo.findOne({
+        where: { id: recruiterId },
+      });
+      if (
+        !recruiter ||
+        !shouldNotify(recruiter.notificationPreferences, 'scheduleConfirmed')
+      ) {
+        return;
+      }
+      await this.mailService.sendRecruiterScheduleConfirmedEmail(
+        recruiter.email,
+        recruiter.fullName,
+        candidateName,
+        jobTitle,
+        scheduledTimeLabel,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Gửi email thông báo xác nhận lịch thất bại: ${(err as Error).message}`,
+      );
+    }
   }
 
   private formatScheduledTime(start: Date, end: Date): string {
@@ -305,6 +360,7 @@ export class ScheduleService {
     application: Application,
     toStatus: ApplicationStatus,
     changedBy: string,
+    recruiterId: string,
   ): Promise<void> {
     const fromStatus = application.status;
     application.status = toStatus;
@@ -317,6 +373,7 @@ export class ScheduleService {
         changedBy,
       }),
     );
+    await this.dashboardCache.invalidate(recruiterId);
   }
 
   private async findOwnedJob(recruiterId: string, jobId: string): Promise<Job> {

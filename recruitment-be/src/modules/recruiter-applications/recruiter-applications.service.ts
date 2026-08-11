@@ -25,6 +25,7 @@ import {
 import { InterviewAnswer } from '../applications/interview-answer.entity';
 import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
+import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import {
   GetJobApplicationsQueryDto,
   ScoreBand,
@@ -41,7 +42,7 @@ const SCORE_BAND_RANGES: Record<
 };
 
 /** Chuyển sang các trạng thái này sẽ tự động gửi email thông báo cho ứng viên */
-const EMAIL_NOTIFY_STATUSES: ApplicationStatus[] = ['interviewed', 'rejected'];
+const EMAIL_NOTIFY_STATUSES: ApplicationStatus[] = ['interviewed', 'rejected', 'hired'];
 
 interface ApplicationRow {
   applicationId: string;
@@ -113,6 +114,7 @@ export class RecruiterApplicationsService {
     @InjectRepository(InterviewAnswer)
     private readonly interviewAnswerRepo: Repository<InterviewAnswer>,
     private readonly mailService: MailService,
+    private readonly dashboardCache: DashboardCacheService,
   ) {}
 
   async getJobApplications(
@@ -159,6 +161,10 @@ export class RecruiterApplicationsService {
       if (range.max !== null) {
         qb.andWhere('match.overallScore < :max', { max: range.max });
       }
+    }
+
+    if (query.status) {
+      qb.andWhere('app.status = :status', { status: query.status });
     }
 
     if (query.sort === 'date') {
@@ -222,6 +228,8 @@ export class RecruiterApplicationsService {
         changedBy: recruiterId,
       }),
     );
+
+    await this.dashboardCache.invalidate(recruiterId);
 
     if (EMAIL_NOTIFY_STATUSES.includes(toStatus)) {
       await this.sendStatusEmail(application, toStatus);
@@ -294,6 +302,12 @@ export class RecruiterApplicationsService {
       );
     } else if (status === 'rejected') {
       await this.mailService.sendApplicationRejectedEmail(
+        email,
+        fullName,
+        jobTitle,
+      );
+    } else if (status === 'hired') {
+      await this.mailService.sendApplicationHiredEmail(
         email,
         fullName,
         jobTitle,

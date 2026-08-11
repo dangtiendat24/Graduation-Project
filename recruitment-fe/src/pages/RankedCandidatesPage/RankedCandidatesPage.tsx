@@ -7,6 +7,7 @@ import { getJob } from '../../api/jobs'
 import { getRecruiterCandidates } from '../../api/candidates'
 import { getJobApplications, updateApplicationStatus, getScoreBand } from '../../api/rankings'
 import type { GetJobApplicationsResponse } from '../../api/rankings'
+import type { ApplicationStatus } from '../../api/candidates'
 import ScoreBandFilter, { type BandFilterValue } from './ScoreBandFilter'
 import RankingTable, { type RankedRow } from './RankingTable'
 import ConfirmActionModal from './ConfirmActionModal'
@@ -15,6 +16,17 @@ import InterviewResultDrawer from './InterviewResultDrawer'
 import Top3Podium, { type PodiumItem } from './Top3Podium'
 import ScoreSummaryCard from './ScoreSummaryCard'
 import './RankedCandidatesPage.css'
+
+const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  pending: 'Vừa nộp đơn',
+  matched: 'Đã chấm điểm',
+  interviewed: 'Đã mời phỏng vấn',
+  schedule_sent: 'Chờ chọn lịch',
+  scheduled: 'Đã hẹn lịch',
+  completed: 'AI báo cáo',
+  hired: 'Đã tuyển',
+  rejected: 'Từ chối',
+}
 
 const PAGE_LIMIT = 20
 // Giới hạn tối đa của GET /recruiter/candidates (dùng để lấy kỹ năng đã trích
@@ -45,6 +57,7 @@ export default function RankedCandidatesPage() {
   const queryClient = useQueryClient()
 
   const [bandFilter, setBandFilter] = useState<BandFilterValue>('all')
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatus | 'all'>('all')
   const [page, setPage] = useState(1)
   const [selectedRow, setSelectedRow] = useState<RankedRow | null>(null)
   const [interviewRow, setInterviewRow] = useState<RankedRow | null>(null)
@@ -62,6 +75,11 @@ export default function RankedCandidatesPage() {
     setPage(1)
   }
 
+  function handleStatusFilterChange(value: ApplicationStatus | 'all') {
+    setStatusFilter(value)
+    setPage(1)
+  }
+
   const { data: job } = useQuery({
     queryKey: ['job', jobId],
     queryFn: () => getJob(jobId!),
@@ -70,11 +88,12 @@ export default function RankedCandidatesPage() {
   })
 
   const rankingsQuery = useQuery({
-    queryKey: ['job-rankings', jobId, bandFilter, page],
+    queryKey: ['job-rankings', jobId, bandFilter, statusFilter, page],
     queryFn: () =>
       getJobApplications(jobId!, {
         sort: 'score',
         scoreBand: bandFilter === 'all' ? undefined : bandFilter,
+        status: statusFilter === 'all' ? undefined : statusFilter,
         page,
         limit: PAGE_LIMIT,
       }),
@@ -235,7 +254,21 @@ export default function RankedCandidatesPage() {
 
         <div className="rk-layout">
           <div className="rk-main">
-            <ScoreBandFilter value={bandFilter} counts={bandCounts} onChange={handleBandChange} />
+            <div className="rk-filters-row">
+              <ScoreBandFilter value={bandFilter} counts={bandCounts} onChange={handleBandChange} />
+              <select
+                className="rk-status-select"
+                value={statusFilter}
+                onChange={(e) => handleStatusFilterChange(e.target.value as ApplicationStatus | 'all')}
+              >
+                <option value="all">Tất cả trạng thái</option>
+                {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <RankingTable
               rows={rows}
