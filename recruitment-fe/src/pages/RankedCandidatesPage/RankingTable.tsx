@@ -37,8 +37,14 @@ function getInitials(name: string): string {
 
 // Cho phép mời phỏng vấn / từ chối theo đúng VALID_TRANSITIONS ở
 // packages/shared/scoring.constants.ts (FE chưa reference được package này).
-function canInterview(status: ApplicationStatus): boolean {
-  return status === 'matched'
+// "Mời phỏng vấn" ở đây là mời phỏng vấn thật (HR <-> ứng viên), nên chỉ bật khi
+// đã có đủ cả điểm matching CV lẫn điểm phỏng vấn AI để HR có căn cứ quyết định.
+function canInterview(row: RankedRow): boolean {
+  return (
+    (row.status === 'matched' || row.status === 'interviewed') &&
+    row.matching?.overallScore != null &&
+    row.interview?.overallScore != null
+  )
 }
 
 function canReject(status: ApplicationStatus): boolean {
@@ -233,8 +239,12 @@ export default function RankingTable({
                     <div className="rk-actions">
                       <button
                         className="rk-btn-interview"
-                        disabled={!canInterview(row.status) || isTerminalPending}
-                        title={canInterview(row.status) ? 'Mời phỏng vấn' : 'Không thể mời phỏng vấn ở trạng thái hiện tại'}
+                        disabled={!canInterview(row) || isTerminalPending}
+                        title={
+                          canInterview(row)
+                            ? 'Mời phỏng vấn'
+                            : 'Cần có đủ điểm matching CV và điểm phỏng vấn AI trước khi mời phỏng vấn'
+                        }
                         onClick={() => onInvite(row)}
                       >
                         <i className="ti ti-calendar-event" /> Mời phỏng vấn
