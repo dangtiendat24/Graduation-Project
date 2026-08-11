@@ -7,6 +7,9 @@ const queryClient = new QueryClient()
 import LandingPage from './pages/LandingPage/LandingPage'
 import AuthPage from './pages/AuthPage/AuthPage'
 import VerifyEmailPage from './pages/VerifyEmailPage/VerifyEmailPage'
+import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage'
+import TermsPage from './pages/TermsPage/TermsPage'
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage/PrivacyPolicyPage'
 import AuthCallbackPage from './pages/AuthCallbackPage/AuthCallbackPage'
 import RecruiterDashboardPage from './pages/RecruiterDashboardPage/RecruiterDashboardPage'
 import RecruiterReportsPage from './pages/RecruiterReportsPage/RecruiterReportsPage'
@@ -73,6 +76,9 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<AuthPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         <Route

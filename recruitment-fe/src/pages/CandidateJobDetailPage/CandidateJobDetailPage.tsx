@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getJob, type Job } from '../../api/jobs'
-import { getApplicationStatus, applyToJob, type ApplicationStatus } from '../../api/applications'
+import { getApplicationStatus, applyToJob, applyToJobWithProfileCv, type ApplicationStatus } from '../../api/applications'
+import { getMyProfile, formatBytes } from '../../api/profile'
 import './CandidateJobDetailPage.css'
 
 const WORK_MODEL_LABELS: Record<string, string> = {
@@ -54,6 +55,7 @@ export default function CandidateJobDetailPage() {
   const [showApplyModal, setShowApplyModal] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [useProfileCv, setUseProfileCv] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: applicationStatus } = useQuery({
@@ -62,8 +64,15 @@ export default function CandidateJobDetailPage() {
     enabled: !!id,
   })
 
+  const { data: profile } = useQuery({
+    queryKey: ['profile', 'me'],
+    queryFn: getMyProfile,
+    staleTime: 30_000,
+  })
+
   const applyMutation = useMutation({
-    mutationFn: (file: File) => applyToJob(id!, file),
+    mutationFn: (input: File | 'profile') =>
+      input === 'profile' ? applyToJobWithProfileCv(id!) : applyToJob(id!, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['applications', 'status', id] })
       setShowApplyModal(false)
@@ -74,15 +83,18 @@ export default function CandidateJobDetailPage() {
   function openApplyModal() {
     setSelectedFile(null)
     applyMutation.reset()
+    // Mặc định dùng CV trong hồ sơ nếu có, để tránh bắt ứng viên chọn lại file họ đã tải lên rồi
+    setUseProfileCv(!!profile?.resume)
     setShowApplyModal(true)
   }
 
   function pickFile(file: File | undefined) {
-    if (file) setSelectedFile(file)
+    if (file) { setSelectedFile(file); setUseProfileCv(false) }
   }
 
   function handleSubmitApply() {
-    if (selectedFile) applyMutation.mutate(selectedFile)
+    if (useProfileCv) applyMutation.mutate('profile')
+    else if (selectedFile) applyMutation.mutate(selectedFile)
   }
 
   useEffect(() => {
@@ -303,6 +315,36 @@ export default function CandidateJobDetailPage() {
             <h3 className="cjd-apply-modal-title">Ứng tuyển: {job.title}</h3>
             <p className="cjd-apply-modal-sub">Chọn CV (PDF hoặc DOCX, tối đa 5MB) để nộp cho tin tuyển dụng này.</p>
 
+            {profile?.resume && (
+              <div
+                className={`cjd-cv-option${useProfileCv ? ' cjd-cv-option--selected' : ''}`}
+                onClick={() => setUseProfileCv(true)}
+              >
+                <i className="ti ti-file-check" />
+                <div className="cjd-cv-option-body">
+                  <div className="cjd-cv-option-title">Dùng CV trong hồ sơ</div>
+                  <div className="cjd-cv-option-sub">
+                    {profile.resume.cvOriginalName} · {formatBytes(profile.resume.cvSizeBytes)}
+                  </div>
+                </div>
+                {useProfileCv && <i className="ti ti-circle-check cjd-cv-option-check" />}
+              </div>
+            )}
+
+            {profile?.resume && (
+              <div
+                className={`cjd-cv-option${!useProfileCv ? ' cjd-cv-option--selected' : ''}`}
+                onClick={() => setUseProfileCv(false)}
+              >
+                <i className="ti ti-upload" />
+                <div className="cjd-cv-option-body">
+                  <div className="cjd-cv-option-title">Tải CV khác lên</div>
+                  <div className="cjd-cv-option-sub">Dùng CV riêng cho tin tuyển dụng này</div>
+                </div>
+                {!useProfileCv && <i className="ti ti-circle-check cjd-cv-option-check" />}
+              </div>
+            )}
+
             <input
               ref={fileInputRef}
               type="file"
@@ -311,27 +353,29 @@ export default function CandidateJobDetailPage() {
               onChange={(e) => pickFile(e.target.files?.[0])}
             />
 
-            <div
-              className={`cjd-drop-zone${dragOver ? ' cjd-drop-zone--over' : ''}`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault()
-                setDragOver(false)
-                pickFile(e.dataTransfer.files?.[0])
-              }}
-            >
-              <i className="ti ti-file-upload cjd-drop-icon" />
-              {selectedFile ? (
-                <div className="cjd-drop-title">{selectedFile.name}</div>
-              ) : (
-                <>
-                  <div className="cjd-drop-title">Kéo thả file vào đây</div>
-                  <div className="cjd-drop-sub">hoặc bấm để chọn file từ máy</div>
-                </>
-              )}
-            </div>
+            {!useProfileCv && (
+              <div
+                className={`cjd-drop-zone${dragOver ? ' cjd-drop-zone--over' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  setDragOver(false)
+                  pickFile(e.dataTransfer.files?.[0])
+                }}
+              >
+                <i className="ti ti-file-upload cjd-drop-icon" />
+                {selectedFile ? (
+                  <div className="cjd-drop-title">{selectedFile.name}</div>
+                ) : (
+                  <>
+                    <div className="cjd-drop-title">Kéo thả file vào đây</div>
+                    <div className="cjd-drop-sub">hoặc bấm để chọn file từ máy</div>
+                  </>
+                )}
+              </div>
+            )}
 
             {applyMutation.isError && (
               <p className="cjd-apply-error">
@@ -351,7 +395,7 @@ export default function CandidateJobDetailPage() {
               </button>
               <button
                 className="cjd-btn-apply"
-                disabled={!selectedFile || applyMutation.isPending}
+                disabled={(!useProfileCv && !selectedFile) || applyMutation.isPending}
                 onClick={handleSubmitApply}
               >
                 {applyMutation.isPending ? 'Đang nộp...' : 'Nộp đơn ứng tuyển'}

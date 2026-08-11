@@ -86,7 +86,13 @@ export default function CandidateLayout({ children }: Props) {
 
         <div className="csl-sidebar-footer">
           <div className="csl-avatar">
-            {user ? getInitials(user.fullName) : 'U'}
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.fullName} className="csl-avatar-img" />
+            ) : user ? (
+              getInitials(user.fullName)
+            ) : (
+              'U'
+            )}
           </div>
           <div className="csl-user-info">
             <div className="csl-user-name">{user?.fullName ?? 'Người dùng'}</div>

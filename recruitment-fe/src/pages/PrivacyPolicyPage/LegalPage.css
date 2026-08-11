@@ -1,0 +1,101 @@
+.legal-page {
+  font-family: var(--font-family);
+  background: var(--bg-page);
+  min-height: 100vh;
+  padding: 2.5rem 1rem 5rem;
+}
+
+.legal-header {
+  max-width: 760px;
+  margin: 0 auto 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.legal-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+.legal-logo-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--logo-dot-color);
+}
+.legal-logo-name {
+  font-size: var(--fs-logo);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  letter-spacing: .04em;
+}
+.legal-logo-name span { color: var(--color-teal); }
+
+.legal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-label);
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+.legal-back:hover { color: var(--text-primary); }
+
+.legal-card {
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 2.5rem;
+}
+
+.legal-title {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+.legal-updated {
+  font-size: var(--fs-label);
+  color: var(--text-muted);
+  margin: 0 0 2rem;
+}
+
+.legal-card h2 {
+  font-size: var(--fs-input);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin: 2rem 0 10px;
+}
+.legal-card h2:first-of-type { margin-top: 0; }
+
+.legal-card p {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+
+.legal-card ul {
+  margin: 0 0 12px;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.legal-card li {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.legal-card strong { color: var(--text-primary); }
+
+.legal-card a {
+  color: var(--color-indigo);
+  text-decoration: none;
+}
+.legal-card a:hover { text-decoration: underline; }

@@ -66,6 +66,18 @@ export class ApplicationsController {
     return this.applicationsService.apply(req.user.id, dto, file)
   }
 
+  @ApiOperation({
+    summary: 'Ứng tuyển bằng CV đã có sẵn trong hồ sơ cá nhân — không cần tải file lại',
+  })
+  @Post('from-profile')
+  applyWithProfileCv(
+    @Request() req: { user: JwtUser },
+    @Body() dto: CreateApplicationDto,
+  ) {
+    this.assertCandidate(req.user)
+    return this.applicationsService.applyWithProfileCv(req.user.id, dto)
+  }
+
   @ApiOperation({ summary: 'Kiểm tra trạng thái ứng tuyển của bản thân cho 1 tin tuyển dụng' })
   @Get('status/:jobId')
   getStatus(@Request() req: { user: JwtUser }, @Param('jobId') jobId: string) {

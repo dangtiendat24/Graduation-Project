@@ -46,6 +46,25 @@ export class UsersService {
     return this.usersRepo.findOne({ where: { googleId } })
   }
 
+  async setPasswordResetToken(userId: string, token: string, expires: Date) {
+    await this.usersRepo.update(userId, {
+      passwordResetToken: token,
+      passwordResetExpires: expires,
+    })
+  }
+
+  findByPasswordResetToken(token: string) {
+    return this.usersRepo.findOne({ where: { passwordResetToken: token } })
+  }
+
+  async resetPassword(userId: string, passwordHash: string) {
+    await this.usersRepo.update(userId, {
+      passwordHash,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    })
+  }
+
   async linkGoogleId(userId: string, googleId: string, avatarUrl?: string) {
     const update: Partial<User> = { googleId, isActive: true }
     if (avatarUrl) update.avatarUrl = avatarUrl

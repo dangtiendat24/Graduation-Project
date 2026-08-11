@@ -148,13 +148,23 @@ export default function RecruiterCompanyPage() {
     queryFn: getMyCompany,
   })
 
+  // Chỉ đồng bộ form từ server ở lần load đầu tiên — KHÔNG chạy lại mỗi khi query 'company-my'
+  // được refetch/patch bởi mutation khác (upload logo/ảnh bìa), nếu không sẽ đè mất các
+  // thay đổi form chưa lưu (cùng lỗi với applyUploaded — đã sửa 1 nửa, còn nửa này).
+  const companyInitialized = useRef(false)
   useEffect(() => {
-    if (serverData) {
+    if (serverData && !companyInitialized.current) {
       const f = serverToForm(serverData)
       setForm(f)
       setSavedForm(f)
+      companyInitialized.current = true
     }
   }, [serverData])
+
+  // Theo dõi lần lưu gần nhất là "Lưu nháp" hay "Lưu & xuất bản" — 2 nút dùng chung 1 mutation
+  // nên cần biết đang chờ/vừa xong cái nào để hiện đúng label trên đúng nút.
+  const [saveIntent, setSaveIntent] = useState<'draft' | 'publish'>('publish')
+  const [lastSavedIntent, setLastSavedIntent] = useState<'draft' | 'publish' | null>(null)
 
   const mutation = useMutation({
     mutationFn: (payload: CompanyData) => upsertCompany(payload),
@@ -162,6 +172,7 @@ export default function RecruiterCompanyPage() {
       const f = serverToForm(saved)
       setSavedForm(f)
       setSaveMsg('saved')
+      setLastSavedIntent(saveIntent)
       queryClient.setQueryData(['company-my'], saved)
       setTimeout(() => setSaveMsg('idle'), 3000)
     },
@@ -171,10 +182,20 @@ export default function RecruiterCompanyPage() {
     },
   })
 
-  const handleSave = (publish = true) => {
+  const handleSave = (publish: boolean) => {
     if (!form.name.trim()) return
+    setSaveIntent(publish ? 'publish' : 'draft')
     mutation.mutate(formToPayload(form, publish))
   }
+
+  const isPublished = serverData?.isPublished ?? false
+
+  const draftBtnLabel =
+    mutation.isPending && saveIntent === 'draft'
+      ? 'Đang lưu…'
+      : saveMsg === 'saved' && lastSavedIntent === 'draft'
+        ? 'Đã lưu nháp ✓'
+        : 'Lưu nháp'
 
   // ── Scroll-to-section (stepper) ──────────────────────────
   const imagesSectionRef = useRef<HTMLDivElement>(null)
@@ -194,11 +215,16 @@ export default function RecruiterCompanyPage() {
   const [coverDragOver, setCoverDragOver] = useState(false)
   const [imageError, setImageError] = useState('')
 
+  // Chỉ merge 2 trường ảnh từ response upload vào state hiện có — KHÔNG setForm(serverToForm(saved))
+  // ghi đè toàn bộ, vì response upload chỉ phản ánh đúng logoUrl/coverUrl mới; các trường khác trong
+  // đó là dữ liệu DB tại thời điểm upload, sẽ xoá mất mọi thay đổi form chưa lưu của người dùng.
   function applyUploaded(saved: CompanyData) {
-    const f = serverToForm(saved)
-    setForm(f)
-    setSavedForm(f)
-    queryClient.setQueryData(['company-my'], saved)
+    const imageFields = { logoUrl: saved.logoUrl ?? '', coverUrl: saved.coverUrl ?? '' }
+    setForm(prev => ({ ...prev, ...imageFields }))
+    setSavedForm(prev => ({ ...prev, ...imageFields }))
+    queryClient.setQueryData<CompanyData>(['company-my'], (old) =>
+      old ? { ...old, ...imageFields } : saved,
+    )
     setImageError('')
   }
 
@@ -245,7 +271,12 @@ export default function RecruiterCompanyPage() {
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key !== 'Enter' || !value.trim()) return
       e.preventDefault()
-      setForm(prev => ({ ...prev, [list]: [...prev[list], value.trim()] }))
+      const trimmed = value.trim()
+      setForm(prev =>
+        prev[list].some(t => t.toLowerCase() === trimmed.toLowerCase())
+          ? prev
+          : { ...prev, [list]: [...prev[list], trimmed] },
+      )
       clear()
     }
 
@@ -279,14 +310,19 @@ export default function RecruiterCompanyPage() {
 
   const companyInitial = form.name ? form.name.charAt(0).toUpperCase() : 'C'
 
-  const saveBtnLabel = mutation.isPending
-    ? 'Đang lưu…'
-    : saveMsg === 'saved'
-      ? 'Đã lưu ✓'
-      : 'Lưu & xuất bản'
+  const saveBtnLabel =
+    mutation.isPending && saveIntent === 'publish'
+      ? 'Đang lưu…'
+      : saveMsg === 'saved' && lastSavedIntent === 'publish'
+        ? 'Đã lưu ✓'
+        : 'Lưu & xuất bản'
 
   const topActions = (
     <div className="rcp-topbar-actions">
+      <span className={`rcp-publish-badge${isPublished ? ' rcp-publish-badge--live' : ''}`}>
+        <i className={`ti ${isPublished ? 'ti-world' : 'ti-file-pencil'}`} />
+        {isPublished ? 'Đã xuất bản' : 'Bản nháp'}
+      </span>
       {mode === 'edit' ? (
         <button className="rcp-btn-mode" onClick={() => setMode('preview')}>
           <i className="ti ti-eye" /> Xem trước
@@ -296,6 +332,13 @@ export default function RecruiterCompanyPage() {
           <i className="ti ti-edit" /> Chỉnh sửa
         </button>
       )}
+      <button
+        className="rcp-btn-ghost"
+        onClick={() => handleSave(false)}
+        disabled={mutation.isPending || !form.name.trim()}
+      >
+        <i className="ti ti-file-pencil" /> {draftBtnLabel}
+      </button>
       <button
         className="rcp-btn-save"
         onClick={() => handleSave(true)}
@@ -1209,6 +1252,13 @@ export default function RecruiterCompanyPage() {
               disabled={!isDirty || mutation.isPending}
             >
               Huỷ thay đổi
+            </button>
+            <button
+              className="rcp-btn-ghost"
+              onClick={() => handleSave(false)}
+              disabled={mutation.isPending || !form.name.trim()}
+            >
+              <i className="ti ti-file-pencil" /> {draftBtnLabel}
             </button>
             <button
               className="rcp-btn-save"

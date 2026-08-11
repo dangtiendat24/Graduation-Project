@@ -16,6 +16,8 @@ import { ConfigService } from '@nestjs/config'
 import { AuthService } from './auth.service'
 import { RegisterDto } from './dto/register.dto'
 import { LoginDto } from './dto/login.dto'
+import { ForgotPasswordDto } from './dto/forgot-password.dto'
+import { ResetPasswordDto } from './dto/reset-password.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import { GoogleAuthGuard } from './guards/google-auth.guard'
 
@@ -49,6 +51,22 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto)
+  }
+
+  @ApiOperation({
+    summary: 'Quên mật khẩu — gửi email chứa link đặt lại mật khẩu (chỉ tài khoản email/mật khẩu)',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto)
+  }
+
+  @ApiOperation({ summary: 'Đặt lại mật khẩu bằng token từ email' })
+  @HttpCode(HttpStatus.OK)
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto)
   }
 
   @ApiOperation({ summary: 'Lấy thông tin profile hiện tại' })

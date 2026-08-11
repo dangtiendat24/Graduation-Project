@@ -23,6 +23,7 @@ export interface MyApplicationListItem {
     location: string | null
     workModel: string | null
     salaryRange: string | null
+    requiredSkills: string[] | null
     company: { name: string; logoUrl: string | null } | null
   }
   matching: { overallScore: number | null; recommendation: MatchRecommendation | null } | null
@@ -34,6 +35,7 @@ export interface MyApplicationListItem {
   schedule: {
     status: ScheduleStatus | null
     confirmedStartTime: string | null
+    confirmedEndTime: string | null
     meetLink: string | null
     proposedSlots: ProposedSlot[] | null
   } | null

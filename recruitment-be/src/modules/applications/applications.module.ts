@@ -7,6 +7,7 @@ import { Application } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { Job } from '../jobs/job.entity';
 import { User } from '../users/user.entity';
+import { CandidateResume } from '../profile/entities/candidate-resume.entity';
 import { StorageModule } from '../storage/storage.module';
 import { MatchingModule } from '../matching/matching.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
@@ -23,6 +24,7 @@ import { ApplicationCvParserProcessor } from './application-cv-parser.processor'
       ApplicationStatusHistory,
       Job,
       User,
+      CandidateResume,
     ]),
     BullModule.registerQueue({ name: QUEUE_NAMES.APPLICATION_CV_PARSE }),
     HttpModule.register({ timeout: 20000, maxRedirects: 3 }),

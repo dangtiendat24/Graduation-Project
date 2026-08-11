@@ -48,7 +48,13 @@ export default function AuthPage() {
   const [loginEmailErr, setLoginEmailErr] = useState('')
   const [loginPw, setLoginPw]             = useState('')
   const [showLoginPw, setShowLoginPw]     = useState(false)
-  const [remember, setRemember]           = useState(false)
+
+  /* ── Forgot password state ── */
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail]     = useState('')
+  const [forgotEmailErr, setForgotEmailErr] = useState('')
+  const [forgotSent, setForgotSent]       = useState(false)
+  const [forgotMessage, setForgotMessage] = useState('')
 
   /* ── Register state ── */
   const [regName, setRegName]             = useState('')
@@ -107,6 +113,47 @@ export default function AuthPage() {
     }
   }
 
+  async function handleForgotPassword(e: { preventDefault(): void }) {
+    e.preventDefault()
+    const emailErr = validateEmail(forgotEmail)
+    if (emailErr) { setForgotEmailErr(emailErr); return }
+
+    setIsLoading(true)
+    setApiError('')
+    try {
+      const res = await fetch(`${API}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setApiError(data.message ?? 'Gửi email thất bại')
+      } else {
+        setForgotMessage(data.message ?? '')
+        setForgotSent(true)
+      }
+    } catch {
+      setApiError('Không thể kết nối đến máy chủ. Vui lòng thử lại.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function openForgotPassword() {
+    setShowForgotPassword(true)
+    setForgotSent(false)
+    setForgotEmail(loginEmail)
+    setForgotEmailErr('')
+    setApiError('')
+  }
+
+  function backToLogin() {
+    setShowForgotPassword(false)
+    setForgotSent(false)
+    setApiError('')
+  }
+
   async function handleRegister(e: { preventDefault(): void }) {
     e.preventDefault()
     const emailErr = validateEmail(regEmail)
@@ -140,6 +187,7 @@ export default function AuthPage() {
     setTab(t)
     setApiError('')
     setRegisterSuccess(false)
+    setShowForgotPassword(false)
   }
 
   return (
@@ -233,8 +281,57 @@ export default function AuthPage() {
             </button>
           </div>
 
+          {/* ── FORGOT PASSWORD ── */}
+          {tab === 'login' && showForgotPassword && (
+            forgotSent ? (
+              <div className="register-success">
+                <div className="register-success-icon">
+                  <i className="ti ti-mail-check" />
+                </div>
+                <p className="form-title">Kiểm tra email của bạn!</p>
+                <p className="form-sub">{forgotMessage}</p>
+                <div className="switch-link" style={{ marginTop: '1.5rem' }}>
+                  <button type="button" onClick={backToLogin}>Quay lại đăng nhập</button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword}>
+                <div className="form-title">Quên mật khẩu?</div>
+                <div className="form-sub">
+                  Nhập email tài khoản của bạn — chúng tôi sẽ gửi link đặt lại mật khẩu.
+                  Chỉ áp dụng cho tài khoản đăng ký bằng email/mật khẩu.
+                </div>
+
+                {apiError && <div className="api-error"><i className="ti ti-alert-circle" /> {apiError}</div>}
+
+                <div className="field">
+                  <label htmlFor="fp-email">Email</label>
+                  <input
+                    type="email"
+                    id="fp-email"
+                    placeholder="ban@congty.com"
+                    autoComplete="email"
+                    value={forgotEmail}
+                    onChange={e => { setForgotEmail(e.target.value); if (forgotEmailErr) setForgotEmailErr('') }}
+                    onBlur={e => setForgotEmailErr(validateEmail(e.target.value))}
+                    style={forgotEmailErr ? { borderColor: 'var(--color-danger)' } : {}}
+                  />
+                  {forgotEmailErr && <div className="field-error">{forgotEmailErr}</div>}
+                </div>
+
+                <button type="submit" className="btn-primary" disabled={isLoading}>
+                  {isLoading ? <><span className="btn-spinner" /> Đang gửi…</> : <>Gửi email đặt lại mật khẩu <i className="ti ti-arrow-right" /></>}
+                </button>
+
+                <div className="switch-link" style={{ marginTop: 12 }}>
+                  <button type="button" onClick={backToLogin}>Quay lại đăng nhập</button>
+                </div>
+              </form>
+            )
+          )}
+
           {/* ── LOGIN FORM ── */}
-          {tab === 'login' && (
+          {tab === 'login' && !showForgotPassword && (
             <form onSubmit={handleLogin}>
               <div className="form-title">Chào mừng trở lại</div>
               <div className="form-sub">Đăng nhập để tiếp tục quy trình tuyển dụng của bạn</div>
@@ -285,15 +382,7 @@ export default function AuthPage() {
               </div>
 
               <div className="form-row">
-                <label className="check-inline">
-                  <input
-                    type="checkbox"
-                    checked={remember}
-                    onChange={e => setRemember(e.target.checked)}
-                  />
-                  Ghi nhớ đăng nhập 7 ngày
-                </label>
-                <button type="button" className="forgot-link">Quên mật khẩu?</button>
+                <button type="button" className="forgot-link" onClick={openForgotPassword}>Quên mật khẩu?</button>
               </div>
 
               <button type="submit" className="btn-primary" disabled={isLoading}>
@@ -480,8 +569,9 @@ export default function AuthPage() {
                     onChange={e => setTerms(e.target.checked)}
                   />
                   <label htmlFor="terms">
-                    Tôi đồng ý với <a href="#">Điều khoản sử dụng</a> và{' '}
-                    <a href="#">Chính sách bảo mật</a> của RecruitAI
+                    Tôi đồng ý với{' '}
+                    <a href="/terms" target="_blank" rel="noreferrer">Điều khoản sử dụng</a> và{' '}
+                    <a href="/privacy-policy" target="_blank" rel="noreferrer">Chính sách bảo mật</a> của RecruitAI
                   </label>
                 </div>
 
