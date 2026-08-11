@@ -11,6 +11,8 @@ import { UsersService } from '../users/users.service'
 import { MailService } from '../mail/mail.service'
 import { RegisterDto } from './dto/register.dto'
 import { LoginDto } from './dto/login.dto'
+import { ForgotPasswordDto } from './dto/forgot-password.dto'
+import { ResetPasswordDto } from './dto/reset-password.dto'
 
 interface GoogleProfile {
   email: string | undefined
@@ -87,6 +89,49 @@ export class AuthService {
         avatarUrl: user.avatarUrl,
       },
     }
+  }
+
+  /**
+   * Không tiết lộ tài khoản có tồn tại hay không khi email không đăng ký — trả về message
+   * chung chung để tránh dò email. Nhưng NẾU email tồn tại và là tài khoản Google (không có
+   * passwordHash) thì báo rõ cho người dùng biết để họ đăng nhập bằng Google thay vì bối rối
+   * không hiểu sao không nhận được email.
+   */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const GENERIC_MESSAGE =
+      'Nếu email này đã đăng ký, chúng tôi đã gửi link đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.'
+
+    const user = await this.usersService.findByEmail(dto.email)
+    if (!user) return { message: GENERIC_MESSAGE }
+
+    if (!user.passwordHash) {
+      return {
+        message:
+          'Tài khoản này đăng nhập bằng Google. Vui lòng đăng nhập bằng Google thay vì đặt lại mật khẩu.',
+      }
+    }
+
+    const token = crypto.randomBytes(32).toString('hex')
+    const expires = new Date(Date.now() + 60 * 60 * 1000) // 1h — ngắn hơn token xác nhận email vì đây là thao tác nhạy cảm hơn
+    await this.usersService.setPasswordResetToken(user.id, token, expires)
+
+    await this.mailService.sendPasswordResetEmail(user.email, user.fullName, token)
+
+    return { message: GENERIC_MESSAGE }
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.usersService.findByPasswordResetToken(dto.token)
+    if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+      throw new BadRequestException(
+        'Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn',
+      )
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10)
+    await this.usersService.resetPassword(user.id, passwordHash)
+
+    return { message: 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.' }
   }
 
   async getProfile(userId: string) {

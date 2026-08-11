@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import './LandingPage.css'
 
 export default function LandingPage() {
@@ -374,10 +374,10 @@ export default function LandingPage() {
               <i className="ti ti-rocket" style={{ fontSize: 18 }} />
               Tạo tài khoản miễn phí
             </button>
-            <button className="btn-cta-outline">
+            <a className="btn-cta-outline" href="mailto:support@recruitai.vn">
               <i className="ti ti-phone" style={{ fontSize: 18 }} />
               Liên hệ tư vấn
-            </button>
+            </a>
           </div>
         </div>
       </section>
@@ -405,33 +405,25 @@ export default function LandingPage() {
             <div>
               <div className="footer-col-title">Sản phẩm</div>
               <div className="footer-links">
-                <a className="footer-link" href="#">Tính năng</a>
-                <a className="footer-link" href="#">Bảng giá</a>
-                <a className="footer-link" href="#">AI Agent</a>
-                <a className="footer-link" href="#">Tích hợp API</a>
-                <a className="footer-link" href="#">Changelog</a>
+                <a className="footer-link" href="#how">Cách hoạt động</a>
+                <a className="footer-link" href="#agents">AI Agent</a>
+                <a className="footer-link" href="#numbers">Thành tích</a>
               </div>
             </div>
 
             <div>
-              <div className="footer-col-title">Tài nguyên</div>
+              <div className="footer-col-title">Hỗ trợ</div>
               <div className="footer-links">
-                <a className="footer-link" href="#">Tài liệu</a>
-                <a className="footer-link" href="#">Blog HR</a>
-                <a className="footer-link" href="#">Case Study</a>
-                <a className="footer-link" href="#">Hỗ trợ</a>
-                <a className="footer-link" href="#">Cộng đồng</a>
+                <a className="footer-link" href="mailto:support@recruitai.vn">Liên hệ hỗ trợ</a>
+                <a className="footer-link" href="#reviews">Đánh giá từ HR</a>
               </div>
             </div>
 
             <div>
-              <div className="footer-col-title">Công ty</div>
+              <div className="footer-col-title">Pháp lý</div>
               <div className="footer-links">
-                <a className="footer-link" href="#">Về chúng tôi</a>
-                <a className="footer-link" href="#">Tuyển dụng</a>
-                <a className="footer-link" href="#">Đối tác</a>
-                <a className="footer-link" href="#">Liên hệ</a>
-                <a className="footer-link" href="#">Bảo mật</a>
+                <Link className="footer-link" to="/terms">Điều khoản sử dụng</Link>
+                <Link className="footer-link" to="/privacy-policy">Chính sách bảo mật</Link>
               </div>
             </div>
           </div>

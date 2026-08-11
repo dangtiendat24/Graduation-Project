@@ -29,3 +29,8 @@ export async function applyToJob(jobId: string, file: File): Promise<void> {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
+
+/** Ứng tuyển bằng CV đã có sẵn trong hồ sơ cá nhân — backend tự lấy file, không cần gửi lại. */
+export async function applyToJobWithProfileCv(jobId: string): Promise<void> {
+  await apiClient.post('/applications/from-profile', { jobId })
+}

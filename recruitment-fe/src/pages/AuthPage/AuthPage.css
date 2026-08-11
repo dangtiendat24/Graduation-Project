@@ -271,25 +271,12 @@
 }
 .pw-toggle:hover { color: #334155; }
 
-/* Remember + Forgot row */
+/* Forgot-password row */
 .form-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 14px;
-}
-.check-inline {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-label);
-  color: var(--text-secondary);
-  font-family: var(--font-family);
-  cursor: pointer;
-}
-.check-inline input[type='checkbox'] {
-  accent-color: var(--color-indigo);
-  cursor: pointer;
 }
 .forgot-link {
   font-size: var(--fs-label);

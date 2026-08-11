@@ -4,6 +4,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { HttpModule } from '@nestjs/axios';
 import { QUEUE_NAMES } from '@smart-recruitment/shared';
 import { Application } from './application.entity';
+import { ApplicationStatusHistory } from './application-status-history.entity';
 import { InterviewSession } from './interview-session.entity';
 import { InterviewAnswer } from './interview-answer.entity';
 import { InterviewSessionService } from './interview-session.service';
@@ -13,6 +14,7 @@ import { InterviewScoringProcessor } from './interview-scoring.processor';
 import { InterviewGenerationService } from './interview-generation.service';
 import { InterviewGenerationProcessor } from './interview-generation.processor';
 import { AdminModule } from '../admin/admin.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 
 /**
  * Module riêng cho pipeline phỏng vấn AI (Agent 3) — tách khỏi ApplicationsModule để
@@ -22,13 +24,19 @@ import { AdminModule } from '../admin/admin.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Application, InterviewSession, InterviewAnswer]),
+    TypeOrmModule.forFeature([
+      Application,
+      ApplicationStatusHistory,
+      InterviewSession,
+      InterviewAnswer,
+    ]),
     BullModule.registerQueue(
       { name: QUEUE_NAMES.INTERVIEW },
       { name: QUEUE_NAMES.INTERVIEW_SCORING },
     ),
     HttpModule.register({ timeout: 20000, maxRedirects: 3 }),
     AdminModule,
+    DashboardModule,
   ],
   controllers: [InterviewSessionController],
   providers: [

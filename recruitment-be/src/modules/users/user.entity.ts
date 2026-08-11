@@ -71,6 +71,17 @@ export class User {
   @Column({ type: 'timestamptz', name: 'email_verify_expires', nullable: true })
   emailVerifyExpires: Date | null;
 
+  @Column({
+    type: 'varchar',
+    name: 'password_reset_token',
+    nullable: true,
+    unique: true,
+  })
+  passwordResetToken: string | null;
+
+  @Column({ type: 'timestamptz', name: 'password_reset_expires', nullable: true })
+  passwordResetExpires: Date | null;
+
   /** null = chưa cấu hình, coi như bật hết (xem DEFAULT_NOTIFICATION_PREFERENCES) */
   @Column({ type: 'jsonb', name: 'notification_preferences', nullable: true })
   notificationPreferences: NotificationPreferences | null;

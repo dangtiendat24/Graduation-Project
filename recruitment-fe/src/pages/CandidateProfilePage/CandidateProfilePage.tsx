@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { useAuthStore } from '../../store/authStore'
 import {
@@ -15,8 +16,16 @@ import {
   type EduItem,
   type ExperienceItem,
 } from '../../api/profile'
+import { uploadAvatar, removeAvatar } from '../../api/settings'
 import { splitSummaryLines } from '../../utils/summary'
 import './CandidateProfilePage.css'
+
+function errorMessage(err: unknown, fallback: string): string {
+  if (isAxiosError(err)) {
+    return (err.response?.data as { message?: string })?.message ?? fallback
+  }
+  return fallback
+}
 
 /* ── helpers ── */
 function getInitials(name: string): string {
@@ -84,9 +93,10 @@ function EduList({ items }: { items: EduItem[] }) {
 /* ── main component ── */
 export default function CandidateProfilePage() {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, token, setAuth } = useAuthStore()
   const queryClient = useQueryClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   /* form state */
   const [form, setForm] = useState<ProfileForm>({
@@ -107,9 +117,14 @@ export default function CandidateProfilePage() {
     staleTime: 30_000,
   })
 
-  /* sync form when profile loads */
+  /* sync form only on the FIRST profile load — background refetches (triggered by CV/avatar
+     upload mutations invalidating the same query) must not clobber unsaved form edits */
+  const profileInitialized = useRef(false)
   useEffect(() => {
-    if (profile) setForm(profileToForm(profile))
+    if (profile && !profileInitialized.current) {
+      setForm(profileToForm(profile))
+      profileInitialized.current = true
+    }
   }, [profile])
 
   /* update profile mutation */
@@ -130,6 +145,40 @@ export default function CandidateProfilePage() {
       setShowDrop(false)
     },
   })
+
+  /* avatar upload/remove mutations */
+  const [avatarError, setAvatarError] = useState('')
+
+  function syncAvatar(avatarUrl: string | null) {
+    queryClient.setQueryData<ProfileData>(['profile', 'me'], (old) =>
+      old ? { ...old, avatarUrl } : old,
+    )
+    if (user && token) setAuth({ ...user, avatarUrl }, token)
+  }
+
+  const avatarMutation = useMutation({
+    mutationFn: uploadAvatar,
+    onSuccess: (saved) => {
+      syncAvatar(saved.avatarUrl)
+      setAvatarError('')
+    },
+    onError: (err) => setAvatarError(errorMessage(err, 'Tải ảnh lên thất bại')),
+  })
+
+  const avatarRemoveMutation = useMutation({
+    mutationFn: removeAvatar,
+    onSuccess: (saved) => syncAvatar(saved.avatarUrl),
+  })
+
+  function handleAvatarFile(file: File | undefined) {
+    if (!file) return
+    avatarMutation.mutate(file)
+  }
+
+  function handleAvatarInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    handleAvatarFile(e.target.files?.[0])
+    e.target.value = ''
+  }
 
   function handleSave() {
     updateMutation.mutate({
@@ -205,6 +254,13 @@ export default function CandidateProfilePage() {
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: 'none' }}
+        onChange={handleAvatarInputChange}
+      />
 
       {/* ══ TWO-COLUMN LAYOUT ══ */}
       <div className="cp-layout">
@@ -230,15 +286,38 @@ export default function CandidateProfilePage() {
                     ? <img src={profile.avatarUrl} alt="avatar" className="cp-avatar-img cp-avatar-photo" />
                     : <div className="cp-avatar-img">{initials}</div>
                   }
-                  <div className="cp-avatar-cam"><i className="ti ti-camera" /></div>
+                  <div
+                    className="cp-avatar-cam"
+                    onClick={() => avatarInputRef.current?.click()}
+                  >
+                    {avatarMutation.isPending
+                      ? <span className="cp-spinner" style={{ width: 12, height: 12, borderWidth: 2 }} />
+                      : <i className="ti ti-camera" />
+                    }
+                  </div>
                 </div>
                 <div className="cp-avatar-info">
                   <div className="cp-avatar-name">{profile?.fullName ?? user?.fullName}</div>
                   <div className="cp-avatar-email">{profile?.email ?? user?.email}</div>
                   <div className="cp-avatar-btns">
-                    <button className="cp-btn-upload"><i className="ti ti-upload" /> Đổi ảnh</button>
-                    <button className="cp-btn-rm">Xoá</button>
+                    <button
+                      className="cp-btn-upload"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={avatarMutation.isPending}
+                    >
+                      <i className="ti ti-upload" /> {avatarMutation.isPending ? 'Đang tải lên...' : 'Đổi ảnh'}
+                    </button>
+                    {profile?.avatarUrl && (
+                      <button
+                        className="cp-btn-rm"
+                        onClick={() => avatarRemoveMutation.mutate()}
+                        disabled={avatarRemoveMutation.isPending}
+                      >
+                        Xoá
+                      </button>
+                    )}
                   </div>
+                  {avatarError && <div className="cp-field-hint" style={{ color: 'var(--color-danger)' }}>{avatarError}</div>}
                 </div>
               </div>
 

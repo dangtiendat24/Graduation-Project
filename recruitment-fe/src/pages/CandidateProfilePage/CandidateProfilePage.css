@@ -151,7 +151,8 @@
   transition: background 0.15s;
 }
 
-.cp-btn-upload:hover { background: #dde4ff; }
+.cp-btn-upload:hover:not(:disabled) { background: #dde4ff; }
+.cp-btn-upload:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .cp-btn-rm {
   padding: 6px 12px;
@@ -165,7 +166,8 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.cp-btn-rm:hover { background: var(--bg-muted); color: var(--text-secondary); }
+.cp-btn-rm:hover:not(:disabled) { background: var(--bg-muted); color: var(--text-secondary); }
+.cp-btn-rm:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ===================== FORM ===================== */
 .cp-form-row {

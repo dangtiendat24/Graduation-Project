@@ -23,6 +23,7 @@ interface ApplicationRow {
   jobLocation: string | null
   jobWorkModel: string | null
   jobSalaryRange: string | null
+  jobRequiredSkills: string[] | null
   companyName: string | null
   companyLogoUrl: string | null
   overallScore: string | null
@@ -32,6 +33,7 @@ interface ApplicationRow {
   interviewOverallScore: string | null
   scheduleStatus: ScheduleStatus | null
   scheduleConfirmedStartTime: Date | null
+  scheduleConfirmedEndTime: Date | null
   scheduleMeetLink: string | null
   scheduleProposedSlots: ProposedSlot[] | null
 }
@@ -49,6 +51,7 @@ export interface MyApplicationListItem {
     location: string | null
     workModel: string | null
     salaryRange: string | null
+    requiredSkills: string[] | null
     company: { name: string; logoUrl: string | null } | null
   }
   matching: { overallScore: number | null; recommendation: MatchRecommendation | null } | null
@@ -60,6 +63,7 @@ export interface MyApplicationListItem {
   schedule: {
     status: ScheduleStatus | null
     confirmedStartTime: string | null
+    confirmedEndTime: string | null
     meetLink: string | null
     proposedSlots: ProposedSlot[] | null
   } | null
@@ -173,6 +177,7 @@ export class CandidateApplicationsService {
       .addSelect('job.location', 'jobLocation')
       .addSelect('job.workModel', 'jobWorkModel')
       .addSelect('job.salaryRange', 'jobSalaryRange')
+      .addSelect('job.requiredSkills', 'jobRequiredSkills')
       .addSelect('company.name', 'companyName')
       .addSelect('company.logoUrl', 'companyLogoUrl')
       .addSelect('match.overallScore', 'overallScore')
@@ -182,6 +187,7 @@ export class CandidateApplicationsService {
       .addSelect('interview.overallScore', 'interviewOverallScore')
       .addSelect('schedule.status', 'scheduleStatus')
       .addSelect('schedule.confirmedStartTime', 'scheduleConfirmedStartTime')
+      .addSelect('schedule.confirmedEndTime', 'scheduleConfirmedEndTime')
       .addSelect('schedule.meetLink', 'scheduleMeetLink')
       .addSelect('schedule.proposedSlots', 'scheduleProposedSlots')
   }
@@ -202,6 +208,7 @@ export class CandidateApplicationsService {
         location: row.jobLocation,
         workModel: row.jobWorkModel,
         salaryRange: row.jobSalaryRange,
+        requiredSkills: row.jobRequiredSkills,
         company: row.companyName ? { name: row.companyName, logoUrl: row.companyLogoUrl } : null,
       },
       matching:
@@ -222,6 +229,9 @@ export class CandidateApplicationsService {
               status: row.scheduleStatus,
               confirmedStartTime: row.scheduleConfirmedStartTime
                 ? new Date(row.scheduleConfirmedStartTime).toISOString()
+                : null,
+              confirmedEndTime: row.scheduleConfirmedEndTime
+                ? new Date(row.scheduleConfirmedEndTime).toISOString()
                 : null,
               meetLink: row.scheduleMeetLink,
               proposedSlots: row.scheduleProposedSlots,
