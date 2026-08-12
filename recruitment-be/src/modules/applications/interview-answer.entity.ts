@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { InterviewSession } from './interview-session.entity';
 
@@ -24,6 +25,11 @@ export interface InterviewAnswerSubScores {
 
 /** Một câu hỏi-trả lời trong buổi phỏng vấn AI (InterviewSession) — điểm được Agent 3 điền sau, không đồng bộ */
 @Entity('interview_answers')
+// upsert() ở InterviewSessionService.submitAnswer() dựa vào ON CONFLICT (session_id, question_id) —
+// khai báo constraint này trong entity metadata để nếu TYPEORM_SYNC=true chạy synchronize(),
+// TypeORM giữ/tự tạo lại constraint thay vì xoá nó vì "không khớp entity" (đây là nguyên nhân
+// khiến bản fix thêm constraint thủ công qua SQL trước đây bị revert)
+@Unique('uq_interview_answers_session_question', ['sessionId', 'questionId'])
 export class InterviewAnswer {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

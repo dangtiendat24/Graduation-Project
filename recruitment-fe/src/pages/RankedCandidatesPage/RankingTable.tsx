@@ -154,9 +154,12 @@ export default function RankingTable({
                           getInitials(row.candidate.fullName)
                         )}
                       </div>
-                      <div>
-                        <div className="rk-cand-name">{row.candidate.fullName}</div>
-                        <div className="rk-cand-meta"><i className="ti ti-mail" /> {row.candidate.email}</div>
+                      <div className="rk-cand-text">
+                        <div className="rk-cand-name" title={row.candidate.fullName}>{row.candidate.fullName}</div>
+                        <div className="rk-cand-meta" title={row.candidate.email}>
+                          <i className="ti ti-mail" />
+                          <span className="rk-cand-email">{row.candidate.email}</span>
+                        </div>
                       </div>
                     </div>
                   </td>
