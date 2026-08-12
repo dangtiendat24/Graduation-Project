@@ -205,6 +205,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  max-width: 260px;
+  min-width: 0;
+}
+
+.rk-cand-text {
+  min-width: 0;
 }
 
 .rk-cand-avatar {
@@ -233,6 +239,9 @@
   font-size: var(--fs-input);
   color: var(--text-primary);
   margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rk-cand-meta {
@@ -241,6 +250,14 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+}
+
+.rk-cand-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* Skills */
