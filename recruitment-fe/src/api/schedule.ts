@@ -45,8 +45,10 @@ export async function getGoogleCalendarStatus(): Promise<GoogleCalendarStatus> {
   return data
 }
 
-export async function getGoogleCalendarConnectUrl(): Promise<string> {
-  const { data } = await apiClient.get<{ url: string }>('/auth/google/calendar')
+export async function getGoogleCalendarConnectUrl(returnTo?: string): Promise<string> {
+  const { data } = await apiClient.get<{ url: string }>('/auth/google/calendar', {
+    params: returnTo ? { returnTo } : undefined,
+  })
   return data.url
 }
 

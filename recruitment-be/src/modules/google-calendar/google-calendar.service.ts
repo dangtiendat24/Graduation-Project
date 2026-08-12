@@ -29,6 +29,7 @@ const CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
 ];
 const STATE_PURPOSE = 'google-calendar-connect';
+const DEFAULT_RETURN_TO = '/recruiter/settings';
 // Refresh sớm hơn hạn thật 2 phút để tránh race condition khi gọi Calendar API ngay sau đó
 const EXPIRY_SAFETY_MARGIN_MS = 2 * 60 * 1000;
 
@@ -108,10 +109,24 @@ export class GoogleCalendarService {
     ]).toString('utf-8');
   }
 
-  /** Sinh URL consent của Google kèm state ký JWT (10 phút) để callback xác định đúng recruiter */
-  buildAuthUrl(userId: string): string {
+  /** Chỉ chấp nhận path tương đối trong app (chống open-redirect) — path lạ thì dùng mặc định */
+  private sanitizeReturnTo(returnTo?: string): string {
+    if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+      return returnTo;
+    }
+    return DEFAULT_RETURN_TO;
+  }
+
+  /** Sinh URL consent của Google kèm state ký JWT (10 phút) để callback xác định đúng recruiter
+   * và biết đường quay lại đúng trang đã bấm "Kết nối Google Calendar" (vd trang lên lịch phỏng
+   * vấn của 1 job cụ thể) thay vì luôn đưa về trang Cài đặt. */
+  buildAuthUrl(userId: string, returnTo?: string): string {
     const state = this.jwtService.sign(
-      { purpose: STATE_PURPOSE, sub: userId },
+      {
+        purpose: STATE_PURPOSE,
+        sub: userId,
+        returnTo: this.sanitizeReturnTo(returnTo),
+      },
       { expiresIn: '10m' },
     );
 
@@ -127,17 +142,21 @@ export class GoogleCalendarService {
     return `${GOOGLE_AUTHORIZE_URL}?${params.toString()}`;
   }
 
-  /** Giải mã + xác thực state token, trả về userId đã khởi tạo flow */
-  verifyState(state: string): string {
+  /** Giải mã + xác thực state token, trả về userId + đường quay lại đã khởi tạo flow */
+  verifyState(state: string): { userId: string; returnTo: string } {
     try {
       const payload = this.jwtService.verify<{
         purpose: string;
         sub: string;
+        returnTo?: string;
       }>(state);
       if (payload.purpose !== STATE_PURPOSE) {
         throw new Error('wrong purpose');
       }
-      return payload.sub;
+      return {
+        userId: payload.sub,
+        returnTo: this.sanitizeReturnTo(payload.returnTo),
+      };
     } catch {
       throw new BadRequestException(
         'state không hợp lệ hoặc đã hết hạn — vui lòng thử kết nối lại',
@@ -145,8 +164,7 @@ export class GoogleCalendarService {
     }
   }
 
-  async handleCallback(code: string, state: string): Promise<void> {
-    const userId = this.verifyState(state);
+  async handleCallback(code: string, userId: string): Promise<void> {
     const tokens = await this.exchangeCode(code);
     await this.saveTokens(userId, tokens);
   }
@@ -240,11 +258,20 @@ export class GoogleCalendarService {
       return this.decrypt(credential.accessToken);
     }
 
-    const tokens = await this.refreshAccessToken(
-      this.decrypt(credential.refreshToken),
-    );
-    await this.saveTokens(userId, tokens);
-    return tokens.access_token;
+    try {
+      const tokens = await this.refreshAccessToken(
+        this.decrypt(credential.refreshToken),
+      );
+      await this.saveTokens(userId, tokens);
+      return tokens.access_token;
+    } catch (err) {
+      // refresh_token không còn dùng được nữa (bị thu hồi, hoặc OAuth app ở chế độ
+      // "Testing" nên refresh_token hết hạn sau 7 ngày) — xoá credential để getStatus()
+      // trả về connected:false, tránh kẹt ở trạng thái "đã kết nối" giả khiến FE không
+      // còn đường nào quay lại nút "Kết nối Google Calendar".
+      await this.credentialsRepo.delete({ userId });
+      throw err;
+    }
   }
 
   async getStatus(
