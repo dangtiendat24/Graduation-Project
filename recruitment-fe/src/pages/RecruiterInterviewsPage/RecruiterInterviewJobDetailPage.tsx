@@ -55,7 +55,7 @@ type InterviewTab = 'upcoming' | 'done'
 
 interface OutcomeTarget {
   item: RecruiterScheduleListItem
-  action: 'hired' | 'rejected'
+  action: 'hired' | 'rejected' | 'completed'
 }
 
 export default function RecruiterInterviewJobDetailPage() {
@@ -213,6 +213,17 @@ export default function RecruiterInterviewJobDetailPage() {
                         {formatVNDateTime(item.schedule.confirmedStartTime, item.schedule.confirmedEndTime)}
                       </span>
                     )}
+                    {item.schedule?.status === 'confirmed' && item.schedule.meetLink && (
+                      <a
+                        href={item.schedule.meetLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ri-btn-meet"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <i className="ti ti-video" /> Tham gia Google Meet
+                      </a>
+                    )}
                     {item.schedule?.status === 'pending' && (
                       <span className="ri-schedule-time">
                         Đã gửi {item.schedule.proposedSlots?.length ?? 0} khung giờ
@@ -225,6 +236,15 @@ export default function RecruiterInterviewJobDetailPage() {
                       <button className="ri-btn-schedule" onClick={() => setManualSelection(item)}>
                         <i className="ti ti-calendar-plus" />
                         {item.schedule ? 'Xem / Sửa lịch' : 'Lên lịch'}
+                      </button>
+                    )}
+                    {!isInterviewDone(item) && item.applicationStatus === 'scheduled' && (
+                      <button
+                        className="ri-btn-mark-done"
+                        title="Dùng khi buổi phỏng vấn đã diễn ra sớm hơn giờ hẹn trong lịch"
+                        onClick={() => setOutcomeTarget({ item, action: 'completed' })}
+                      >
+                        <i className="ti ti-checkbox" /> Đánh dấu đã phỏng vấn
                       </button>
                     )}
                     <div className="ri-outcome-buttons">
