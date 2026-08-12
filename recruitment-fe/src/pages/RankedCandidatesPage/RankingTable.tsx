@@ -90,17 +90,18 @@ export default function RankingTable({
 }: Props) {
   return (
     <div className="rk-table-container">
+      <div className="rk-table-scroll">
       <table className="rk-table">
         <thead>
           <tr>
             <th className="rk-col-rank">Hạng</th>
-            <th>Ứng viên</th>
-            <th style={{ width: '24%' }}>Kỹ năng</th>
-            <th style={{ width: '16%' }}>Điểm chi tiết</th>
-            <th>Điểm số</th>
-            <th>Điểm phỏng vấn AI</th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
+            <th style={{ width: '160px' }}>Ứng viên</th>
+            <th style={{ width: '14%' }}>Kỹ năng</th>
+            <th style={{ width: '14%' }}>Điểm chi tiết</th>
+            <th style={{ width: '64px' }}>Điểm số</th>
+            <th style={{ width: '104px' }}>Điểm phỏng vấn AI</th>
+            <th style={{ width: '92px' }}>Trạng thái</th>
+            <th style={{ width: '158px' }}>Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -147,19 +148,21 @@ export default function RankingTable({
                   </td>
                   <td>
                     <div className="rk-cand-info">
-                      <div className="rk-cand-avatar">
-                        {row.candidate.avatarUrl ? (
-                          <img src={row.candidate.avatarUrl} alt={row.candidate.fullName} />
-                        ) : (
-                          getInitials(row.candidate.fullName)
-                        )}
-                      </div>
-                      <div className="rk-cand-text">
-                        <div className="rk-cand-name" title={row.candidate.fullName}>{row.candidate.fullName}</div>
-                        <div className="rk-cand-meta" title={row.candidate.email}>
-                          <i className="ti ti-mail" />
-                          <span className="rk-cand-email">{row.candidate.email}</span>
+                      <div className="rk-cand-row">
+                        <div className="rk-cand-avatar">
+                          {row.candidate.avatarUrl ? (
+                            <img src={row.candidate.avatarUrl} alt={row.candidate.fullName} />
+                          ) : (
+                            getInitials(row.candidate.fullName)
+                          )}
                         </div>
+                        <div className="rk-cand-text">
+                          <div className="rk-cand-name" title={row.candidate.fullName}>{row.candidate.fullName}</div>
+                        </div>
+                      </div>
+                      <div className="rk-cand-meta" title={row.candidate.email}>
+                        <i className="ti ti-mail" />
+                        <span className="rk-cand-email">{row.candidate.email}</span>
                       </div>
                     </div>
                   </td>
@@ -276,6 +279,7 @@ export default function RankingTable({
           )}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
