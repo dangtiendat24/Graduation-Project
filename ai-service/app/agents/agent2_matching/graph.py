@@ -8,7 +8,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity as sk_cosine_similarity
 
 from app.core.config import settings
-from app.core.vectorstore import get_vector
+from app.core.vectorstore import get_vector, upsert_vector
+from app.services.embeddings import create_embedding
 from .schemas import MatchAnalysis, MatchCriteria, MatchingWeights, SkillBreakdown
 
 # Fallback khi request không gửi weights (caller cũ/test) — nguồn chân lý thật sự là
@@ -97,12 +98,31 @@ def _build_llm():
     ).with_structured_output(MatchAnalysis)
 
 
+async def _get_or_create_vector(
+    collection: str, point_id: str, text: str, payload_key: str
+) -> list[float] | None:
+    """Lấy vector đã lưu; nếu chưa có (embed job lúc tạo/update bị lỗi/fire-and-forget)
+    thì tự tính và upsert ngay tại đây để agent tự phục hồi thay vì fail vĩnh viễn."""
+    vector = await get_vector(collection, point_id)
+    if vector is not None:
+        return vector
+    if not text.strip():
+        return None
+    vector = await create_embedding(text)
+    await upsert_vector(collection, point_id, vector, {payload_key: point_id})
+    return vector
+
+
 async def fetch_vectors_node(state: MatchState) -> MatchState:
-    cv_vector = await get_vector("cvs", state["profile_id"])
+    cv_vector = await _get_or_create_vector(
+        "cvs", state["profile_id"], state["cv_text"], "profile_id"
+    )
     if cv_vector is None:
         return {**state, "error": f"Chưa có CV embedding cho profile_id={state['profile_id']}"}
 
-    job_vector = await get_vector("jobs", state["job_id"])
+    job_vector = await _get_or_create_vector(
+        "jobs", state["job_id"], state["job_text"], "job_id"
+    )
     if job_vector is None:
         return {**state, "error": f"Chưa có Job embedding cho job_id={state['job_id']}"}
 
