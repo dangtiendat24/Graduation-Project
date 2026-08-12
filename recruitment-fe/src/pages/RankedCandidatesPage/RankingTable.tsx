@@ -35,6 +35,18 @@ function getInitials(name: string): string {
   return name.split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 }
 
+// Chèn điểm ngắt dòng (<wbr/>) sau "@" và "." để email dài xuống dòng ở ranh giới
+// hợp lý (vd "...1012@" rồi "gmail.com") thay vì cắt ngang giữa từ.
+function renderBreakableEmail(email: string) {
+  const parts = email.split(/([@.])/)
+  return parts.map((part, i) => (
+    <span key={i}>
+      {part}
+      {(part === '@' || part === '.') && <wbr />}
+    </span>
+  ))
+}
+
 // Cho phép mời phỏng vấn / từ chối theo đúng VALID_TRANSITIONS ở
 // packages/shared/scoring.constants.ts (FE chưa reference được package này).
 // "Mời phỏng vấn" ở đây là mời phỏng vấn thật (HR <-> ứng viên), nên chỉ bật khi
@@ -162,7 +174,7 @@ export default function RankingTable({
                       </div>
                       <div className="rk-cand-meta" title={row.candidate.email}>
                         <i className="ti ti-mail" />
-                        <span className="rk-cand-email">{row.candidate.email}</span>
+                        <span className="rk-cand-email">{renderBreakableEmail(row.candidate.email)}</span>
                       </div>
                     </div>
                   </td>
