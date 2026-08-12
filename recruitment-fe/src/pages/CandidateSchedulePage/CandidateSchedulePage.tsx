@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getMyApplications, confirmScheduleSlot } from '../../api/candidateApplications'
 import type { MyApplicationListItem, ProposedSlot } from '../../api/candidateApplications'
@@ -86,7 +87,7 @@ function ScheduleCard({ app, expanded, onToggle }: ItemProps) {
   const StatusIcon = config.icon
 
   return (
-    <div className={`cs-card${expanded ? ' cs-card--expanded' : ''}`}>
+    <div id={`schedule-card-${app.applicationId}`} className={`cs-card${expanded ? ' cs-card--expanded' : ''}`}>
       <button className="cs-card-header" onClick={onToggle}>
         <div className="cs-logo">
           {logo ? <img src={logo} alt={companyName} /> : getInitials(companyName)}
@@ -167,7 +168,10 @@ function ScheduleCard({ app, expanded, onToggle }: ItemProps) {
 }
 
 export default function CandidateSchedulePage() {
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [searchParams] = useSearchParams()
+  const targetApplicationId = searchParams.get('applicationId')
+  const [expandedId, setExpandedId] = useState<string | null>(targetApplicationId)
+  const hasScrolledToTarget = useRef(false)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['candidate-applications', 'list'],
@@ -178,6 +182,13 @@ export default function CandidateSchedulePage() {
     () => (data?.data ?? []).filter((a) => INTERVIEW_RELATED_STATUSES.includes(a.status)),
     [data],
   )
+
+  // Đến từ trang "Đơn đã nộp" (bấm vào badge trạng thái) — tự mở đúng thẻ và cuộn tới đó.
+  useEffect(() => {
+    if (!targetApplicationId || hasScrolledToTarget.current || items.length === 0) return
+    hasScrolledToTarget.current = true
+    document.getElementById(`schedule-card-${targetApplicationId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [targetApplicationId, items])
 
   const pendingCount = items.filter((a) => a.status === 'schedule_sent').length
   const confirmedCount = items.filter((a) => a.status === 'scheduled' || a.status === 'completed').length

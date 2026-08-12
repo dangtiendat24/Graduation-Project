@@ -57,7 +57,9 @@ export default function ScheduleBox({ item, onClose, onSent }: Props) {
   })
 
   const connectMutation = useMutation({
-    mutationFn: getGoogleCalendarConnectUrl,
+    // Truyền đúng trang đang đứng (vd trang lên lịch của job này) để sau khi cấp quyền Google
+    // xong, callback đưa recruiter quay lại đây thay vì luôn về trang Cài đặt.
+    mutationFn: () => getGoogleCalendarConnectUrl(window.location.pathname),
     onSuccess: (url) => {
       window.location.href = url
     },
@@ -73,6 +75,12 @@ export default function ScheduleBox({ item, onClose, onSent }: Props) {
     onSuccess: (data) => {
       setSlots(data)
       setSelected(new Set())
+    },
+    // Lỗi xác thực Google (refresh_token bị thu hồi/hết hạn) khiến BE tự xoá credential —
+    // refetch lại status để box chuyển về panel "Kết nối Google Calendar" thay vì kẹt ở
+    // panel đã kết nối chỉ có dòng chữ lỗi mà không có cách nào bấm kết nối lại.
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['google-calendar-status'] })
     },
   })
 

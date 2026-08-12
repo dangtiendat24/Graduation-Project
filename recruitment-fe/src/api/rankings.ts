@@ -120,7 +120,7 @@ export async function getJobApplications(
 export async function updateApplicationStatus(
   jobId: string,
   applicationId: string,
-  status: 'hired' | 'rejected',
+  status: 'hired' | 'rejected' | 'completed',
 ): Promise<void> {
   await apiClient.patch(`/jobs/${jobId}/applications/${applicationId}/status`, { status })
 }
