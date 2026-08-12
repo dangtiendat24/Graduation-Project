@@ -41,9 +41,14 @@ export class GoogleCalendarController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Get('auth/google/calendar')
-  connect(@Request() req: { user: JwtUser }) {
+  connect(
+    @Request() req: { user: JwtUser },
+    @Query('returnTo') returnTo?: string,
+  ) {
     this.assertRecruiter(req.user);
-    return { url: this.googleCalendarService.buildAuthUrl(req.user.id) };
+    return {
+      url: this.googleCalendarService.buildAuthUrl(req.user.id, returnTo),
+    };
   }
 
   @ApiExcludeEndpoint()
@@ -58,23 +63,36 @@ export class GoogleCalendarController {
       'FRONTEND_URL',
       'http://localhost:5173',
     );
-    const redirect = (params: Record<string, string>) =>
+    const redirect = (path: string, params: Record<string, string>) =>
       res.redirect(
-        `${frontendUrl}/recruiter/settings?${new URLSearchParams(params).toString()}`,
+        `${frontendUrl}${path}?${new URLSearchParams(params).toString()}`,
       );
 
     if (error || !code || !state) {
-      return redirect({
+      return redirect('/recruiter/settings', {
         googleCalendar: 'error',
         reason: error ?? 'missing_code_or_state',
       });
     }
 
+    // Xác thực state trước để biết returnTo — kể cả khi bước exchange code bên dưới lỗi,
+    // vẫn đưa được recruiter về đúng trang đã bấm "Kết nối Google Calendar".
+    let userId: string;
+    let returnTo: string;
     try {
-      await this.googleCalendarService.handleCallback(code, state);
-      return redirect({ googleCalendar: 'connected' });
+      ({ userId, returnTo } = this.googleCalendarService.verifyState(state));
     } catch (err) {
-      return redirect({
+      return redirect('/recruiter/settings', {
+        googleCalendar: 'error',
+        reason: err instanceof Error ? err.message : 'invalid_state',
+      });
+    }
+
+    try {
+      await this.googleCalendarService.handleCallback(code, userId);
+      return redirect(returnTo, { googleCalendar: 'connected' });
+    } catch (err) {
+      return redirect(returnTo, {
         googleCalendar: 'error',
         reason: err instanceof Error ? err.message : 'unknown_error',
       });

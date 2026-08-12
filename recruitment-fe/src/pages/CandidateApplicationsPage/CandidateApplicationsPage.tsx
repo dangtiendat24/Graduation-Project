@@ -37,6 +37,10 @@ const STATUS_CONFIG: Record<ApplicationStatus, { label: string; clsPrefix: strin
 
 type FilterTab = 'all' | 'in_progress' | 'interview' | 'done'
 
+// Các trạng thái có mặt trên trang "Lịch phỏng vấn" (CandidateSchedulePage) — bấm vào badge
+// trạng thái sẽ nhảy thẳng tới đúng thẻ của đơn ứng tuyển đó thay vì chỉ hiển thị tĩnh.
+const SCHEDULE_LINKED_STATUSES: ApplicationStatus[] = ['interviewed', 'schedule_sent', 'scheduled', 'completed']
+
 function getInitials(name: string): string {
   return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
 }
@@ -215,10 +219,22 @@ export default function CandidateApplicationsPage() {
 
                   {/* Right Column */}
                   <div className="ca-status-area">
-                    <div className={`ca-badge ${config.clsPrefix}-bg`}>
-                      <StatusIcon size={16} strokeWidth={2.5} />
-                      {config.label}
-                    </div>
+                    {SCHEDULE_LINKED_STATUSES.includes(app.status) ? (
+                      <Link
+                        to={`/candidate/schedule?applicationId=${app.applicationId}`}
+                        className={`ca-badge ca-badge--link ${config.clsPrefix}-bg`}
+                        title="Xem chi tiết lịch phỏng vấn"
+                      >
+                        <StatusIcon size={16} strokeWidth={2.5} />
+                        {config.label}
+                        <ChevronRight size={14} />
+                      </Link>
+                    ) : (
+                      <div className={`ca-badge ${config.clsPrefix}-bg`}>
+                        <StatusIcon size={16} strokeWidth={2.5} />
+                        {config.label}
+                      </div>
+                    )}
 
                     {app.interview?.sessionId &&
                       (app.interview.status === 'pending' || app.interview.status === 'in_progress') && (

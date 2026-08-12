@@ -301,6 +301,17 @@
   border: 1px solid transparent;
 }
 
+.ca-badge--link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 0.15s, transform 0.15s;
+}
+
+.ca-badge--link:hover {
+  filter: brightness(0.96);
+  transform: translateY(-1px);
+}
+
 .ca-schedule-info {
   display: flex;
   flex-direction: column;

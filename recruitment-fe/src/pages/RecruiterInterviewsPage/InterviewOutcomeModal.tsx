@@ -1,7 +1,7 @@
 interface Props {
   candidateName: string
   jobTitle: string
-  action: 'hired' | 'rejected'
+  action: 'hired' | 'rejected' | 'completed'
   isPending: boolean
   onConfirm: () => void
   onCancel: () => void
@@ -16,6 +16,7 @@ export default function InterviewOutcomeModal({
   onCancel,
 }: Props) {
   const isHire = action === 'hired'
+  const isCompleted = action === 'completed'
 
   return (
     <div className="ri-overlay" onClick={() => !isPending && onCancel()}>
@@ -23,11 +24,25 @@ export default function InterviewOutcomeModal({
         <div className="ri-box-header">
           <div>
             <div className="ri-box-title">
-              {isHire ? 'Xác nhận tuyển ứng viên?' : 'Từ chối ứng viên?'}
+              {isCompleted
+                ? 'Đánh dấu đã phỏng vấn?'
+                : isHire
+                  ? 'Xác nhận tuyển ứng viên?'
+                  : 'Từ chối ứng viên?'}
             </div>
             <div className="ri-box-sub">
-              Bạn sắp đánh dấu <strong>{candidateName}</strong>{' '}
-              {isHire ? 'đã được tuyển' : 'bị từ chối'} cho vị trí <strong>{jobTitle}</strong>.
+              {isCompleted ? (
+                <>
+                  Bạn sắp đánh dấu <strong>{candidateName}</strong> đã hoàn thành phỏng vấn cho vị
+                  trí <strong>{jobTitle}</strong>, dù có thể chưa tới giờ hẹn trong lịch. Sau khi
+                  đánh dấu, bạn có thể quyết định tuyển hoặc từ chối ứng viên này.
+                </>
+              ) : (
+                <>
+                  Bạn sắp đánh dấu <strong>{candidateName}</strong>{' '}
+                  {isHire ? 'đã được tuyển' : 'bị từ chối'} cho vị trí <strong>{jobTitle}</strong>.
+                </>
+              )}
             </div>
           </div>
           <button className="ri-box-close" onClick={onCancel} disabled={isPending}>
@@ -36,7 +51,7 @@ export default function InterviewOutcomeModal({
         </div>
 
         <div className="ri-box-body">
-          {!isHire && (
+          {action === 'rejected' && (
             <div className="ri-note">
               <i className="ti ti-mail" /> Email thông báo sẽ được tự động gửi cho ứng viên.
             </div>
@@ -48,7 +63,7 @@ export default function InterviewOutcomeModal({
             Huỷ
           </button>
           <button
-            className={isHire ? 'ri-btn-success' : 'ri-btn-danger'}
+            className={isCompleted ? 'ri-btn-primary' : isHire ? 'ri-btn-success' : 'ri-btn-danger'}
             onClick={onConfirm}
             disabled={isPending}
           >
@@ -56,6 +71,8 @@ export default function InterviewOutcomeModal({
               <>
                 <i className="ti ti-loader-2 ri-spin" /> Đang xử lý…
               </>
+            ) : isCompleted ? (
+              'Xác nhận đã phỏng vấn'
             ) : isHire ? (
               'Xác nhận tuyển'
             ) : (
