@@ -56,7 +56,11 @@ export class ApplicationsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: MAX_CV_SIZE }),
-          new FileTypeValidator({ fileType: ALLOWED_CV_MIME_TYPES }),
+          // fallbackToMimetype: một số trình duyệt/hệ điều hành không gửi kèm magic number
+          // đọc được cho PDF hợp lệ (ví dụ PDF không có association mặc định trên OS),
+          // khiến file-type không nhận diện được dù file hoàn toàn hợp lệ. Khi đó dùng
+          // mimetype do client khai báo làm phương án dự phòng thay vì từ chối luôn.
+          new FileTypeValidator({ fileType: ALLOWED_CV_MIME_TYPES, fallbackToMimetype: true }),
         ],
       }),
     )

@@ -56,19 +56,34 @@ export interface InterviewQuestion {
   difficulty: 'easy' | 'medium' | 'hard'
 }
 
+export interface InterviewAnswerSubScores {
+  relevance: number
+  clarity: number
+  depth: number
+  correctness: number
+  /** Chỉ có ở voice interview — mức độ đáng tin là câu trả lời tự nhiên của ứng viên, thang 0-20 */
+  authenticity?: number
+}
+
 export interface InterviewAnswerResult {
   questionId: string
   questionText: string
   category: 'technical' | 'situational' | 'behavioral'
   difficulty: 'easy' | 'medium' | 'hard'
   answerText: string
-  subScores: { relevance: number; clarity: number; depth: number; correctness: number } | null
+  subScores: InterviewAnswerSubScores | null
   totalScore: number | null
   comment: string | null
+  /** Các field dưới đây chỉ có giá trị khi mode='voice' */
+  audioUrl: string | null
+  responseLatencyMs: number | null
+  tabBlurCount: number | null
+  tabBlurTotalMs: number | null
 }
 
 export interface ApplicationInterviewResult {
   sessionId: string
+  mode: 'text' | 'voice'
   status: InterviewSessionStatus
   questionsStatus: InterviewPipelineStatus
   scoringStatus: InterviewPipelineStatus

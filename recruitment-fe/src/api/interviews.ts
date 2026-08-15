@@ -12,16 +12,25 @@ export interface InterviewQuestion {
   difficulty: InterviewQuestionDifficulty
 }
 
+export type InterviewSessionMode = 'text' | 'voice'
+
 export interface InterviewSessionDetail {
   id: string
   applicationId: string
+  mode: InterviewSessionMode
   status: InterviewSessionStatus
   questionsStatus: InterviewPipelineStatus
   questionsError: string | null
   questions: InterviewQuestion[] | null
   scoringStatus: InterviewPipelineStatus
   overallScore: number | null
-  answers: { questionId: string; answerText: string }[]
+  answers: {
+    questionId: string
+    questionText: string
+    category: InterviewQuestionCategory
+    difficulty: InterviewQuestionDifficulty
+    answerText: string
+  }[]
 }
 
 export async function getInterviewSession(sessionId: string): Promise<InterviewSessionDetail> {

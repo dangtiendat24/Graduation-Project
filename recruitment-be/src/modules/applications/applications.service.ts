@@ -20,7 +20,8 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { shouldNotify } from '../settings/notification-preferences';
 
-const NON_REAPPLICABLE_STATUSES: ApplicationStatus[] = ['hired', 'rejected'];
+/** Chỉ trạng thái này mới cho phép ứng viên nộp lại CV cho cùng 1 job — mọi trạng thái khác (kể cả 'hired') đều chặn nộp lại. */
+const REAPPLICABLE_STATUSES: ApplicationStatus[] = ['rejected'];
 
 @Injectable()
 export class ApplicationsService {
@@ -99,7 +100,7 @@ export class ApplicationsService {
       where: { candidateId, jobId },
       order: { createdAt: 'DESC' },
     });
-    if (existing && !NON_REAPPLICABLE_STATUSES.includes(existing.status)) {
+    if (existing && !REAPPLICABLE_STATUSES.includes(existing.status)) {
       throw new ConflictException(
         'Bạn đã nộp đơn ứng tuyển cho tin tuyển dụng này rồi',
       );
@@ -183,7 +184,7 @@ export class ApplicationsService {
     });
     return {
       hasApplied:
-        !!existing && !NON_REAPPLICABLE_STATUSES.includes(existing.status),
+        !!existing && !REAPPLICABLE_STATUSES.includes(existing.status),
       status: existing?.status ?? null,
       appliedAt: existing?.createdAt ?? null,
     };

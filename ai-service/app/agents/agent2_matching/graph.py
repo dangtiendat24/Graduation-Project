@@ -95,7 +95,7 @@ def _build_llm():
         model=settings.GROQ_MODEL,
         api_key=SecretStr(settings.GROQ_API_KEY),
         temperature=0,
-    ).with_structured_output(MatchAnalysis)
+    ).with_structured_output(MatchAnalysis, method="json_schema")
 
 
 async def _get_or_create_vector(

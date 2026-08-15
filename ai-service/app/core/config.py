@@ -8,12 +8,17 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
 
-    # OpenAI (chỉ dùng cho embeddings — xem app/services/embeddings.py)
+    # OpenAI (embeddings — app/services/embeddings.py; TTS — app/services/tts.py, agent3 voice interview)
     OPENAI_API_KEY: str = ""
+    OPENAI_TTS_MODEL: str = "tts-1"
+    OPENAI_TTS_VOICE: str = "alloy"
 
-    # Groq (dùng cho agent1 resume-parser và agent2 matching)
+    # Groq (chat — agent1 resume-parser, agent2 matching, agent3 interview;
+    # STT — app/services/stt.py, agent3 voice interview, gọi qua SDK openai với base_url Groq)
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_STT_MODEL: str = "whisper-large-v3"
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
 
     # Qdrant Vector DB
     # Local/Docker: dùng QDRANT_HOST/QDRANT_PORT

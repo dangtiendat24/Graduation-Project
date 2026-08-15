@@ -22,7 +22,10 @@ import {
   Check,
   Pencil,
   Building2,
+  Mic,
+  Keyboard,
 } from 'lucide-react'
+import VoiceInterviewFlow from './VoiceInterviewFlow'
 import './CandidateInterviewPage.css'
 
 const MAX_ANSWER_LENGTH = 2000
@@ -243,11 +246,43 @@ function InterviewSessionView({
   const [currentIndex, setCurrentIndex] = useState(() => initialQuestionIndex(session, answers))
   const [savedHint, setSavedHint] = useState(false)
   const [showSubmittedAnswers, setShowSubmittedAnswers] = useState(false)
+  const [voiceIntent, setVoiceIntent] = useState(false)
+  const [showTextIntro, setShowTextIntro] = useState(false)
 
   const questions = session.questions ?? []
   const currentQuestion = questions[currentIndex]
   const answeredCount = Object.values(answers).filter((v) => v.trim().length > 0).length
   const screen = deriveScreen(session, hasStarted, isReviewing)
+
+  // Voice interview đã được bắt đầu từ trước (vd tải lại trang) và CHƯA hoàn tất — mode đã khoá ở
+  // server. Khi status đã "completed" thì không vào lại luồng ghi âm (đòi quyền mic) nữa, mà rơi
+  // xuống màn "completed" chung bên dưới để xem lại câu hỏi/câu trả lời.
+  const isVoiceActive =
+    session.mode === 'voice' && session.status !== 'pending' && session.status !== 'completed'
+
+  function handleVoiceCompleted() {
+    void queryClient.invalidateQueries({ queryKey: ['interview-session', sessionId] })
+    void queryClient.invalidateQueries({ queryKey: ['candidate-applications'] })
+  }
+
+  if (isVoiceActive || voiceIntent) {
+    return (
+      <CandidateLayout>
+        <BackToListLink />
+        <ContextLine jobTitle={jobTitle} companyName={companyName} />
+        <VoiceInterviewFlow
+          key={sessionId}
+          sessionId={sessionId}
+          isResume={isVoiceActive}
+          onFallbackToText={() => {
+            setVoiceIntent(false)
+            setShowTextIntro(true)
+          }}
+          onCompleted={handleVoiceCompleted}
+        />
+      </CandidateLayout>
+    )
+  }
 
   function persistCurrentAnswer(value: string) {
     if (!currentQuestion) return
@@ -289,7 +324,17 @@ function InterviewSessionView({
       {screen === 'loading' && <LoadingCard />}
       {screen === 'error' && <ErrorCard message={session.questionsError} />}
 
-      {screen === 'intro' && (
+      {screen === 'intro' && !showTextIntro && (
+        <ModeChoiceCard
+          jobTitle={jobTitle}
+          companyName={companyName}
+          textQuestionCount={questions.length}
+          onChooseVoice={() => setVoiceIntent(true)}
+          onChooseText={() => setShowTextIntro(true)}
+        />
+      )}
+
+      {screen === 'intro' && showTextIntro && (
         <IntroCard
           jobTitle={jobTitle}
           companyName={companyName}
@@ -341,7 +386,11 @@ function InterviewSessionView({
       {screen === 'completed' && showSubmittedAnswers && (
         <>
           <ContextLine jobTitle={jobTitle} companyName={companyName} />
-          <SubmittedAnswersView questions={questions} answers={answers} />
+          {session.mode === 'voice' ? (
+            <VoiceSubmittedAnswersView answers={session.answers} />
+          ) : (
+            <SubmittedAnswersView questions={questions} answers={answers} />
+          )}
         </>
       )}
     </CandidateLayout>
@@ -458,6 +507,66 @@ function IntroCard({
         <button className="iv-btn iv-btn-primary iv-btn-block" onClick={onStart}>
           Bắt đầu phỏng vấn
           <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function ModeChoiceCard({
+  jobTitle,
+  companyName,
+  textQuestionCount,
+  onChooseVoice,
+  onChooseText,
+}: {
+  jobTitle: string
+  companyName: string
+  textQuestionCount: number
+  onChooseVoice: () => void
+  onChooseText: () => void
+}) {
+  return (
+    <div className="iv-center">
+      <div className="iv-card-narrow iv-card-wide">
+        <div className="iv-icon-ring iv-teal">
+          <Bot size={26} />
+        </div>
+        <h2>Phỏng vấn sơ loại bằng AI</h2>
+        <p className="iv-role-line">
+          {jobTitle} · {companyName}
+        </p>
+
+        <div className="iv-brief-meta">
+          <div>
+            <div className="iv-meta-num">7</div>
+            <div className="iv-meta-label">câu hỏi</div>
+          </div>
+          <div>
+            <div className="iv-meta-num">~15</div>
+            <div className="iv-meta-label">phút</div>
+          </div>
+          <div>
+            <div className="iv-meta-num">2 phút</div>
+            <div className="iv-meta-label">mỗi câu</div>
+          </div>
+        </div>
+
+        <ul className="iv-brief-rules">
+          <li>Bạn sẽ nghe câu hỏi và trả lời trực tiếp bằng giọng nói qua micro.</li>
+          <li>Sau mỗi câu, AI sẽ nhận xét ngay điểm tốt và chưa tốt trong câu trả lời của bạn.</li>
+          <li>Độ khó câu hỏi tiếp theo điều chỉnh theo chất lượng câu trả lời trước đó.</li>
+          <li>Một khi đã chọn hình thức phỏng vấn, bạn không thể đổi sang hình thức khác giữa chừng.</li>
+        </ul>
+
+        <button className="iv-btn iv-btn-primary iv-btn-block" onClick={onChooseVoice}>
+          <Mic size={16} />
+          Bắt đầu phỏng vấn bằng giọng nói
+        </button>
+
+        <button className="iv-link-btn" style={{ margin: '14px auto 0' }} onClick={onChooseText}>
+          <Keyboard size={13} />
+          Hoặc trả lời bằng văn bản ({textQuestionCount} câu, không giới hạn thời gian)
         </button>
       </div>
     </div>
@@ -742,6 +851,40 @@ function SubmittedAnswersView({
               <div className="iv-review-item-top">
                 <div className="iv-review-q">
                   {i + 1}. {q.question}
+                </div>
+              </div>
+              {text ? (
+                <div className="iv-review-a">{text}</div>
+              ) : (
+                <div className="iv-review-a empty">Không trả lời</div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
+function VoiceSubmittedAnswersView({ answers }: { answers: InterviewSessionDetail['answers'] }) {
+  return (
+    <>
+      <div className="iv-submitted-title">Bài phỏng vấn đã nộp</div>
+      <div className="iv-review-list">
+        {answers.map((a, i) => {
+          const text = a.answerText.trim()
+          return (
+            <div key={a.questionId} className={`iv-review-item${text ? '' : ' unanswered'}`}>
+              <div className="iv-review-item-top">
+                <div className="iv-review-q">
+                  {i + 1}. {a.questionText}
+                </div>
+                <div className="iv-review-item-actions">
+                  <span className={`iv-badge iv-badge-${a.category}`}>{CATEGORY_LABEL[a.category]}</span>
+                  <span className={`iv-diff iv-diff-${a.difficulty}`}>
+                    <span className="iv-diff-dot" />
+                    {DIFFICULTY_LABEL[a.difficulty]}
+                  </span>
                 </div>
               </div>
               {text ? (
