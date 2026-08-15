@@ -47,6 +47,7 @@ export class InterviewSessionController {
     return {
       id: session.id,
       applicationId: session.applicationId,
+      mode: session.mode,
       status: session.status,
       questionsStatus: session.questionsStatus,
       questionsError: session.questionsError,
@@ -55,6 +56,9 @@ export class InterviewSessionController {
       overallScore: session.overallScore,
       answers: answers.map((a) => ({
         questionId: a.questionId,
+        questionText: a.questionText,
+        category: a.category,
+        difficulty: a.difficulty,
         answerText: a.answerText,
       })),
     };

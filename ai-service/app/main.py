@@ -8,6 +8,7 @@ from app.core.vectorstore import ensure_collections
 from app.agents.agent1_resume_parser.router import router as resume_parser_router
 from app.agents.agent2_matching.router import router as matching_router
 from app.agents.agent3_interview.router import router as interview_router
+from app.agents.agent3_interview.adaptive_router import router as interview_adaptive_router
 from app.agents.agent4_scheduling.router import router as scheduling_router
 from app.agents.agent5_reporting.router import router as reporting_router
 
@@ -46,6 +47,7 @@ app.add_middleware(
 app.include_router(resume_parser_router)
 app.include_router(matching_router)
 app.include_router(interview_router)
+app.include_router(interview_adaptive_router)
 app.include_router(scheduling_router)
 app.include_router(reporting_router)
 
