@@ -271,6 +271,21 @@
 }
 .pw-toggle:hover { color: #334155; }
 
+/* Ẩn icon "hiện mật khẩu" mặc định của trình duyệt (Edge/IE) để tránh
+   hiển thị 2 icon con mắt chồng lên nút pw-toggle tự thiết kế */
+.field input[type="password"]::-ms-reveal,
+.field input[type="password"]::-ms-clear {
+  display: none;
+}
+.field input::-webkit-credentials-auto-fill-button,
+.field input::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
 /* Forgot-password row */
 .form-row {
   display: flex;
