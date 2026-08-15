@@ -20,6 +20,14 @@ export type InterviewSessionStatus =
   | 'timeout'
   | 'cancelled';
 
+/**
+ * Kênh giao tiếp của buổi phỏng vấn — chọn 1 lần khi bắt đầu và khóa cứng cho cả session,
+ * không cho đổi giữa chừng (tránh việc câu trả lời của cùng 1 bài phỏng vấn bị chia làm 2 kênh).
+ * 'voice' là mặc định/ưu tiên trên giao diện; 'text' chỉ là lựa chọn thay thế khi ứng viên
+ * không dùng được mic.
+ */
+export type InterviewSessionMode = 'text' | 'voice';
+
 /** Trạng thái pipeline sinh câu hỏi / chấm điểm — cùng vocabulary với ParseStatus (Application) */
 export type InterviewPipelineStatus =
   | 'pending'
@@ -50,6 +58,9 @@ export class InterviewSession {
 
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status!: InterviewSessionStatus;
+
+  @Column({ type: 'varchar', length: 10, default: 'text' })
+  mode!: InterviewSessionMode;
 
   /** Danh sách câu hỏi chuẩn do ai-service sinh — nguồn chân lý duy nhất cho submitAnswer/chấm điểm */
   @Column({ type: 'jsonb', nullable: true })
@@ -88,6 +99,10 @@ export class InterviewSession {
     nullable: true,
   })
   overallScore!: number | null;
+
+  /** Câu hỏi đang chờ trả lời trong voice interview (adaptive) — null khi mode='text' hoặc đã hoàn tất */
+  @Column({ name: 'current_question', type: 'jsonb', nullable: true })
+  currentQuestion!: GeneratedQuestionItem | null;
 
   @Column({ name: 'started_at', type: 'timestamptz', nullable: true })
   startedAt!: Date | null;

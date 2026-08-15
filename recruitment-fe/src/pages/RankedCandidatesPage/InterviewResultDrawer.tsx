@@ -20,11 +20,30 @@ const DIFFICULTY_LABEL: Record<string, string> = {
   hard: 'Nâng cao',
 }
 
-const SUB_SCORE_ROWS: { key: 'relevance' | 'clarity' | 'depth' | 'correctness'; label: string; barClass: string }[] = [
-  { key: 'relevance', label: 'Bám sát câu hỏi', barClass: 'rk-bar-skills' },
-  { key: 'clarity', label: 'Rõ ràng, mạch lạc', barClass: 'rk-bar-exp' },
-  { key: 'depth', label: 'Chiều sâu, ví dụ cụ thể', barClass: 'rk-bar-edu' },
-  { key: 'correctness', label: 'Chính xác kỹ thuật', barClass: 'rk-bar-tfidf' },
+type SubScoreKey = 'relevance' | 'clarity' | 'depth' | 'correctness' | 'authenticity'
+
+interface SubScoreRow {
+  key: SubScoreKey
+  label: string
+  barClass: string
+  max: number
+}
+
+// Text: 4 tiêu chí, mỗi tiêu chí thang 0-25 (tổng 0-100)
+const TEXT_SUB_SCORE_ROWS: SubScoreRow[] = [
+  { key: 'relevance', label: 'Bám sát câu hỏi', barClass: 'rk-bar-skills', max: 25 },
+  { key: 'clarity', label: 'Rõ ràng, mạch lạc', barClass: 'rk-bar-exp', max: 25 },
+  { key: 'depth', label: 'Chiều sâu, ví dụ cụ thể', barClass: 'rk-bar-edu', max: 25 },
+  { key: 'correctness', label: 'Chính xác kỹ thuật', barClass: 'rk-bar-tfidf', max: 25 },
+]
+
+// Voice: 5 tiêu chí, mỗi tiêu chí thang 0-20 (tổng 0-100) — thêm "authenticity"
+const VOICE_SUB_SCORE_ROWS: SubScoreRow[] = [
+  { key: 'relevance', label: 'Bám sát câu hỏi', barClass: 'rk-bar-skills', max: 20 },
+  { key: 'clarity', label: 'Rõ ràng, mạch lạc', barClass: 'rk-bar-exp', max: 20 },
+  { key: 'depth', label: 'Chiều sâu, ví dụ cụ thể', barClass: 'rk-bar-edu', max: 20 },
+  { key: 'correctness', label: 'Chính xác kỹ thuật', barClass: 'rk-bar-tfidf', max: 20 },
+  { key: 'authenticity', label: 'Độ tin cậy tự trả lời', barClass: 'rk-bar-semantic', max: 20 },
 ]
 
 function getInitials(name: string): string {
@@ -38,6 +57,7 @@ export default function InterviewResultDrawer({ row, jobId, onClose }: Props) {
   })
 
   const band = data?.overallScore != null ? getScoreBand(data.overallScore) : null
+  const subScoreRows = data?.mode === 'voice' ? VOICE_SUB_SCORE_ROWS : TEXT_SUB_SCORE_ROWS
 
   return (
     <div className="rk-overlay" onClick={onClose}>
@@ -56,7 +76,14 @@ export default function InterviewResultDrawer({ row, jobId, onClose }: Props) {
           </div>
           <div>
             <div className="rk-drawer-name">{row.candidate.fullName}</div>
-            <div className="rk-cand-meta">Kết quả phỏng vấn AI</div>
+            <div className="rk-cand-meta">
+              Kết quả phỏng vấn AI
+              {data?.mode === 'voice' && (
+                <span className="rk-mode-tag">
+                  <i className="ti ti-microphone" /> Giọng nói
+                </span>
+              )}
+            </div>
           </div>
           {data?.overallScore != null && (
             <span className={`rk-score-pill rk-score-pill--lg rk-band-${band}`}>
@@ -120,20 +147,46 @@ export default function InterviewResultDrawer({ row, jobId, onClose }: Props) {
                       {a.answerText.trim() ? a.answerText : <em>Ứng viên không trả lời câu này</em>}
                     </div>
 
+                    {a.audioUrl && (
+                      <audio className="rk-qa-audio" src={a.audioUrl} controls preload="none" />
+                    )}
+
                     {a.subScores && (
                       <div className="rk-qa-subscores">
-                        {SUB_SCORE_ROWS.map((s) => (
-                          <div className="rk-criteria-row" key={s.key}>
-                            <span>{s.label}</span>
-                            <div className="rk-bar rk-bar--sm">
-                              <div
-                                className={`rk-bar-fill ${s.barClass}`}
-                                style={{ width: `${(a.subScores![s.key] / 25) * 100}%` }}
-                              />
+                        {subScoreRows.map((s) => {
+                          const value = a.subScores![s.key]
+                          if (value === undefined) return null
+                          return (
+                            <div className="rk-criteria-row" key={s.key}>
+                              <span>{s.label}</span>
+                              <div className="rk-bar rk-bar--sm">
+                                <div
+                                  className={`rk-bar-fill ${s.barClass}`}
+                                  style={{ width: `${(value / s.max) * 100}%` }}
+                                />
+                              </div>
+                              <span className="rk-criteria-val">
+                                {value}/{s.max}
+                              </span>
                             </div>
-                            <span className="rk-criteria-val">{a.subScores![s.key]}/25</span>
-                          </div>
-                        ))}
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {(a.responseLatencyMs != null || a.tabBlurCount != null) && (
+                      <div className="rk-qa-signals">
+                        {a.responseLatencyMs != null && (
+                          <span>
+                            <i className="ti ti-clock" /> Độ trễ trả lời: {(a.responseLatencyMs / 1000).toFixed(1)}s
+                          </span>
+                        )}
+                        {a.tabBlurCount != null && a.tabBlurCount > 0 && (
+                          <span className="rk-qa-signal-warn">
+                            <i className="ti ti-alert-triangle" /> Rời tab {a.tabBlurCount} lần trong lúc trả lời
+                            {a.tabBlurTotalMs != null ? ` (${Math.round(a.tabBlurTotalMs / 1000)}s)` : ''}
+                          </span>
+                        )}
                       </div>
                     )}
 

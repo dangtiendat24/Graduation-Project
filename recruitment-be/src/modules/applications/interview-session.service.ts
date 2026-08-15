@@ -55,7 +55,10 @@ export class InterviewSessionService {
     sessionId: string,
   ): Promise<{ session: InterviewSession; answers: InterviewAnswer[] }> {
     const session = await this.findOwnedSession(candidateId, sessionId);
-    const answers = await this.answerRepo.find({ where: { sessionId } });
+    const answers = await this.answerRepo.find({
+      where: { sessionId },
+      order: { createdAt: 'ASC' },
+    });
     return { session, answers };
   }
 

@@ -13,8 +13,11 @@ import { InterviewScoringService } from './interview-scoring.service';
 import { InterviewScoringProcessor } from './interview-scoring.processor';
 import { InterviewGenerationService } from './interview-generation.service';
 import { InterviewGenerationProcessor } from './interview-generation.processor';
+import { VoiceInterviewService } from './voice-interview.service';
+import { VoiceInterviewController } from './voice-interview.controller';
 import { AdminModule } from '../admin/admin.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { StorageModule } from '../storage/storage.module';
 
 /**
  * Module riêng cho pipeline phỏng vấn AI (Agent 3) — tách khỏi ApplicationsModule để
@@ -37,14 +40,16 @@ import { DashboardModule } from '../dashboard/dashboard.module';
     HttpModule.register({ timeout: 20000, maxRedirects: 3 }),
     AdminModule,
     DashboardModule,
+    StorageModule,
   ],
-  controllers: [InterviewSessionController],
+  controllers: [InterviewSessionController, VoiceInterviewController],
   providers: [
     InterviewSessionService,
     InterviewScoringService,
     InterviewScoringProcessor,
     InterviewGenerationService,
     InterviewGenerationProcessor,
+    VoiceInterviewService,
   ],
   exports: [InterviewGenerationService],
 })

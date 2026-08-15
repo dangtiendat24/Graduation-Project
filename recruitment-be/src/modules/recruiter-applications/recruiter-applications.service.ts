@@ -26,6 +26,7 @@ import { InterviewAnswer } from '../applications/interview-answer.entity';
 import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
+import { StorageService } from '../storage/storage.service';
 import {
   GetJobApplicationsQueryDto,
   ScoreBand,
@@ -42,7 +43,11 @@ const SCORE_BAND_RANGES: Record<
 };
 
 /** Chuyển sang các trạng thái này sẽ tự động gửi email thông báo cho ứng viên */
-const EMAIL_NOTIFY_STATUSES: ApplicationStatus[] = ['interviewed', 'rejected', 'hired'];
+const EMAIL_NOTIFY_STATUSES: ApplicationStatus[] = [
+  'interviewed',
+  'rejected',
+  'hired',
+];
 
 interface ApplicationRow {
   applicationId: string;
@@ -115,6 +120,7 @@ export class RecruiterApplicationsService {
     private readonly interviewAnswerRepo: Repository<InterviewAnswer>,
     private readonly mailService: MailService,
     private readonly dashboardCache: DashboardCacheService,
+    private readonly storage: StorageService,
   ) {}
 
   async getJobApplications(
@@ -267,6 +273,7 @@ export class RecruiterApplicationsService {
 
     return {
       sessionId: session.id,
+      mode: session.mode,
       status: session.status,
       questionsStatus: session.questionsStatus,
       scoringStatus: session.scoringStatus,
@@ -274,16 +281,25 @@ export class RecruiterApplicationsService {
       overallScore: session.overallScore,
       transcript: session.transcript,
       questions: session.questions,
-      answers: answers.map((a) => ({
-        questionId: a.questionId,
-        questionText: a.questionText,
-        category: a.category,
-        difficulty: a.difficulty,
-        answerText: a.answerText,
-        subScores: a.subScores,
-        totalScore: a.totalScore,
-        comment: a.comment,
-      })),
+      answers: await Promise.all(
+        answers.map(async (a) => ({
+          questionId: a.questionId,
+          questionText: a.questionText,
+          category: a.category,
+          difficulty: a.difficulty,
+          answerText: a.answerText,
+          subScores: a.subScores,
+          totalScore: a.totalScore,
+          comment: a.comment,
+          // audioUrl lưu trong DB là storage KEY, không phải URL công khai — chỉ voice interview có
+          audioUrl: a.audioUrl
+            ? await this.storage.getSignedUrl(a.audioUrl)
+            : null,
+          responseLatencyMs: a.responseLatencyMs,
+          tabBlurCount: a.tabBlurCount,
+          tabBlurTotalMs: a.tabBlurTotalMs,
+        })),
+      ),
     };
   }
 

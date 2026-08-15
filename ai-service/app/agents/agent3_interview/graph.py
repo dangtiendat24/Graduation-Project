@@ -43,7 +43,7 @@ def _build_llm(output_schema):
         model=settings.GROQ_MODEL,
         api_key=SecretStr(settings.GROQ_API_KEY),
         temperature=0.3,
-    ).with_structured_output(output_schema)
+    ).with_structured_output(output_schema, method="json_schema")
 
 
 def _format_parsed_data(parsed_data: dict) -> str:
