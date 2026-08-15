@@ -46,6 +46,7 @@ export default function AuthPage() {
   /* ── Login state ── */
   const [loginEmail, setLoginEmail]       = useState('')
   const [loginEmailErr, setLoginEmailErr] = useState('')
+  const [loginEmailTouched, setLoginEmailTouched] = useState(false)
   const [loginPw, setLoginPw]             = useState('')
   const [showLoginPw, setShowLoginPw]     = useState(false)
 
@@ -53,6 +54,7 @@ export default function AuthPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail]     = useState('')
   const [forgotEmailErr, setForgotEmailErr] = useState('')
+  const [forgotEmailTouched, setForgotEmailTouched] = useState(false)
   const [forgotSent, setForgotSent]       = useState(false)
   const [forgotMessage, setForgotMessage] = useState('')
 
@@ -60,6 +62,7 @@ export default function AuthPage() {
   const [regName, setRegName]             = useState('')
   const [regEmail, setRegEmail]           = useState('')
   const [regEmailErr, setRegEmailErr]     = useState('')
+  const [regEmailTouched, setRegEmailTouched] = useState(false)
   const [regPw, setRegPw]                 = useState('')
   const [regPw2, setRegPw2]               = useState('')
   const [showRegPw, setShowRegPw]         = useState(false)
@@ -312,8 +315,11 @@ export default function AuthPage() {
                     placeholder="ban@congty.com"
                     autoComplete="email"
                     value={forgotEmail}
-                    onChange={e => { setForgotEmail(e.target.value); if (forgotEmailErr) setForgotEmailErr('') }}
-                    onBlur={e => setForgotEmailErr(validateEmail(e.target.value))}
+                    onChange={e => {
+                      setForgotEmail(e.target.value)
+                      if (forgotEmailTouched) setForgotEmailErr(validateEmail(e.target.value))
+                    }}
+                    onBlur={e => { setForgotEmailTouched(true); setForgotEmailErr(validateEmail(e.target.value)) }}
                     style={forgotEmailErr ? { borderColor: 'var(--color-danger)' } : {}}
                   />
                   {forgotEmailErr && <div className="field-error">{forgotEmailErr}</div>}
@@ -352,8 +358,11 @@ export default function AuthPage() {
                   placeholder="ban@congty.com"
                   autoComplete="email"
                   value={loginEmail}
-                  onChange={e => { setLoginEmail(e.target.value); if (loginEmailErr) setLoginEmailErr('') }}
-                  onBlur={e => setLoginEmailErr(validateEmail(e.target.value))}
+                  onChange={e => {
+                    setLoginEmail(e.target.value)
+                    if (loginEmailTouched) setLoginEmailErr(validateEmail(e.target.value))
+                  }}
+                  onBlur={e => { setLoginEmailTouched(true); setLoginEmailErr(validateEmail(e.target.value)) }}
                   style={loginEmailErr ? { borderColor: 'var(--color-danger)' } : {}}
                 />
                 {loginEmailErr && <div className="field-error">{loginEmailErr}</div>}
@@ -462,8 +471,11 @@ export default function AuthPage() {
                     placeholder="ban@congty.com"
                     autoComplete="email"
                     value={regEmail}
-                    onChange={e => { setRegEmail(e.target.value); if (regEmailErr) setRegEmailErr('') }}
-                    onBlur={e => setRegEmailErr(validateEmail(e.target.value))}
+                    onChange={e => {
+                      setRegEmail(e.target.value)
+                      if (regEmailTouched) setRegEmailErr(validateEmail(e.target.value))
+                    }}
+                    onBlur={e => { setRegEmailTouched(true); setRegEmailErr(validateEmail(e.target.value)) }}
                     style={regEmailErr ? { borderColor: 'var(--color-danger)' } : {}}
                   />
                   {regEmailErr && <div className="field-error">{regEmailErr}</div>}

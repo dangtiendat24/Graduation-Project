@@ -65,7 +65,7 @@ export default function CandidateLayout({ children }: Props) {
     <div className="csl-root">
       {/* ── Sidebar ── */}
       <aside className="csl-sidebar">
-        <div className="csl-logo" onClick={() => navigate('/')}>
+        <div className="csl-logo" onClick={() => navigate('/candidate/dashboard')}>
           <span className="csl-logo-dot" />
           <span className="csl-logo-name">Recruit<span>.AI</span></span>
         </div>

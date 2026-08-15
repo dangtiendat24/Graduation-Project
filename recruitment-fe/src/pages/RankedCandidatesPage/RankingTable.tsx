@@ -113,7 +113,7 @@ export default function RankingTable({
             <th style={{ width: '64px' }}>Điểm số</th>
             <th style={{ width: '104px' }}>Điểm phỏng vấn AI</th>
             <th style={{ width: '92px' }}>Trạng thái</th>
-            <th style={{ width: '158px' }}>Hành động</th>
+            <th style={{ width: '200px' }}>Hành động</th>
           </tr>
         </thead>
         <tbody>
