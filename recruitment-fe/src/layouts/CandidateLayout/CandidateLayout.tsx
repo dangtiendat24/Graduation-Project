@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import LoginToast from '../../components/LoginToast/LoginToast'
+import NotificationBell from '../../components/NotificationBell/NotificationBell'
 import './CandidateLayout.css'
 
 function getInitials(name: string): string {
@@ -112,10 +113,7 @@ export default function CandidateLayout({ children }: Props) {
             <div className="csl-date">{formatDate()}</div>
           </div>
           <div className="csl-topbar-right">
-            <div className="csl-icon-btn">
-              <i className="ti ti-bell" />
-              <span className="csl-dot" />
-            </div>
+            <NotificationBell />
             <button className="csl-btn-primary" onClick={() => navigate('/candidate/jobs')}>
               <i className="ti ti-briefcase" />
               Tìm việc làm
