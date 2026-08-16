@@ -12,6 +12,7 @@ import { StorageModule } from '../storage/storage.module';
 import { MatchingModule } from '../matching/matching.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { MailModule } from '../mail/mail.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ApplicationsService } from './applications.service';
 import { ApplicationsController } from './applications.controller';
 import { ApplicationCvParserService } from './application-cv-parser.service';
@@ -32,6 +33,7 @@ import { ApplicationCvParserProcessor } from './application-cv-parser.processor'
     MatchingModule,
     DashboardModule,
     MailModule,
+    NotificationsModule,
   ],
   controllers: [ApplicationsController],
   providers: [

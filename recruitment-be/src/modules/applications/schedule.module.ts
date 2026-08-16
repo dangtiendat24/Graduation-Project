@@ -8,6 +8,7 @@ import { User } from '../users/user.entity';
 import { GoogleCalendarModule } from '../google-calendar/google-calendar.module';
 import { MailModule } from '../mail/mail.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { ScheduleService } from './schedule.service';
 import { RecruiterScheduleController } from './recruiter-schedule.controller';
 
@@ -28,6 +29,7 @@ import { RecruiterScheduleController } from './recruiter-schedule.controller';
     GoogleCalendarModule,
     MailModule,
     DashboardModule,
+    NotificationsModule,
   ],
   controllers: [RecruiterScheduleController],
   providers: [ScheduleService],

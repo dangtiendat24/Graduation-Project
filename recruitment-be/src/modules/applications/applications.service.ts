@@ -19,6 +19,7 @@ import { ApplicationCvParserService } from './application-cv-parser.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { shouldNotify } from '../settings/notification-preferences';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /** Chỉ trạng thái này mới cho phép ứng viên nộp lại CV cho cùng 1 job — mọi trạng thái khác (kể cả 'hired') đều chặn nộp lại. */
 const REAPPLICABLE_STATUSES: ApplicationStatus[] = ['rejected'];
@@ -42,6 +43,7 @@ export class ApplicationsService {
     private readonly mailService: MailService,
     private readonly cvParser: ApplicationCvParserService,
     private readonly dashboardCache: DashboardCacheService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async apply(
@@ -133,39 +135,50 @@ export class ApplicationsService {
       job.recruiterId,
       candidateId,
       job.title,
+      saved.id,
     );
 
     return saved;
   }
 
-  /** Không để lỗi gửi mail làm hỏng luồng nộp CV chính — chỉ log lại nếu thất bại */
+  /** Không để lỗi gửi mail/ghi thông báo làm hỏng luồng nộp CV chính — chỉ log lại nếu thất bại */
   private async notifyRecruiterNewApplication(
     recruiterId: string,
     candidateId: string,
     jobTitle: string,
+    applicationId: string,
   ): Promise<void> {
     try {
       const recruiter = await this.userRepo.findOne({
         where: { id: recruiterId },
       });
-      if (
-        !recruiter ||
-        !shouldNotify(recruiter.notificationPreferences, 'newApplication')
-      ) {
-        return;
-      }
+      if (!recruiter) return;
+
       const candidate = await this.userRepo.findOne({
         where: { id: candidateId },
       });
+      const candidateName = candidate?.fullName ?? 'Một ứng viên';
+
+      await this.notificationsService.create(
+        recruiterId,
+        'new_application',
+        'Ứng viên mới',
+        `${candidateName} vừa ứng tuyển vào vị trí ${jobTitle}`,
+        `/recruiter/candidates/${applicationId}`,
+      );
+
+      if (!shouldNotify(recruiter.notificationPreferences, 'newApplication')) {
+        return;
+      }
       await this.mailService.sendNewApplicationEmail(
         recruiter.email,
         recruiter.fullName,
-        candidate?.fullName ?? 'Một ứng viên',
+        candidateName,
         jobTitle,
       );
     } catch (err) {
       this.logger.error(
-        `Gửi email thông báo ứng viên mới thất bại: ${(err as Error).message}`,
+        `Gửi thông báo ứng viên mới thất bại: ${(err as Error).message}`,
       );
     }
   }

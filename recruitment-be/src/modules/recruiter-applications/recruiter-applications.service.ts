@@ -27,6 +27,7 @@ import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { StorageService } from '../storage/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   GetJobApplicationsQueryDto,
   ScoreBand,
@@ -121,6 +122,7 @@ export class RecruiterApplicationsService {
     private readonly mailService: MailService,
     private readonly dashboardCache: DashboardCacheService,
     private readonly storage: StorageService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async getJobApplications(
@@ -238,7 +240,7 @@ export class RecruiterApplicationsService {
     await this.dashboardCache.invalidate(recruiterId);
 
     if (EMAIL_NOTIFY_STATUSES.includes(toStatus)) {
-      await this.sendStatusEmail(application, toStatus);
+      await this.notifyCandidateStatusChange(application, toStatus);
     }
 
     return saved;
@@ -303,7 +305,12 @@ export class RecruiterApplicationsService {
     };
   }
 
-  private async sendStatusEmail(
+  /**
+   * Ghi thông báo trong-app + gửi email cho ứng viên khi đơn chuyển sang các trạng thái quan trọng.
+   * Ghi thông báo trước email — nếu gửi email lỗi thì chuông thông báo vẫn phản ánh đúng sự kiện
+   * đã xảy ra, không phụ thuộc vào email có gửi được hay không.
+   */
+  private async notifyCandidateStatusChange(
     application: Application,
     status: ApplicationStatus,
   ): Promise<void> {
@@ -311,18 +318,39 @@ export class RecruiterApplicationsService {
     const jobTitle = application.job.title;
 
     if (status === 'interviewed') {
+      await this.notificationsService.create(
+        application.candidateId,
+        'interview_invite',
+        'Mời phỏng vấn',
+        `Bạn được mời phỏng vấn cho vị trí ${jobTitle}`,
+        '/candidate/applications',
+      );
       await this.mailService.sendInterviewInviteEmail(
         email,
         fullName,
         jobTitle,
       );
     } else if (status === 'rejected') {
+      await this.notificationsService.create(
+        application.candidateId,
+        'application_rejected',
+        'Kết quả ứng tuyển',
+        `Đơn ứng tuyển vị trí ${jobTitle} chưa phù hợp lần này`,
+        '/candidate/applications',
+      );
       await this.mailService.sendApplicationRejectedEmail(
         email,
         fullName,
         jobTitle,
       );
     } else if (status === 'hired') {
+      await this.notificationsService.create(
+        application.candidateId,
+        'application_hired',
+        'Chúc mừng!',
+        `Bạn đã được nhận vào vị trí ${jobTitle}`,
+        '/candidate/applications',
+      );
       await this.mailService.sendApplicationHiredEmail(
         email,
         fullName,

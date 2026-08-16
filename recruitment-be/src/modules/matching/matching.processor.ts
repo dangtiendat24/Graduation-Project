@@ -29,6 +29,7 @@ import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
 import { MailService } from '../mail/mail.service';
 import { shouldNotify } from '../settings/notification-preferences';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CvMatchJobData } from './matching.service';
 
 /** Shape thô trả về từ ai-service (Python/Pydantic dùng snake_case, kể cả nested skill_breakdown) */
@@ -67,6 +68,7 @@ export class MatchingProcessor extends WorkerHost {
     private readonly dashboardCache: DashboardCacheService,
     private readonly agentLogger: AgentExecutionLoggerService,
     private readonly mailService: MailService,
+    private readonly notificationsService: NotificationsService,
   ) {
     super();
   }
@@ -185,15 +187,24 @@ export class MatchingProcessor extends WorkerHost {
     }
   }
 
-  /** Không để lỗi gửi mail làm hỏng luồng matching chính — chỉ log lại nếu thất bại */
+  /** Không để lỗi gửi mail/ghi thông báo làm hỏng luồng matching chính — chỉ log lại nếu thất bại */
   private async notifyRecruiterMatchingComplete(
     recruiter: User | null,
     application: Application,
     overallScore: number,
   ): Promise<void> {
     try {
+      if (!recruiter) return;
+
+      await this.notificationsService.create(
+        recruiter.id,
+        'matching_complete',
+        'Đã chấm điểm CV',
+        `CV của ${application.candidate.fullName} cho vị trí ${application.job.title} đã được chấm điểm: ${overallScore}/100`,
+        `/recruiter/candidates/${application.id}`,
+      );
+
       if (
-        !recruiter ||
         !shouldNotify(recruiter.notificationPreferences, 'matchingComplete')
       ) {
         return;
@@ -207,7 +218,7 @@ export class MatchingProcessor extends WorkerHost {
       );
     } catch (err) {
       this.logger.error(
-        `Gửi email thông báo chấm điểm xong thất bại: ${(err as Error).message}`,
+        `Gửi thông báo chấm điểm xong thất bại: ${(err as Error).message}`,
       );
     }
   }
