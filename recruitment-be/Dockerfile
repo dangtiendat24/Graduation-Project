@@ -55,4 +55,11 @@ COPY --from=builder /app/recruitment-be/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+# Chạy migration còn thiếu trước khi start app — tránh lặp lại lỗi entity/DB lệch schema do
+# migration mới chưa từng được áp dụng lên DB production (đã xảy ra 2 lần: interview_answers,
+# rồi interview_sessions/notifications khi thêm voice interview). migration:run:prod dùng thẳng
+# dist/config/typeorm.config.js (không cần ts-node/devDependencies, vốn đã bị `npm ci --omit=dev`
+# xoá khỏi stage production). TypeORM tự lưu migration nào đã chạy vào bảng "migrations", nên lệnh
+# này an toàn khi container khởi động lại nhiều lần (free tier hay sleep/wake) — chỉ áp dụng phần
+# migration còn thiếu, không chạy lại cái đã chạy.
+CMD ["sh", "-c", "npm run migration:run:prod && node dist/main"]
