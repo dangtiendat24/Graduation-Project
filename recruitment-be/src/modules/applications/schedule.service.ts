@@ -17,6 +17,7 @@ import { GoogleCalendarService } from '../google-calendar/google-calendar.servic
 import { MailService } from '../mail/mail.service';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { shouldNotify } from '../settings/notification-preferences';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const VN_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
@@ -63,6 +64,7 @@ export class ScheduleService {
     private readonly googleCalendarService: GoogleCalendarService,
     private readonly mailService: MailService,
     private readonly dashboardCache: DashboardCacheService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -131,6 +133,16 @@ export class ScheduleService {
         recruiterId,
       );
     }
+
+    // Ghi thông báo trong-app trước email — nếu gửi email lỗi (SMTP down...) thì chuông
+    // thông báo vẫn phản ánh đúng sự kiện đã xảy ra, không phụ thuộc vào email có gửi được hay không.
+    await this.notificationsService.create(
+      application.candidateId,
+      'schedule_proposed',
+      isResend ? 'Cập nhật khung giờ phỏng vấn' : 'Lịch phỏng vấn mới',
+      `Nhà tuyển dụng đã gửi khung giờ phỏng vấn cho vị trí ${job.title}`,
+      '/candidate/schedule',
+    );
 
     await this.mailService.sendScheduleProposedEmail(
       application.candidate.email,
@@ -229,7 +241,7 @@ export class ScheduleService {
     return saved;
   }
 
-  /** Không để lỗi gửi mail làm hỏng luồng xác nhận lịch chính — chỉ log lại nếu thất bại */
+  /** Không để lỗi gửi mail/ghi thông báo làm hỏng luồng xác nhận lịch chính — chỉ log lại nếu thất bại */
   private async notifyRecruiterScheduleConfirmed(
     recruiterId: string,
     candidateName: string,
@@ -240,8 +252,17 @@ export class ScheduleService {
       const recruiter = await this.userRepo.findOne({
         where: { id: recruiterId },
       });
+      if (!recruiter) return;
+
+      await this.notificationsService.create(
+        recruiterId,
+        'schedule_confirmed',
+        'Ứng viên đã xác nhận lịch phỏng vấn',
+        `${candidateName} đã xác nhận lịch phỏng vấn vị trí ${jobTitle} lúc ${scheduledTimeLabel}`,
+        '/recruiter/interviews',
+      );
+
       if (
-        !recruiter ||
         !shouldNotify(recruiter.notificationPreferences, 'scheduleConfirmed')
       ) {
         return;
@@ -255,7 +276,7 @@ export class ScheduleService {
       );
     } catch (err) {
       this.logger.error(
-        `Gửi email thông báo xác nhận lịch thất bại: ${(err as Error).message}`,
+        `Gửi thông báo xác nhận lịch thất bại: ${(err as Error).message}`,
       );
     }
   }

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import LoginToast from '../../components/LoginToast/LoginToast'
 import { getRecruiterSchedules } from '../../api/schedule'
+import NotificationBell from '../../components/NotificationBell/NotificationBell'
 import './DashboardLayout.css'
 
 interface NavItemProps {
@@ -146,10 +147,7 @@ export default function DashboardLayout({ children, actions }: Props) {
             <span>Tìm ứng viên, tin tuyển dụng...</span>
           </div>
           <div className="dl-topbar-right">
-            <div className="dl-icon-btn">
-              <i className="ti ti-bell" />
-              <span className="dl-dot" />
-            </div>
+            <NotificationBell />
             {actions}
           </div>
         </header>
