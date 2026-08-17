@@ -9,6 +9,7 @@ import { MailModule } from '../mail/mail.module';
 import { ScheduleModule } from '../applications/schedule.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { StorageModule } from '../storage/storage.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { RecruiterApplicationsService } from './recruiter-applications.service';
 import { RecruiterApplicationsController } from './recruiter-applications.controller';
 
@@ -25,6 +26,7 @@ import { RecruiterApplicationsController } from './recruiter-applications.contro
     ScheduleModule,
     DashboardModule,
     StorageModule,
+    NotificationsModule,
   ],
   controllers: [RecruiterApplicationsController],
   providers: [RecruiterApplicationsService],
