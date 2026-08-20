@@ -226,7 +226,12 @@
   font-weight: var(--fw-bold);
   text-align: center;
   margin: 0;
-  text-wrap: balance;
+  /* KHÔNG dùng text-wrap: balance — hiệu ứng gõ chữ tăng dần độ dài text mỗi khung hình, mà
+     balance tính lại toàn bộ điểm xuống dòng dựa trên TOÀN BỘ text mỗi lần độ dài đổi, khiến các
+     dòng đã hiện trước đó bị xáo lại liên tục (chữ nhảy lung tung giữa các dòng). Xuống dòng mặc
+     định (greedy) chỉ xử lý từ trái sang phải và không đổi lại các dòng đã "chốt" khi thêm ký tự
+     ở cuối, nên ổn định cho việc hiện chữ dần dần.
+     */
 }
 
 .vi-caption-static { color: var(--text-secondary); font-weight: 500; }
