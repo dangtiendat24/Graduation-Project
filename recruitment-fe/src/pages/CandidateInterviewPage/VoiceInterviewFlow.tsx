@@ -94,7 +94,15 @@ export default function VoiceInterviewFlow({
   const blurCountRef = useRef(0)
   const blurTotalMsRef = useRef(0)
   const blurStartRef = useRef<number | null>(null)
-  const lastPayloadRef = useRef<SubmitPayload | null>(null)
+  // Chặn gọi lặp handleStopRecording/handleSkip cho cùng 1 câu hỏi (double-click, double-tap) —
+  // submitPayload là async nên screen chỉ chuyển sang 'submitting' SAU khi await xong, nghĩa là
+  // giữa 2 lần click liên tiếp nút vẫn còn hiển thị và bấm được, dễ gửi trùng 2 lần cho cùng 1
+  // câu. Khoá bằng ref (đọc/ghi đồng bộ) thay vì dựa vào state vì state không cập nhật kịp.
+  const submitLockRef = useRef(false)
+  // Lưu lại đúng hành động cần thử lại khi rơi vào màn network-error — màn lỗi có thể đến từ 3
+  // nguồn khác nhau (nộp câu trả lời / bắt đầu phỏng vấn mới / lấy lại trạng thái khi resume),
+  // mỗi nguồn cần gọi lại đúng API tương ứng thay vì đoán qua trạng thái khác.
+  const retryRef = useRef<() => void>(() => {})
 
   const submitMutation = useMutation({
     mutationFn: (payload: SubmitPayload) => submitVoiceAnswer(sessionId, payload),
@@ -154,6 +162,8 @@ export default function VoiceInterviewFlow({
   }, [screen, recordSecondsLeft])
 
   function enterQuestion(question: VoiceQuestion) {
+    submitLockRef.current = false
+    setShowEndConfirm(false)
     setCurrentQuestion(question)
     setFeedback(null)
     setScreen('question')
@@ -179,18 +189,21 @@ export default function VoiceInterviewFlow({
   }
 
   async function submitPayload(payload: SubmitPayload) {
-    lastPayloadRef.current = payload
     setScreen('submitting')
     try {
       const result = await submitMutation.mutateAsync(payload)
       setFeedback(result)
       setScreen('feedback')
     } catch {
+      retryRef.current = () => void submitPayload(payload)
       setScreen('network-error')
     }
   }
 
   async function handleStopRecording() {
+    if (submitLockRef.current) return
+    submitLockRef.current = true
+    setShowEndConfirm(false)
     trackingRef.current = false
     const blob = await mic.stopRecording()
     const responseLatencyMs = questionAudioEndedAtRef.current
@@ -206,6 +219,9 @@ export default function VoiceInterviewFlow({
   }
 
   async function handleSkip() {
+    if (submitLockRef.current) return
+    submitLockRef.current = true
+    setShowEndConfirm(false)
     trackingRef.current = false
     if (mic.isRecording) await mic.stopRecording()
     const responseLatencyMs = questionAudioEndedAtRef.current
@@ -218,11 +234,6 @@ export default function VoiceInterviewFlow({
       tabBlurCount: blurCountRef.current,
       tabBlurTotalMs: blurTotalMsRef.current,
     })
-  }
-
-  async function handleRetrySubmit() {
-    if (!lastPayloadRef.current) return
-    await submitPayload(lastPayloadRef.current)
   }
 
   async function handleEndInterview() {
@@ -270,6 +281,7 @@ export default function VoiceInterviewFlow({
         }
         enterQuestion(state.currentQuestion)
       } catch {
+        retryRef.current = () => void handlePermissionGranted()
         setErrorMessage(null)
         setScreen('network-error')
       }
@@ -284,6 +296,7 @@ export default function VoiceInterviewFlow({
       const question = await startVoiceInterview(sessionId)
       enterQuestion(question)
     } catch {
+      retryRef.current = () => void handleStartInterview()
       setErrorMessage(null)
       setScreen('network-error')
     }
@@ -315,10 +328,7 @@ export default function VoiceInterviewFlow({
       )}
 
       {screen === 'network-error' && (
-        <NetworkErrorScreen
-          message={errorMessage}
-          onRetry={lastPayloadRef.current ? handleRetrySubmit : handleStartInterview}
-        />
+        <NetworkErrorScreen message={errorMessage} onRetry={() => retryRef.current()} />
       )}
 
       {currentQuestion && STAGE_SCREENS.includes(screen) && (
