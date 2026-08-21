@@ -292,9 +292,19 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 860px) {
   .rig-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .rig-header--row {
+    flex-direction: column;
+  }
+  .rig-btn-calendar {
+    width: 100%;
+    justify-content: center;
   }
   .rig-job-card {
     flex-direction: column;
@@ -306,5 +316,14 @@
   }
   .rig-applicant-count {
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .rig-page {
+    padding: var(--space-4);
+  }
+  .rig-stats {
+    grid-template-columns: 1fr;
   }
 }

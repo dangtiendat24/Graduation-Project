@@ -119,8 +119,14 @@
   overflow: hidden;
 }
 
+.hr-table-scroll {
+  overflow-x: auto;
+}
+
 .hr-table {
   width: 100%;
+  min-width: 720px;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 

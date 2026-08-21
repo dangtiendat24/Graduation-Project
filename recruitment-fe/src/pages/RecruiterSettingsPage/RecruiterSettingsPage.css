@@ -306,6 +306,24 @@
 }
 
 @media (max-width: 640px) {
+  .rst-page {
+    padding: 0 var(--space-4) var(--space-6);
+  }
   .rst-form-row,
   .rst-form-row--3 { grid-template-columns: 1fr; }
+  .rst-card-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+  .rst-btn-save {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .rst-avatar-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

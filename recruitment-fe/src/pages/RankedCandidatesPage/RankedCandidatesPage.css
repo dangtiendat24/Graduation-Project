@@ -1074,6 +1074,21 @@
   }
 }
 
+@media (max-width: 640px) {
+  .rk-page {
+    padding: var(--space-4);
+  }
+  .rk-filters-row {
+    justify-content: flex-start;
+  }
+  .rk-status-select {
+    width: 100%;
+  }
+  .rk-modal-actions {
+    flex-direction: column;
+  }
+}
+
 /* ===================== INTERVIEW SCORE COLUMN + Q&A DRAWER ===================== */
 
 .rk-interview-btn {

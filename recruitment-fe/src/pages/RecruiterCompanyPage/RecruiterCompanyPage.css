@@ -754,3 +754,63 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .rcp-spin { animation: spin .8s linear infinite; }
 
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 1024px) {
+  .rcp-layout {
+    grid-template-columns: 1fr;
+  }
+  .rcp-side-panel {
+    position: static;
+  }
+  .rcp-pv-body {
+    grid-template-columns: 1fr;
+  }
+  .rcp-stepper {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .rcp-form-row {
+    grid-template-columns: 1fr;
+  }
+  .rcp-pv-perks {
+    grid-template-columns: 1fr;
+  }
+  .rcp-pv-head {
+    flex-direction: column;
+  }
+  .rcp-pv-head-right {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .rcp-logo-area {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .rcp-stepper,
+  .rcp-layout,
+  .rcp-preview {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+  .rcp-topbar-actions {
+    flex-wrap: wrap;
+  }
+  .rcp-save-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+  }
+  .rcp-save-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
+
