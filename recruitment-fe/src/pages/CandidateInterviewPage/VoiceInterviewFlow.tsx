@@ -275,6 +275,7 @@ export default function VoiceInterviewFlow({
           return
         }
         if (!state.currentQuestion) {
+          retryRef.current = () => void handlePermissionGranted()
           setErrorMessage('Không tìm thấy câu hỏi đang chờ trả lời.')
           setScreen('network-error')
           return
