@@ -415,3 +415,48 @@
   font-size: var(--fs-body);
   font-family: var(--font-family);
 }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 1024px) {
+  .ccp-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .ccp-cover {
+    height: 120px;
+    margin-bottom: -40px;
+  }
+
+  .ccp-head-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 14px 16px 18px;
+    gap: 14px;
+  }
+
+  .ccp-logo {
+    width: 64px;
+    height: 64px;
+    font-size: 22px;
+    margin-top: -32px;
+  }
+
+  .ccp-head-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .ccp-btn-follow {
+    justify-content: center;
+  }
+
+  .ccp-section {
+    padding: 16px 18px;
+  }
+
+  .ccp-sidebar-card {
+    padding: 16px;
+  }
+}

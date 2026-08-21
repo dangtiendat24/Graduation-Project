@@ -311,6 +311,7 @@ export default function CandidateHomePage() {
             ) : applications.length === 0 ? (
               <div className="ch-empty-state">Bạn chưa nộp đơn ứng tuyển nào.</div>
             ) : (
+              <div className="ch-app-table-wrap">
               <table className="ch-app-table">
                 <thead>
                   <tr>
@@ -369,6 +370,7 @@ export default function CandidateHomePage() {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 
