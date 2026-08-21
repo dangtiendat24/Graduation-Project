@@ -83,3 +83,13 @@
   color: var(--text-primary);
   background: var(--bg-muted);
 }
+
+/* ══════════════ RESPONSIVE ══════════════ */
+@media (max-width: 480px) {
+  .lt-toast {
+    left: 16px;
+    right: 16px;
+    min-width: 0;
+    max-width: calc(100vw - 32px);
+  }
+}
