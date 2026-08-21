@@ -5,6 +5,7 @@
   justify-content: center;
   background: var(--bg-page);
   font-family: var(--font-family);
+  padding: 1rem;
 }
 
 .auth-cb-box {
@@ -16,6 +17,8 @@
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
+  width: 100%;
+  max-width: 360px;
 }
 
 .auth-cb-spinner {
@@ -58,3 +61,8 @@
   transition: opacity 0.15s;
 }
 .auth-cb-back:hover { opacity: 0.88; }
+
+/* ══════════════ RESPONSIVE ══════════════ */
+@media (max-width: 480px) {
+  .auth-cb-box { padding: 2rem 1.5rem; }
+}

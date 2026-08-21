@@ -289,3 +289,9 @@
   .rcd-header-actions { align-items: flex-start; width: 100%; }
   .rcd-grid { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 640px) {
+  .rcd-page { padding: var(--space-4); }
+  .rcd-header-actions { flex-direction: column; }
+  .rcd-btn-primary { width: 100%; justify-content: center; }
+}

@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { useMobileSidebar } from '../../hooks/useMobileSidebar'
 import LoginToast from '../../components/LoginToast/LoginToast'
 import NotificationBell from '../../components/NotificationBell/NotificationBell'
 import './CandidateLayout.css'
@@ -56,6 +57,7 @@ export default function CandidateLayout({ children }: Props) {
   const navigate = useNavigate()
   const { user, clearAuth } = useAuthStore()
   const firstName = user ? getFirstName(user.fullName) : 'bạn'
+  const { isOpen: isSidebarOpen, setOpen: setSidebarOpen } = useMobileSidebar()
 
   function handleLogout() {
     clearAuth()
@@ -64,11 +66,25 @@ export default function CandidateLayout({ children }: Props) {
 
   return (
     <div className="csl-root">
+      {isSidebarOpen && (
+        <div className="csl-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* ── Sidebar ── */}
-      <aside className="csl-sidebar">
+      <aside className={`csl-sidebar${isSidebarOpen ? ' open' : ''}`}>
         <div className="csl-logo" onClick={() => navigate('/candidate/dashboard')}>
           <span className="csl-logo-dot" />
           <span className="csl-logo-name">Recruit<span>.AI</span></span>
+          <button
+            className="csl-sidebar-close"
+            onClick={(e) => {
+              e.stopPropagation()
+              setSidebarOpen(false)
+            }}
+            aria-label="Đóng menu"
+          >
+            <i className="ti ti-x" />
+          </button>
         </div>
 
         <nav className="csl-nav">
@@ -108,6 +124,14 @@ export default function CandidateLayout({ children }: Props) {
       {/* ── Main area ── */}
       <div className="csl-main">
         <header className="csl-topbar">
+          <button
+            className="csl-hamburger"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Mở menu"
+          >
+            <i className="ti ti-menu-2" />
+          </button>
+
           <div className="csl-topbar-left">
             <div className="csl-greeting">Xin chào, {firstName} 👋</div>
             <div className="csl-date">{formatDate()}</div>
@@ -116,7 +140,7 @@ export default function CandidateLayout({ children }: Props) {
             <NotificationBell />
             <button className="csl-btn-primary" onClick={() => navigate('/candidate/jobs')}>
               <i className="ti ti-briefcase" />
-              Tìm việc làm
+              <span>Tìm việc làm</span>
             </button>
           </div>
         </header>
