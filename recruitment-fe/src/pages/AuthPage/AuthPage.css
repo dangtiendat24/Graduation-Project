@@ -577,3 +577,10 @@
   .brand-quote { display: none; }
   .auth-back { margin-left: 0; }
 }
+
+@media (max-width: 480px) {
+  .auth-page { padding: 1.25rem 0.75rem; }
+  .brand { padding: 1rem 1.25rem; }
+  .form-panel { padding: 1.5rem 1.25rem; }
+  .role-grid { grid-template-columns: 1fr; }
+}

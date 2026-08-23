@@ -682,12 +682,12 @@
   .numbers-grid { grid-template-columns: repeat(2, 1fr); }
   .testi-grid { grid-template-columns: 1fr; }
   .footer-top { grid-template-columns: 1fr 1fr; }
+  .nav-links { display: none; }
 }
 @media (max-width: 600px) {
   .how-steps { grid-template-columns: 1fr; }
   .agents-grid { grid-template-columns: 1fr; }
   .stat-divider { display: none; }
   .mockup-body { height: 200px; }
-  .nav-links { display: none; }
   .footer-top { grid-template-columns: 1fr; }
 }

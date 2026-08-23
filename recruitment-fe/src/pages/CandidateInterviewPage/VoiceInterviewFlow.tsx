@@ -103,6 +103,12 @@ export default function VoiceInterviewFlow({
   // nguồn khác nhau (nộp câu trả lời / bắt đầu phỏng vấn mới / lấy lại trạng thái khi resume),
   // mỗi nguồn cần gọi lại đúng API tương ứng thay vì đoán qua trạng thái khác.
   const retryRef = useRef<() => void>(() => {})
+  // Chặn bấm "Thử lại" 2 lần liên tiếp ở màn network-error — các hàm retry (handlePermissionGranted,
+  // handleStartInterview, submitPayload) đều await trước khi setScreen rời khỏi 'network-error', nên
+  // giữa 2 lần click nút vẫn còn hiển thị, dễ gọi requestPermission()/API chồng lấn và rò rỉ
+  // MediaStream/AudioContext cũ. Reset lại mỗi lần MÀN HÌNH vào 'network-error' (kể cả lần 2 nếu
+  // retry thất bại tiếp) để lần thử lại kế tiếp vẫn bấm được.
+  const retryLockRef = useRef(false)
 
   const submitMutation = useMutation({
     mutationFn: (payload: SubmitPayload) => submitVoiceAnswer(sessionId, payload),
@@ -161,6 +167,16 @@ export default function VoiceInterviewFlow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, recordSecondsLeft])
 
+  useEffect(() => {
+    if (screen === 'network-error') retryLockRef.current = false
+  }, [screen])
+
+  function handleRetry() {
+    if (retryLockRef.current) return
+    retryLockRef.current = true
+    retryRef.current()
+  }
+
   function enterQuestion(question: VoiceQuestion) {
     submitLockRef.current = false
     setShowEndConfirm(false)
@@ -184,6 +200,7 @@ export default function VoiceInterviewFlow({
 
   function handleStartRecording() {
     mic.startRecording()
+    setShowEndConfirm(false)
     setRecordSecondsLeft(RECORD_SECONDS)
     setScreen('recording')
   }
@@ -275,6 +292,7 @@ export default function VoiceInterviewFlow({
           return
         }
         if (!state.currentQuestion) {
+          retryRef.current = () => void handlePermissionGranted()
           setErrorMessage('Không tìm thấy câu hỏi đang chờ trả lời.')
           setScreen('network-error')
           return
@@ -328,7 +346,7 @@ export default function VoiceInterviewFlow({
       )}
 
       {screen === 'network-error' && (
-        <NetworkErrorScreen message={errorMessage} onRetry={() => retryRef.current()} />
+        <NetworkErrorScreen message={errorMessage} onRetry={handleRetry} />
       )}
 
       {currentQuestion && STAGE_SCREENS.includes(screen) && (

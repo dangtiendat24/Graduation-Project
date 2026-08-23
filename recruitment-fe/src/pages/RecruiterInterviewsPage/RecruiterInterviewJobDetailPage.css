@@ -603,3 +603,36 @@
     transform: rotate(360deg);
   }
 }
+
+/* ── Responsive ── */
+@media (max-width: 860px) {
+  .ri-candidate-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ri-candidate-info,
+  .ri-btn-schedule {
+    align-self: stretch;
+  }
+  .ri-candidate-status {
+    min-width: 0;
+  }
+  .ri-candidate-actions {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .ri-page {
+    padding: var(--space-4);
+  }
+  .ri-check-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ri-box-actions,
+  .ri-outcome-buttons {
+    flex-direction: column;
+  }
+}

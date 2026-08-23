@@ -103,3 +103,9 @@
   border-color: var(--border-emphasis);
   color: var(--text-primary);
 }
+
+/* ══════════════ RESPONSIVE ══════════════ */
+@media (max-width: 480px) {
+  .verify-page { padding: 0.75rem; }
+  .verify-box { padding: 2rem 1.25rem; }
+}

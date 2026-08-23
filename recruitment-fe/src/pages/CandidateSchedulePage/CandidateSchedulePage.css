@@ -284,3 +284,33 @@
 .cs-btn-meet:hover {
   background: #D1FAE5;
 }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 720px) {
+  .cs-stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .cs-card-header {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    gap: 10px 16px;
+  }
+
+  .cs-job-info {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .cs-badge {
+    white-space: normal;
+    text-align: center;
+  }
+
+  .cs-card-body {
+    padding: 14px 16px 16px;
+  }
+}
