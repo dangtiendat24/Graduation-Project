@@ -31,23 +31,39 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   async register(dto: RegisterDto) {
     const existing = await this.usersService.findByEmail(dto.email)
-    if (existing) throw new ConflictException('Email đã được sử dụng')
+    if (existing && existing.isActive) {
+      throw new ConflictException('Email đã được sử dụng')
+    }
 
     const passwordHash = await bcrypt.hash(dto.password, 10)
-    const user = await this.usersService.create({
-      email: dto.email,
-      passwordHash,
-      fullName: dto.fullName,
-      role: dto.role,
-    })
+    let userId: string
+
+    if (existing) {
+      // Email đã đăng ký nhưng chưa xác nhận — cho đăng ký lại (đè role/mật khẩu/họ tên mới),
+      // đồng thời gửi lại email xác nhận với token mới.
+      await this.usersService.reregisterUnverified(existing.id, {
+        passwordHash,
+        fullName: dto.fullName,
+        role: dto.role,
+      })
+      userId = existing.id
+    } else {
+      const user = await this.usersService.create({
+        email: dto.email,
+        passwordHash,
+        fullName: dto.fullName,
+        role: dto.role,
+      })
+      userId = user.id
+    }
 
     const token = crypto.randomBytes(32).toString('hex')
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24h
-    await this.usersService.setVerifyToken(user.id, token, expires)
+    await this.usersService.setVerifyToken(userId, token, expires)
 
     await this.mailService.sendVerificationEmail(dto.email, dto.fullName, token)
 

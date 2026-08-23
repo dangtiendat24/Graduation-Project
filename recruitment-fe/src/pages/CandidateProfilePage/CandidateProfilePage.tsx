@@ -148,6 +148,9 @@ export default function CandidateProfilePage() {
 
   /* avatar upload/remove mutations */
   const [avatarError, setAvatarError] = useState('')
+  /* URL ảnh vừa fail load (vd Google photo bị chặn bởi extension chặn quảng cáo/riêng tư của
+     trình duyệt) — so với avatarUrl hiện tại để tự phục hồi khi user đổi sang ảnh khác */
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState<string | null>(null)
 
   function syncAvatar(avatarUrl: string | null) {
     queryClient.setQueryData<ProfileData>(['profile', 'me'], (old) =>
@@ -282,8 +285,16 @@ export default function CandidateProfilePage() {
               {/* Avatar */}
               <div className="cp-avatar-section">
                 <div className="cp-avatar-wrap">
-                  {profile?.avatarUrl
-                    ? <img src={profile.avatarUrl} alt="avatar" className="cp-avatar-img cp-avatar-photo" />
+                  {profile?.avatarUrl && avatarLoadFailed !== profile.avatarUrl
+                    ? (
+                      <img
+                        src={profile.avatarUrl}
+                        alt="avatar"
+                        className="cp-avatar-img cp-avatar-photo"
+                        referrerPolicy="no-referrer"
+                        onError={() => setAvatarLoadFailed(profile.avatarUrl)}
+                      />
+                    )
                     : <div className="cp-avatar-img">{initials}</div>
                   }
                   <div
