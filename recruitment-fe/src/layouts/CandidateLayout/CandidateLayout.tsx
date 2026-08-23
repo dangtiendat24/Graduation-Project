@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import LoginToast from '../../components/LoginToast/LoginToast'
@@ -56,6 +57,7 @@ export default function CandidateLayout({ children }: Props) {
   const navigate = useNavigate()
   const { user, clearAuth } = useAuthStore()
   const firstName = user ? getFirstName(user.fullName) : 'bạn'
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState<string | null>(null)
 
   function handleLogout() {
     clearAuth()
@@ -87,8 +89,14 @@ export default function CandidateLayout({ children }: Props) {
 
         <div className="csl-sidebar-footer">
           <div className="csl-avatar">
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.fullName} className="csl-avatar-img" />
+            {user?.avatarUrl && avatarLoadFailed !== user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName}
+                className="csl-avatar-img"
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarLoadFailed(user.avatarUrl ?? null)}
+              />
             ) : user ? (
               getInitials(user.fullName)
             ) : (

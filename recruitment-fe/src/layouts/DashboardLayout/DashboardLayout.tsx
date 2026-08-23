@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
@@ -67,6 +68,7 @@ interface Props {
 
 export default function DashboardLayout({ children, actions }: Props) {
   const { user, clearAuth } = useAuthStore()
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState<string | null>(null)
 
   const prefix = user?.role === 'recruiter' ? '/recruiter' : '/candidate'
 
@@ -120,8 +122,14 @@ export default function DashboardLayout({ children, actions }: Props) {
 
         <div className="dl-sidebar-footer">
           <div className="dl-avatar">
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.fullName} className="dl-avatar-img" />
+            {user?.avatarUrl && avatarLoadFailed !== user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName}
+                className="dl-avatar-img"
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarLoadFailed(user.avatarUrl ?? null)}
+              />
             ) : user ? (
               getInitials(user.fullName)
             ) : (
