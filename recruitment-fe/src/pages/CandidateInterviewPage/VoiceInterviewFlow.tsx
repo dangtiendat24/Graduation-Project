@@ -88,6 +88,7 @@ export default function VoiceInterviewFlow({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [aiSpeaking, setAiSpeaking] = useState(false)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
+  const [micStartError, setMicStartError] = useState<string | null>(null)
 
   const questionAudioEndedAtRef = useRef<number | null>(null)
   const trackingRef = useRef(false)
@@ -195,11 +196,19 @@ export default function VoiceInterviewFlow({
 
   function handleQuestionAudioEnded() {
     beginTrackingWindow()
+    setMicStartError(null)
     setScreen('ready')
   }
 
-  function handleStartRecording() {
-    mic.startRecording()
+  async function handleStartRecording() {
+    const started = await mic.startRecording()
+    if (!started) {
+      setMicStartError(
+        'Không thể truy cập micro — có thể bạn vừa đổi thiết bị âm thanh (tai nghe/mic). Vui lòng thử lại.',
+      )
+      return
+    }
+    setMicStartError(null)
     setShowEndConfirm(false)
     setRecordSecondsLeft(RECORD_SECONDS)
     setScreen('recording')
@@ -222,13 +231,15 @@ export default function VoiceInterviewFlow({
     submitLockRef.current = true
     setShowEndConfirm(false)
     trackingRef.current = false
-    const blob = await mic.stopRecording()
+    const { blob, hadSound } = await mic.stopRecording()
     const responseLatencyMs = questionAudioEndedAtRef.current
       ? Date.now() - questionAudioEndedAtRef.current
       : 0
     await submitPayload({
       questionId: currentQuestion!.questionId,
-      audioBlob: blob,
+      // Không có tiếng nói thật trong lúc ghi âm (im lặng) — không gửi audio lên STT để tránh
+      // Whisper bịa chữ, coi như "không trả lời" giống lúc bỏ qua/hết giờ.
+      audioBlob: hadSound ? blob : null,
       responseLatencyMs,
       tabBlurCount: blurCountRef.current,
       tabBlurTotalMs: blurTotalMsRef.current,
@@ -478,10 +489,11 @@ export default function VoiceInterviewFlow({
 
                   {screen === 'ready' && (
                     <>
-                      <button className="vi-record-btn" onClick={handleStartRecording}>
+                      <button className="vi-record-btn" onClick={() => void handleStartRecording()}>
                         <Mic size={20} />
                       </button>
                       <span className="vi-control-label">Bắt đầu ghi âm</span>
+                      {micStartError && <span className="vi-mic-start-error">{micStartError}</span>}
                     </>
                   )}
 
