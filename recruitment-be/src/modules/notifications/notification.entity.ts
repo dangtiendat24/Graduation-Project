@@ -8,6 +8,7 @@ import {
 export type NotificationType =
   | 'new_application'
   | 'matching_complete'
+  | 'interview_scored'
   | 'schedule_proposed'
   | 'schedule_confirmed'
   | 'interview_invite'

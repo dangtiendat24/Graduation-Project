@@ -268,6 +268,48 @@ export class MailService implements OnModuleInit {
       ),
     );
   }
+
+  /** Thông báo cho ứng viên — AI vừa chấm điểm phù hợp CV xong (gửi dù đạt hay không đạt ngưỡng) */
+  async sendCandidateCvScoredEmail(
+    to: string,
+    fullName: string,
+    jobTitle: string,
+    passed: boolean,
+  ) {
+    if (this.devMode) {
+      this.logger.log(
+        `[DEV] Candidate CV scored email for ${to} — job: ${jobTitle}, passed: ${passed}`,
+      );
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] Đã có kết quả đánh giá hồ sơ — vị trí ${jobTitle}`,
+      buildCandidateCvScoredEmailHtml(fullName, jobTitle, passed, this.frontendUrl),
+    );
+  }
+
+  /**
+   * Thông báo cho ứng viên — Agent 3 vừa chấm điểm xong bài phỏng vấn AI. Không lộ điểm/nhận xét
+   * (theo đúng thiết kế ẩn điểm phỏng vấn với candidate — xem interview-session.controller.ts).
+   */
+  async sendCandidateInterviewScoredEmail(
+    to: string,
+    fullName: string,
+    jobTitle: string,
+  ) {
+    if (this.devMode) {
+      this.logger.log(
+        `[DEV] Candidate interview scored email for ${to} — job: ${jobTitle}`,
+      );
+      return;
+    }
+    await this.sendEmail(
+      to,
+      `[RecruitAI] Bài phỏng vấn AI của bạn đã được đánh giá — vị trí ${jobTitle}`,
+      buildCandidateInterviewScoredEmailHtml(fullName, jobTitle, this.frontendUrl),
+    );
+  }
 }
 
 function buildVerifyEmailHtml(fullName: string, verifyUrl: string): string {
@@ -571,6 +613,121 @@ function buildRejectionEmailHtml(fullName: string, jobTitle: string): string {
   </table>
 </body>
 </html>`;
+}
+
+function buildCandidateCvScoredEmailHtml(
+  fullName: string,
+  jobTitle: string,
+  passed: boolean,
+  frontendUrl: string,
+): string {
+  const bodyText = passed
+    ? `AI vừa hoàn tất đánh giá mức độ phù hợp giữa hồ sơ của bạn và vị trí <strong>${jobTitle}</strong>.
+       Hồ sơ của bạn đã qua vòng sơ loại — nhà tuyển dụng sẽ xem xét và có thể mời bạn tham gia phỏng vấn AI hoặc phỏng vấn trực tiếp trong thời gian tới.`
+    : `AI vừa hoàn tất đánh giá mức độ phù hợp giữa hồ sơ của bạn và vị trí <strong>${jobTitle}</strong>.
+       Rất tiếc, hồ sơ của bạn chưa phù hợp với yêu cầu của vị trí này ở thời điểm hiện tại. Cảm ơn bạn đã dành thời gian ứng tuyển.`;
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kết quả đánh giá hồ sơ</title></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#0C2340 0%,#0F172A 48%,#1E1065 100%);padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:.04em;">
+              RECRUIT<span style="color:#5EEAD4;">.AI</span>
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Xin chào, ${fullName}!</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              ${bodyText}
+            </p>
+
+            <table cellpadding="0" cellspacing="0"><tr><td>
+              <a href="${frontendUrl}/candidate/applications"
+                style="display:inline-block;background:#4338CA;color:#FFFFFF;font-size:15px;font-weight:600;padding:13px 32px;border-radius:8px;text-decoration:none;letter-spacing:.02em;">
+                Xem đơn ứng tuyển →
+              </a>
+            </td></tr></table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;padding:16px 40px;border-top:1px solid #E2E8F0;">
+            <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+              © 2026 RecruitAI — Nền tảng tuyển dụng thông minh
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function buildCandidateInterviewScoredEmailHtml(
+  fullName: string,
+  jobTitle: string,
+  frontendUrl: string,
+): string {
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kết quả phỏng vấn AI</title></head>
+<body style="margin:0;padding:0;background:#F1F5F9;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#FFFFFF;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(150deg,#0C2340 0%,#0F172A 48%,#1E1065 100%);padding:28px 40px;">
+            <span style="font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:.04em;">
+              RECRUIT<span style="color:#5EEAD4;">.AI</span>
+            </span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 40px 28px;">
+            <p style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Xin chào, ${fullName}!</p>
+            <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+              Cảm ơn bạn đã hoàn thành bài phỏng vấn AI cho vị trí <strong>${jobTitle}</strong>.
+              AI vừa đánh giá xong toàn bộ câu trả lời của bạn — nhà tuyển dụng sẽ xem kết quả và liên hệ nếu bạn phù hợp với bước tiếp theo.
+            </p>
+
+            <table cellpadding="0" cellspacing="0"><tr><td>
+              <a href="${frontendUrl}/candidate/applications"
+                style="display:inline-block;background:#4338CA;color:#FFFFFF;font-size:15px;font-weight:600;padding:13px 32px;border-radius:8px;text-decoration:none;letter-spacing:.02em;">
+                Xem đơn ứng tuyển →
+              </a>
+            </td></tr></table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#F8FAFC;padding:16px 40px;border-top:1px solid #E2E8F0;">
+            <p style="margin:0;font-size:12px;color:#94A3B8;text-align:center;">
+              © 2026 RecruitAI — Nền tảng tuyển dụng thông minh
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
 }
 
 function buildHiredEmailHtml(fullName: string, jobTitle: string): string {

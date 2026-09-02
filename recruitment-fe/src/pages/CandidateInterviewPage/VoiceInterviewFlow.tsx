@@ -88,6 +88,7 @@ export default function VoiceInterviewFlow({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [aiSpeaking, setAiSpeaking] = useState(false)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
+  const [micStartError, setMicStartError] = useState<string | null>(null)
 
   const questionAudioEndedAtRef = useRef<number | null>(null)
   const trackingRef = useRef(false)
@@ -103,6 +104,12 @@ export default function VoiceInterviewFlow({
   // nguồn khác nhau (nộp câu trả lời / bắt đầu phỏng vấn mới / lấy lại trạng thái khi resume),
   // mỗi nguồn cần gọi lại đúng API tương ứng thay vì đoán qua trạng thái khác.
   const retryRef = useRef<() => void>(() => {})
+  // Chặn bấm "Thử lại" 2 lần liên tiếp ở màn network-error — các hàm retry (handlePermissionGranted,
+  // handleStartInterview, submitPayload) đều await trước khi setScreen rời khỏi 'network-error', nên
+  // giữa 2 lần click nút vẫn còn hiển thị, dễ gọi requestPermission()/API chồng lấn và rò rỉ
+  // MediaStream/AudioContext cũ. Reset lại mỗi lần MÀN HÌNH vào 'network-error' (kể cả lần 2 nếu
+  // retry thất bại tiếp) để lần thử lại kế tiếp vẫn bấm được.
+  const retryLockRef = useRef(false)
 
   const submitMutation = useMutation({
     mutationFn: (payload: SubmitPayload) => submitVoiceAnswer(sessionId, payload),
@@ -161,6 +168,16 @@ export default function VoiceInterviewFlow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, recordSecondsLeft])
 
+  useEffect(() => {
+    if (screen === 'network-error') retryLockRef.current = false
+  }, [screen])
+
+  function handleRetry() {
+    if (retryLockRef.current) return
+    retryLockRef.current = true
+    retryRef.current()
+  }
+
   function enterQuestion(question: VoiceQuestion) {
     submitLockRef.current = false
     setShowEndConfirm(false)
@@ -179,11 +196,20 @@ export default function VoiceInterviewFlow({
 
   function handleQuestionAudioEnded() {
     beginTrackingWindow()
+    setMicStartError(null)
     setScreen('ready')
   }
 
-  function handleStartRecording() {
-    mic.startRecording()
+  async function handleStartRecording() {
+    const started = await mic.startRecording()
+    if (!started) {
+      setMicStartError(
+        'Không thể truy cập micro — có thể bạn vừa đổi thiết bị âm thanh (tai nghe/mic). Vui lòng thử lại.',
+      )
+      return
+    }
+    setMicStartError(null)
+    setShowEndConfirm(false)
     setRecordSecondsLeft(RECORD_SECONDS)
     setScreen('recording')
   }
@@ -205,13 +231,15 @@ export default function VoiceInterviewFlow({
     submitLockRef.current = true
     setShowEndConfirm(false)
     trackingRef.current = false
-    const blob = await mic.stopRecording()
+    const { blob, hadSound } = await mic.stopRecording()
     const responseLatencyMs = questionAudioEndedAtRef.current
       ? Date.now() - questionAudioEndedAtRef.current
       : 0
     await submitPayload({
       questionId: currentQuestion!.questionId,
-      audioBlob: blob,
+      // Không có tiếng nói thật trong lúc ghi âm (im lặng) — không gửi audio lên STT để tránh
+      // Whisper bịa chữ, coi như "không trả lời" giống lúc bỏ qua/hết giờ.
+      audioBlob: hadSound ? blob : null,
       responseLatencyMs,
       tabBlurCount: blurCountRef.current,
       tabBlurTotalMs: blurTotalMsRef.current,
@@ -275,6 +303,7 @@ export default function VoiceInterviewFlow({
           return
         }
         if (!state.currentQuestion) {
+          retryRef.current = () => void handlePermissionGranted()
           setErrorMessage('Không tìm thấy câu hỏi đang chờ trả lời.')
           setScreen('network-error')
           return
@@ -328,7 +357,7 @@ export default function VoiceInterviewFlow({
       )}
 
       {screen === 'network-error' && (
-        <NetworkErrorScreen message={errorMessage} onRetry={() => retryRef.current()} />
+        <NetworkErrorScreen message={errorMessage} onRetry={handleRetry} />
       )}
 
       {currentQuestion && STAGE_SCREENS.includes(screen) && (
@@ -460,10 +489,11 @@ export default function VoiceInterviewFlow({
 
                   {screen === 'ready' && (
                     <>
-                      <button className="vi-record-btn" onClick={handleStartRecording}>
+                      <button className="vi-record-btn" onClick={() => void handleStartRecording()}>
                         <Mic size={20} />
                       </button>
                       <span className="vi-control-label">Bắt đầu ghi âm</span>
+                      {micStartError && <span className="vi-mic-start-error">{micStartError}</span>}
                     </>
                   )}
 

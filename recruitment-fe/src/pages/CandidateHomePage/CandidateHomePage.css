@@ -313,6 +313,11 @@
 }
 
 /* ===================== APPLICATIONS TABLE ===================== */
+.ch-app-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
 .ch-app-table {
   width: 100%;
   border-collapse: collapse;
@@ -917,3 +922,87 @@
 }
 
 .ch-profile-complete-btn:hover { opacity: 0.85; }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 1024px) {
+  .ch-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .ch-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .ch-hero-stats {
+    width: 100%;
+  }
+
+  .ch-hero-stat {
+    flex: 1;
+  }
+
+  .ch-pipeline {
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .ch-pipe-step {
+    flex: 0 0 96px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ch-hero {
+    padding: 1.125rem 1.25rem;
+  }
+
+  .ch-hero-title {
+    font-size: 19px;
+  }
+
+  .ch-hero-btns {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .ch-btn-hero-primary,
+  .ch-btn-hero-ghost {
+    justify-content: center;
+  }
+
+  .ch-hero-stats {
+    gap: 8px;
+  }
+
+  .ch-hero-stat {
+    padding: 10px 8px;
+    min-width: 0;
+  }
+
+  .ch-pipeline-wrap {
+    padding: 1rem 1.125rem;
+  }
+
+  .ch-pipeline-alert {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ch-job-card {
+    flex-wrap: wrap;
+  }
+
+  .ch-jc-right {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 8px;
+  }
+}

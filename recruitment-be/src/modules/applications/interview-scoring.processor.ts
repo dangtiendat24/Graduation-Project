@@ -14,6 +14,8 @@ import { Application } from './application.entity';
 import { ApplicationStatusHistory } from './application-status-history.entity';
 import { AgentExecutionLoggerService } from '../admin/agent-execution-logger.service';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 
 interface AiScoredAnswer {
   question_id: string;
@@ -53,6 +55,8 @@ export class InterviewScoringProcessor extends WorkerHost {
     private readonly config: ConfigService,
     private readonly agentLogger: AgentExecutionLoggerService,
     private readonly dashboardCache: DashboardCacheService,
+    private readonly notificationsService: NotificationsService,
+    private readonly mailService: MailService,
   ) {
     super();
   }
@@ -157,6 +161,7 @@ export class InterviewScoringProcessor extends WorkerHost {
       });
 
       await this.transitionApplicationToInterviewed(session.applicationId);
+      await this.notifyInterviewScored(session.applicationId);
     } catch (err) {
       await this.sessionRepo.update(sessionId, {
         scoringStatus: 'error',
@@ -218,6 +223,39 @@ export class InterviewScoringProcessor extends WorkerHost {
     );
 
     await this.dashboardCache.invalidate(application.job.recruiterId);
+  }
+
+  /**
+   * Báo cho recruiter (chuông thông báo) + ứng viên (email, không lộ điểm — theo đúng thiết kế
+   * ẩn điểm phỏng vấn với candidate) rằng Agent 3 vừa chấm điểm xong. Không để lỗi ở đây làm
+   * hỏng luồng chấm điểm chính đã hoàn tất trước đó — chỉ log lại nếu thất bại.
+   */
+  private async notifyInterviewScored(applicationId: string): Promise<void> {
+    try {
+      const application = await this.appRepo.findOne({
+        where: { id: applicationId },
+        relations: ['job', 'candidate'],
+      });
+      if (!application) return;
+
+      await this.notificationsService.create(
+        application.job.recruiterId,
+        'interview_scored',
+        'Đã chấm điểm phỏng vấn AI',
+        `Bài phỏng vấn AI của ${application.candidate.fullName} cho vị trí ${application.job.title} đã có kết quả`,
+        `/recruiter/candidates/${application.id}`,
+      );
+
+      await this.mailService.sendCandidateInterviewScoredEmail(
+        application.candidate.email,
+        application.candidate.fullName,
+        application.job.title,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Gửi thông báo/email sau khi chấm điểm phỏng vấn thất bại (application ${applicationId}): ${(err as Error).message}`,
+      );
+    }
   }
 
   /** answerRepo.find() trả totalScore (cột numeric) dạng string — luôn ép về number trước khi cộng */

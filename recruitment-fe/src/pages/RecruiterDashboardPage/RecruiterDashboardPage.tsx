@@ -270,6 +270,7 @@ export default function RecruiterDashboardPage() {
             {recentApplications.length === 0 ? (
               <div className="rd-empty rd-empty--inline">Chưa có ứng viên nào nộp CV.</div>
             ) : (
+              <div className="rd-table-scroll">
               <table className="rd-apps-table">
                 <thead>
                   <tr>
@@ -316,6 +317,7 @@ export default function RecruiterDashboardPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>

@@ -18,6 +18,8 @@ import { VoiceInterviewController } from './voice-interview.controller';
 import { AdminModule } from '../admin/admin.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { StorageModule } from '../storage/storage.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { MailModule } from '../mail/mail.module';
 
 /**
  * Module riêng cho pipeline phỏng vấn AI (Agent 3) — tách khỏi ApplicationsModule để
@@ -41,6 +43,8 @@ import { StorageModule } from '../storage/storage.module';
     AdminModule,
     DashboardModule,
     StorageModule,
+    NotificationsModule,
+    MailModule,
   ],
   controllers: [InterviewSessionController, VoiceInterviewController],
   providers: [

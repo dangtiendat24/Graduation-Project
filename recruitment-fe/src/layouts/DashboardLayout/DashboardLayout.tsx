@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
+import { useMobileSidebar } from '../../hooks/useMobileSidebar'
 import LoginToast from '../../components/LoginToast/LoginToast'
 import { getRecruiterSchedules } from '../../api/schedule'
 import NotificationBell from '../../components/NotificationBell/NotificationBell'
@@ -67,6 +69,8 @@ interface Props {
 
 export default function DashboardLayout({ children, actions }: Props) {
   const { user, clearAuth } = useAuthStore()
+  const { isOpen: isSidebarOpen, setOpen: setSidebarOpen } = useMobileSidebar()
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState<string | null>(null)
 
   const prefix = user?.role === 'recruiter' ? '/recruiter' : '/candidate'
 
@@ -85,12 +89,23 @@ export default function DashboardLayout({ children, actions }: Props) {
 
   return (
     <div className="dl-root">
-      <aside className="dl-sidebar">
+      {isSidebarOpen && (
+        <div className="dl-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      <aside className={`dl-sidebar${isSidebarOpen ? ' open' : ''}`}>
         <div className="dl-logo">
           <span className="dl-logo-dot" />
           <span className="dl-logo-name">
             Recruit<span>.AI</span>
           </span>
+          <button
+            className="dl-sidebar-close"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Đóng menu"
+          >
+            <i className="ti ti-x" />
+          </button>
         </div>
 
         <div className="dl-nav-label">Tổng quan</div>
@@ -120,8 +135,14 @@ export default function DashboardLayout({ children, actions }: Props) {
 
         <div className="dl-sidebar-footer">
           <div className="dl-avatar">
-            {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.fullName} className="dl-avatar-img" />
+            {user?.avatarUrl && avatarLoadFailed !== user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName}
+                className="dl-avatar-img"
+                referrerPolicy="no-referrer"
+                onError={() => setAvatarLoadFailed(user.avatarUrl ?? null)}
+              />
             ) : user ? (
               getInitials(user.fullName)
             ) : (
@@ -142,6 +163,14 @@ export default function DashboardLayout({ children, actions }: Props) {
 
       <div className="dl-main">
         <header className="dl-topbar">
+          <button
+            className="dl-hamburger"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Mở menu"
+          >
+            <i className="ti ti-menu-2" />
+          </button>
+
           <div className="dl-search">
             <i className="ti ti-search" />
             <span>Tìm ứng viên, tin tuyển dụng...</span>

@@ -402,6 +402,51 @@
   .iv-rail { width: 100%; flex: 0 0 auto; max-height: 160px; }
 }
 
+@media (max-width: 640px) {
+  .iv-card-narrow {
+    padding: 26px 20px;
+  }
+
+  .iv-brief-meta {
+    gap: 14px;
+  }
+
+  .iv-qpanel {
+    padding: 18px 16px;
+  }
+
+  .iv-qpanel-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .iv-qpanel-footer .iv-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .iv-saved-hint {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .iv-picker-card {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .iv-picker-status {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+
+  .iv-review-item-top {
+    flex-wrap: wrap;
+  }
+}
+
 /* ===================== SESSION PICKER ===================== */
 .iv-picker-hint {
   font-size: var(--fs-body);

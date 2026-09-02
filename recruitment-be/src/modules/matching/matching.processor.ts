@@ -173,6 +173,8 @@ export class MatchingProcessor extends WorkerHost {
 
     await this.dashboardCache.invalidate(application.job.recruiterId);
 
+    await this.notifyCandidateCvScored(application, nextStatus === 'matched');
+
     // Ứng viên qua ngưỡng auto-reject (không bị "matched") → tự động mở phỏng vấn AI ngay,
     // không chờ recruiter thao tác gì. Không để lỗi enqueue (vd Redis tạm down) làm hỏng
     // luồng matching chính.
@@ -187,7 +189,41 @@ export class MatchingProcessor extends WorkerHost {
     }
   }
 
-  /** Không để lỗi gửi mail/ghi thông báo làm hỏng luồng matching chính — chỉ log lại nếu thất bại */
+  /**
+   * Chuông thông báo + email cho ỨNG VIÊN khi CV được chấm điểm xong — đây là sự kiện của
+   * ứng viên (kết quả hồ sơ của chính họ), không phải của recruiter, nên không ghi vào chuông
+   * thông báo của recruiter (recruiter vẫn có thể nhận email riêng, xem notifyRecruiterMatchingComplete).
+   * Không để lỗi gửi mail/ghi thông báo làm hỏng luồng matching chính — chỉ log lại nếu thất bại.
+   */
+  private async notifyCandidateCvScored(
+    application: Application,
+    passed: boolean,
+  ): Promise<void> {
+    try {
+      await this.notificationsService.create(
+        application.candidateId,
+        'matching_complete',
+        'Hồ sơ đã được chấm điểm',
+        passed
+          ? `Hồ sơ của bạn cho vị trí ${application.job.title} đã qua vòng sơ loại`
+          : `Hồ sơ của bạn cho vị trí ${application.job.title} chưa phù hợp lần này`,
+        '/candidate/applications',
+      );
+
+      await this.mailService.sendCandidateCvScoredEmail(
+        application.candidate.email,
+        application.candidate.fullName,
+        application.job.title,
+        passed,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Gửi thông báo/email báo kết quả chấm điểm CV cho ứng viên thất bại (application ${application.id}): ${(err as Error).message}`,
+      );
+    }
+  }
+
+  /** Không để lỗi gửi mail làm hỏng luồng matching chính — chỉ log lại nếu thất bại */
   private async notifyRecruiterMatchingComplete(
     recruiter: User | null,
     application: Application,
@@ -195,14 +231,6 @@ export class MatchingProcessor extends WorkerHost {
   ): Promise<void> {
     try {
       if (!recruiter) return;
-
-      await this.notificationsService.create(
-        recruiter.id,
-        'matching_complete',
-        'Đã chấm điểm CV',
-        `CV của ${application.candidate.fullName} cho vị trí ${application.job.title} đã được chấm điểm: ${overallScore}/100`,
-        `/recruiter/candidates/${application.id}`,
-      );
 
       if (
         !shouldNotify(recruiter.notificationPreferences, 'matchingComplete')

@@ -8,7 +8,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
-  ) {}
+  ) { }
 
   findByEmail(email: string) {
     return this.usersRepo.findOne({ where: { email } })
@@ -69,5 +69,17 @@ export class UsersService {
     const update: Partial<User> = { googleId, isActive: true }
     if (avatarUrl) update.avatarUrl = avatarUrl
     await this.usersRepo.update(userId, update)
+  }
+
+  /**
+   * Đăng ký lại đè lên tài khoản chưa xác nhận email (chưa từng đăng nhập được nên không có dữ
+   * liệu nghiệp vụ nào gắn theo id) — cho phép đổi role/mật khẩu/họ tên thay vì tạo user mới,
+   * tránh vi phạm unique constraint trên email.
+   */
+  async reregisterUnverified(
+    userId: string,
+    data: { passwordHash: string; fullName: string; role: 'recruiter' | 'candidate' },
+  ) {
+    await this.usersRepo.update(userId, data)
   }
 }

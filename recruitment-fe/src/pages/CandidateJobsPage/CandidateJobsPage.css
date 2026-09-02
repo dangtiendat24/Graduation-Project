@@ -440,3 +440,77 @@
 .cj-btn-apply:hover {
   background: var(--color-indigo-hover);
 }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 1024px) {
+  .cj-content {
+    grid-template-columns: 1fr;
+  }
+
+  .cj-filters {
+    position: static;
+  }
+}
+
+@media (max-width: 860px) {
+  .cj-hero {
+    padding: var(--space-8) var(--space-6) 48px;
+  }
+
+  .cj-content {
+    padding: var(--space-6);
+  }
+}
+
+@media (max-width: 640px) {
+  .cj-hero {
+    padding: var(--space-6) var(--space-4) 40px;
+  }
+
+  .cj-hero h1 {
+    font-size: 21px;
+  }
+
+  .cj-search-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-3);
+  }
+
+  .cj-search-field.divider {
+    max-width: none;
+    border-left: none;
+    border-top: 1px solid var(--border-default);
+  }
+
+  .cj-btn-search {
+    width: 100%;
+  }
+
+  .cj-content {
+    padding: var(--space-4);
+  }
+
+  .cj-job-card {
+    flex-direction: column;
+  }
+
+  .cj-job-top {
+    flex-wrap: wrap;
+  }
+
+  .cj-job-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .cj-job-actions {
+    justify-content: stretch;
+  }
+
+  .cj-btn-apply {
+    flex: 1;
+    text-align: center;
+  }
+}

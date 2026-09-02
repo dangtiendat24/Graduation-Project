@@ -901,3 +901,46 @@
 .cp-btn-primary:hover { background: var(--color-indigo-hover); }
 
 .cp-btn-primary i { font-size: 15px; }
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 1024px) {
+  .cp-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .cp-card-head {
+    padding: 0.875rem 1.125rem;
+  }
+
+  .cp-card-body {
+    padding: 1.125rem;
+  }
+
+  .cp-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .cp-avatar-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+
+  .cp-save-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 0 calc(-1 * var(--space-4)) calc(-1 * var(--space-4));
+    padding: 12px var(--space-4);
+  }
+
+  .cp-save-actions {
+    justify-content: stretch;
+  }
+
+  .cp-save-actions button {
+    flex: 1;
+  }
+}

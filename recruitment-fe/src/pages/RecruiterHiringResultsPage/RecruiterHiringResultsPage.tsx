@@ -123,6 +123,7 @@ export default function RecruiterHiringResultsPage() {
             </div>
           ) : (
             <div className="hr-table-container">
+              <div className="hr-table-scroll">
               <table className="hr-table">
                 <thead>
                   <tr>
@@ -170,6 +171,7 @@ export default function RecruiterHiringResultsPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </>
