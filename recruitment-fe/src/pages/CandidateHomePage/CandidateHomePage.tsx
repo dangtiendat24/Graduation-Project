@@ -174,9 +174,14 @@ export default function CandidateHomePage() {
   // Phỏng vấn sắp tới: ưu tiên lịch đang chờ ứng viên chọn khung giờ (cần hành động ngay),
   // nếu không có thì lấy lịch đã xác nhận gần nhất còn nằm trong tương lai
   const nowMs = new Date().getTime()
-  const pendingScheduleApp = applications.find((a) => a.schedule?.status === 'pending') ?? null
+  // Lọc thêm theo a.status: nếu recruiter đã chuyển đơn sang interviewed/rejected sau khi lịch
+  // đã confirmed (VD đánh dấu "đã phỏng vấn" sớm rồi từ chối), object `schedule` vẫn còn nguyên
+  // ở trạng thái confirmed/pending — không lọc theo INTERVIEW_STATUSES thì dashboard vẫn hiện
+  // lịch phỏng vấn "sắp tới" cho đơn đã bị đóng, dù trang Lịch phỏng vấn đã ẩn đơn đó rồi.
+  const pendingScheduleApp =
+    applications.find((a) => INTERVIEW_STATUSES.includes(a.status) && a.schedule?.status === 'pending') ?? null
   const confirmedUpcomingApp = applications
-    .filter((a) => a.schedule?.status === 'confirmed' && a.schedule.confirmedStartTime)
+    .filter((a) => INTERVIEW_STATUSES.includes(a.status) && a.schedule?.status === 'confirmed' && a.schedule.confirmedStartTime)
     .filter((a) => new Date(a.schedule!.confirmedStartTime!).getTime() >= nowMs)
     .sort((a, b) => new Date(a.schedule!.confirmedStartTime!).getTime() - new Date(b.schedule!.confirmedStartTime!).getTime())[0]
     ?? null
