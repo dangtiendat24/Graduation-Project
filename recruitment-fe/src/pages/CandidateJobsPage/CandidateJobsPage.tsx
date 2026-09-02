@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getActiveJobs, type Job, type JobSearchParams } from '../../api/jobs'
+import { getSavedJobIds, saveJob, unsaveJob } from '../../api/savedJobs'
 import './CandidateJobsPage.css'
 
 type WorkModel = 'onsite' | 'hybrid' | 'remote'
@@ -36,6 +38,22 @@ function getInitials(name: string): string {
 
 export default function CandidateJobsPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const { data: savedJobIds = [] } = useQuery({
+    queryKey: ['saved-jobs'],
+    queryFn: getSavedJobIds,
+  })
+  const savedJobIdSet = useMemo(() => new Set(savedJobIds), [savedJobIds])
+
+  const toggleSaveMutation = useMutation({
+    mutationFn: ({ jobId, wasSaved }: { jobId: string; wasSaved: boolean }) =>
+      wasSaved ? unsaveJob(jobId) : saveJob(jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-jobs'] })
+    },
+  })
+
   const [inputQuery, setInputQuery] = useState('')
   const [inputLocation, setInputLocation] = useState('')
   const [activeQuery, setActiveQuery] = useState('')
@@ -224,6 +242,7 @@ export default function CandidateJobsPage() {
             const initials = getInitials(companyName)
             const workModelLabel = job.workModel ? WORK_MODEL_LABELS[job.workModel] : null
             const levelLabel = job.level ? LEVEL_LABELS[job.level] : null
+            const isSaved = savedJobIdSet.has(job.id)
 
             return (
               <div key={job.id} className="cj-job-card" onClick={() => navigate(`/candidate/jobs/${job.id}`)} style={{ cursor: 'pointer' }}>
@@ -287,8 +306,13 @@ export default function CandidateJobsPage() {
                       {job.salaryRange ?? 'Thỏa thuận'}
                     </span>
                     <div className="cj-job-actions" onClick={(e) => e.stopPropagation()}>
-                      <button className="cj-btn-save" title="Lưu tin">
-                        <i className="ti ti-heart" />
+                      <button
+                        className={`cj-btn-save${isSaved ? ' cj-btn-save--active' : ''}`}
+                        title={isSaved ? 'Bỏ lưu tin' : 'Lưu tin'}
+                        disabled={toggleSaveMutation.isPending && toggleSaveMutation.variables?.jobId === job.id}
+                        onClick={() => toggleSaveMutation.mutate({ jobId: job.id, wasSaved: isSaved })}
+                      >
+                        <i className={`ti ${isSaved ? 'ti-heart-filled' : 'ti-heart'}`} />
                       </button>
                       <button className="cj-btn-apply" onClick={() => navigate(`/candidate/jobs/${job.id}`)}>Xem chi tiết</button>
                     </div>

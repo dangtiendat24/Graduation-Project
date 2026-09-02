@@ -275,6 +275,12 @@
   border-color: var(--color-danger);
 }
 
+.cjd-btn-save--active {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--bg-surface));
+}
+
 /* ── Detail rows ── */
 .cjd-detail-title {
   font-size: var(--fs-label);

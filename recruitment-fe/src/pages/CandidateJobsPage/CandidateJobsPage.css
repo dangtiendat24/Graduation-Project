@@ -424,6 +424,12 @@
   border-color: var(--color-danger);
 }
 
+.cj-btn-save--active {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--bg-surface));
+}
+
 .cj-btn-apply {
   background: var(--color-indigo);
   color: #fff;
