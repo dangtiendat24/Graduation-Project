@@ -29,10 +29,20 @@ export class SavedJobsController {
   @ApiOperation({
     summary: 'Id các tin tuyển dụng candidate đang đăng nhập đã lưu',
   })
-  @Get()
-  async findAll(@Request() req: { user: JwtUser }) {
+  @Get('ids')
+  async findAllIds(@Request() req: { user: JwtUser }) {
     this.assertCandidate(req.user);
     return { jobIds: await this.savedJobsService.listSavedJobIds(req.user.id) };
+  }
+
+  @ApiOperation({
+    summary:
+      'Danh sách đầy đủ các tin tuyển dụng candidate đang đăng nhập đã lưu, mới lưu trước',
+  })
+  @Get()
+  findAll(@Request() req: { user: JwtUser }) {
+    this.assertCandidate(req.user);
+    return this.savedJobsService.listSavedJobs(req.user.id);
   }
 
   @ApiOperation({ summary: 'Lưu 1 tin tuyển dụng' })

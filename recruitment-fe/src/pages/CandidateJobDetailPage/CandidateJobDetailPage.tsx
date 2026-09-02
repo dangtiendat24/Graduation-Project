@@ -72,7 +72,7 @@ export default function CandidateJobDetailPage() {
   })
 
   const { data: savedJobIds = [] } = useQuery({
-    queryKey: ['saved-jobs'],
+    queryKey: ['saved-jobs', 'ids'],
     queryFn: getSavedJobIds,
   })
   const isSaved = !!id && savedJobIds.includes(id)
