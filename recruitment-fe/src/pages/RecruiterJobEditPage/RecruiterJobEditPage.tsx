@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { getJob, updateJob } from '../../api/jobs'
+import { isDeadlinePassed, isExpiredJob } from '../../utils/jobDeadline'
 import './RecruiterJobEditPage.css'
 
 interface JobForm {
@@ -20,7 +21,8 @@ interface JobForm {
   salaryMax: string
   jobPerks: string[]
   deadline: string
-  status: 'draft' | 'active' | 'closed'
+  /** 'expired' chỉ tồn tại khi tin đang quá hạn — recruiter không tự chọn được ở toggle */
+  status: 'draft' | 'active' | 'closed' | 'expired'
   useCustomWeights: boolean
   weightSkills: string
   weightExperience: string
@@ -151,6 +153,22 @@ export default function RecruiterJobEditPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setForm(prev => prev ? { ...prev, [key]: e.target.value } : prev)
     }
+
+  // Tin hệ thống tự đóng vì quá hạn — khác với tin recruiter chủ động đóng ('closed').
+  const isExpired = isExpiredJob(job)
+
+  /**
+   * Gia hạn cho tin quá hạn thì BE tự mở lại tin (jobs.service.update). Đẩy luôn toggle trạng
+   * thái sang "Đang tuyển" để form không hiển thị "Hết hạn" rồi lưu xong lại ra "Đang tuyển".
+   */
+  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const deadline = e.target.value
+    setForm(prev => {
+      if (!prev) return prev
+      const reopens = prev.status === 'expired' && !!deadline && !isDeadlinePassed(deadline)
+      return { ...prev, deadline, status: reopens ? 'active' : prev.status }
+    })
+  }
 
   const handleTagKey =
     (list: 'requiredSkills' | 'jobPerks', value: string, clear: () => void) =>
@@ -469,8 +487,13 @@ export default function RecruiterJobEditPage() {
                     <label className="rje-label">Hạn nộp đơn</label>
                     <div className="rje-input-icon">
                       <i className="ti ti-calendar" />
-                      <input className="rje-input" type="date" value={form.deadline} onChange={setField('deadline')} />
+                      <input className="rje-input" type="date" value={form.deadline} onChange={handleDeadlineChange} />
                     </div>
+                    {isExpired && (
+                      <div className="rje-hint rje-hint--warn">
+                        Tin đã quá hạn nên tự động dừng nhận hồ sơ. Chọn hạn nộp mới để mở lại tuyển.
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -509,6 +532,14 @@ export default function RecruiterJobEditPage() {
                       </label>
                     ))}
                   </div>
+                  {form.status === 'expired' && (
+                    /* 'expired' do hệ thống suy ra từ deadline nên không đưa vào toggle cho
+                       recruiter tự chọn — hết hạn thì gia hạn, còn muốn ẩn hẳn thì chọn "Đã đóng". */
+                    <div className="rje-hint rje-hint--warn">
+                      Tin đang ở trạng thái <strong>Hết hạn</strong>. Đặt hạn nộp mới để quay lại
+                      "Đang tuyển", hoặc chọn "Đã đóng" để ẩn hẳn khỏi trang công ty.
+                    </div>
+                  )}
                 </div>
 
               </div>

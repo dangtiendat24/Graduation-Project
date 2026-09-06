@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getCompany, type CompanyData } from '../../api/companies'
 import { getActiveJobs, type Job } from '../../api/jobs'
+import { isExpiredJob } from '../../utils/jobDeadline'
 import './CandidateCompanyPage.css'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -64,7 +65,8 @@ export default function CandidateCompanyPage() {
       try {
         const [co, jobList] = await Promise.all([
           getCompany(id!),
-          getActiveJobs({ companyId: id }),
+          // Trang công ty là nơi duy nhất ứng viên xem được cả tin đã quá hạn
+          getActiveJobs({ companyId: id, includeExpired: true }),
         ])
         if (!cancelled) {
           setCompany(co)
@@ -114,6 +116,11 @@ export default function CandidateCompanyPage() {
   return (
     <CandidateLayout>
       <div className="ccp-wrapper">
+
+        {/* Back link */}
+        <button className="ccp-back" onClick={() => navigate(-1)}>
+          <i className="ti ti-arrow-left" /> Quay lại
+        </button>
 
         {/* Cover */}
         <div className="ccp-cover">
@@ -208,10 +215,10 @@ export default function CandidateCompanyPage() {
               </div>
             )}
 
-            {/* Active jobs */}
+            {/* Tin đang tuyển + tin đã quá hạn (tin recruiter chủ động đóng thì BE không trả về) */}
             <div className="ccp-section">
               <div className="ccp-sec-title">
-                <i className="ti ti-briefcase" />Việc làm đang tuyển
+                <i className="ti ti-briefcase" />Việc làm tại công ty
                 {jobs.length > 0 && <span className="ccp-job-count">({jobs.length})</span>}
               </div>
 
@@ -225,10 +232,13 @@ export default function CandidateCompanyPage() {
                   {jobs.map(job => (
                     <div
                       key={job.id}
-                      className="ccp-job-card"
+                      className={`ccp-job-card${isExpiredJob(job) ? ' ccp-job-card--expired' : ''}`}
                       onClick={() => navigate(`/candidate/jobs/${job.id}`)}
                     >
-                      <div className="ccp-job-title">{job.title}</div>
+                      <div className="ccp-job-title">
+                        {job.title}
+                        {isExpiredJob(job) && <span className="ccp-job-expired-tag">Đã hết hạn</span>}
+                      </div>
                       <div className="ccp-job-meta">
                         {job.location && <span><i className="ti ti-map-pin" />{job.location}</span>}
                         {job.workModel && <span><i className="ti ti-briefcase" />{WORK_MODEL_LABELS[job.workModel]}</span>}

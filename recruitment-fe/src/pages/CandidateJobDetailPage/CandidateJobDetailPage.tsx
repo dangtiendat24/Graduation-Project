@@ -5,6 +5,8 @@ import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getJob, type Job } from '../../api/jobs'
 import { getApplicationStatus, applyToJob, applyToJobWithProfileCv, type ApplicationStatus } from '../../api/applications'
 import { getMyProfile, formatBytes } from '../../api/profile'
+import { getSavedJobIds, saveJob, unsaveJob } from '../../api/savedJobs'
+import { isExpiredJob, isOpenForApplication } from '../../utils/jobDeadline'
 import './CandidateJobDetailPage.css'
 
 const WORK_MODEL_LABELS: Record<string, string> = {
@@ -68,6 +70,19 @@ export default function CandidateJobDetailPage() {
     queryKey: ['profile', 'me'],
     queryFn: getMyProfile,
     staleTime: 30_000,
+  })
+
+  const { data: savedJobIds = [] } = useQuery({
+    queryKey: ['saved-jobs', 'ids'],
+    queryFn: getSavedJobIds,
+  })
+  const isSaved = !!id && savedJobIds.includes(id)
+
+  const toggleSaveMutation = useMutation({
+    mutationFn: () => (isSaved ? unsaveJob(id!) : saveJob(id!)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-jobs'] })
+    },
   })
 
   const applyMutation = useMutation({
@@ -139,6 +154,7 @@ export default function CandidateJobDetailPage() {
 
   const companyName = job.company?.name ?? 'Công ty chưa cập nhật'
   const initials = getInitials(companyName)
+  const jobClosed = !isOpenForApplication(job)
 
   return (
     <CandidateLayout>
@@ -255,13 +271,24 @@ export default function CandidateJobDetailPage() {
                   <i className="ti ti-circle-check" />
                   {applicationStatus.status ? STATUS_LABELS[applicationStatus.status] : 'Đã ứng tuyển'}
                 </button>
+              ) : jobClosed ? (
+                /* Tin quá hạn được BE tự đóng — chặn ngay ở nút thay vì để ứng viên chọn xong
+                   CV rồi mới nhận lỗi 409 lúc nộp. */
+                <button className="cjd-btn-apply cjd-btn-apply--done" disabled>
+                  <i className="ti ti-lock" />
+                  {isExpiredJob(job) ? 'Đã hết hạn nộp hồ sơ' : 'Tin đã đóng'}
+                </button>
               ) : (
                 <button className="cjd-btn-apply" onClick={openApplyModal}>
                   <i className="ti ti-send" /> Ứng tuyển ngay
                 </button>
               )}
-              <button className="cjd-btn-save">
-                <i className="ti ti-heart" /> Lưu tin
+              <button
+                className={`cjd-btn-save${isSaved ? ' cjd-btn-save--active' : ''}`}
+                disabled={toggleSaveMutation.isPending}
+                onClick={() => toggleSaveMutation.mutate()}
+              >
+                <i className={`ti ${isSaved ? 'ti-heart-filled' : 'ti-heart'}`} /> {isSaved ? 'Đã lưu' : 'Lưu tin'}
               </button>
             </div>
 

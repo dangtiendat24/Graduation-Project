@@ -1,0 +1,71 @@
+/* ============================================================
+   CandidateSavedJobsPage — csj-* prefix
+   ============================================================ */
+
+.csj-header {
+  margin-bottom: 20px;
+}
+
+.csj-title {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.csj-sub {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+}
+
+.csj-state-msg {
+  font-size: var(--fs-body);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-10) 0;
+}
+
+.csj-state-error {
+  color: var(--color-danger);
+}
+
+.csj-empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-default);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.csj-empty i {
+  font-size: 28px;
+  color: var(--color-danger);
+}
+
+.csj-btn-browse {
+  margin-top: 6px;
+  background: var(--color-indigo);
+  color: #fff;
+  border: none;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-bold);
+  padding: 9px 18px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-family);
+  transition: background 0.15s;
+}
+
+.csj-btn-browse:hover {
+  background: var(--color-indigo-hover);
+}
+
+.csj-list {
+  display: flex;
+  flex-direction: column;
+}

@@ -21,6 +21,7 @@ import RecruiterJobCreatePage from './pages/RecruiterJobCreatePage/RecruiterJobC
 import RecruiterJobEditPage from './pages/RecruiterJobEditPage/RecruiterJobEditPage'
 import CandidateHomePage from './pages/CandidateHomePage/CandidateHomePage'
 import CandidateJobsPage from './pages/CandidateJobsPage/CandidateJobsPage'
+import CandidateSavedJobsPage from './pages/CandidateSavedJobsPage/CandidateSavedJobsPage'
 import CandidateJobDetailPage from './pages/CandidateJobDetailPage/CandidateJobDetailPage'
 import CandidateProfilePage from './pages/CandidateProfilePage/CandidateProfilePage'
 import CandidateCompanyPage from './pages/CandidateCompanyPage/CandidateCompanyPage'
@@ -230,6 +231,15 @@ function App() {
           element={
             <ProtectedRoute role="candidate">
               <CandidateJobDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/candidate/saved-jobs"
+          element={
+            <ProtectedRoute role="candidate">
+              <CandidateSavedJobsPage />
             </ProtectedRoute>
           }
         />

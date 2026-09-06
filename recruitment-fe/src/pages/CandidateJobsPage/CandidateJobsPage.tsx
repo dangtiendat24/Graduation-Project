@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getActiveJobs, type Job, type JobSearchParams } from '../../api/jobs'
+import { getSavedJobIds, saveJob, unsaveJob } from '../../api/savedJobs'
+import JobCard from '../../components/JobCard/JobCard'
 import './CandidateJobsPage.css'
 
 type WorkModel = 'onsite' | 'hybrid' | 'remote'
@@ -24,18 +27,24 @@ const LEVEL_LABELS: Record<Level, string> = {
 
 const QUICK_CHIPS = ['Backend Developer', 'UI/UX Designer', 'Data Analyst', 'DevOps', 'React']
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-}
-
 export default function CandidateJobsPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+
+  const { data: savedJobIds = [] } = useQuery({
+    queryKey: ['saved-jobs', 'ids'],
+    queryFn: getSavedJobIds,
+  })
+  const savedJobIdSet = useMemo(() => new Set(savedJobIds), [savedJobIds])
+
+  const toggleSaveMutation = useMutation({
+    mutationFn: ({ jobId, wasSaved }: { jobId: string; wasSaved: boolean }) =>
+      wasSaved ? unsaveJob(jobId) : saveJob(jobId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-jobs'] })
+    },
+  })
+
   const [inputQuery, setInputQuery] = useState('')
   const [inputLocation, setInputLocation] = useState('')
   const [activeQuery, setActiveQuery] = useState('')
@@ -219,84 +228,17 @@ export default function CandidateJobsPage() {
             </div>
           )}
 
-          {!loading && !error && jobs.map((job) => {
-            const companyName = job.company?.name ?? 'Công ty chưa cập nhật'
-            const initials = getInitials(companyName)
-            const workModelLabel = job.workModel ? WORK_MODEL_LABELS[job.workModel] : null
-            const levelLabel = job.level ? LEVEL_LABELS[job.level] : null
-
-            return (
-              <div key={job.id} className="cj-job-card" onClick={() => navigate(`/candidate/jobs/${job.id}`)} style={{ cursor: 'pointer' }}>
-                <div
-                  className="cj-company-logo"
-                  title={companyName}
-                  onClick={(e) => { if (job.company?.id) { e.stopPropagation(); navigate(`/candidate/companies/${job.company.id}`) } }}
-                  style={job.company?.id ? { cursor: 'pointer' } : undefined}
-                >
-                  {initials}
-                </div>
-
-                <div className="cj-job-main">
-                  <div className="cj-job-top">
-                    <div>
-                      <div className="cj-job-title">{job.title}</div>
-                      <div
-                        className="cj-job-company"
-                        onClick={(e) => { if (job.company?.id) { e.stopPropagation(); navigate(`/candidate/companies/${job.company.id}`) } }}
-                        style={job.company?.id ? { cursor: 'pointer', textDecoration: 'underline dotted' } : undefined}
-                      >
-                        {companyName}
-                      </div>
-                    </div>
-                    {job.deadline && (
-                      <span className="cj-deadline-pill">
-                        <i className="ti ti-calendar-due" />
-                        HSD: {new Date(job.deadline).toLocaleDateString('vi-VN')}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="cj-job-meta">
-                    {job.location && (
-                      <span><i className="ti ti-map-pin" />{job.location}</span>
-                    )}
-                    {workModelLabel && (
-                      <span><i className="ti ti-briefcase" />{workModelLabel}</span>
-                    )}
-                    {levelLabel && (
-                      <span><i className="ti ti-award" />{levelLabel}</span>
-                    )}
-                    {job.minExperience && (
-                      <span><i className="ti ti-clock" />{job.minExperience} năm kinh nghiệm</span>
-                    )}
-                  </div>
-
-                  {job.requiredSkills && job.requiredSkills.length > 0 && (
-                    <div className="cj-job-tags">
-                      {job.requiredSkills.slice(0, 4).map((skill) => (
-                        <span key={skill} className="cj-tag">{skill}</span>
-                      ))}
-                      {job.requiredSkills.length > 4 && (
-                        <span className="cj-tag">+{job.requiredSkills.length - 4}</span>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="cj-job-footer">
-                    <span className="cj-job-salary">
-                      {job.salaryRange ?? 'Thỏa thuận'}
-                    </span>
-                    <div className="cj-job-actions" onClick={(e) => e.stopPropagation()}>
-                      <button className="cj-btn-save" title="Lưu tin">
-                        <i className="ti ti-heart" />
-                      </button>
-                      <button className="cj-btn-apply" onClick={() => navigate(`/candidate/jobs/${job.id}`)}>Xem chi tiết</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+          {!loading && !error && jobs.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              isSaved={savedJobIdSet.has(job.id)}
+              saveDisabled={toggleSaveMutation.isPending && toggleSaveMutation.variables?.jobId === job.id}
+              onOpen={() => navigate(`/candidate/jobs/${job.id}`)}
+              onOpenCompany={() => job.company?.id && navigate(`/candidate/companies/${job.company.id}`)}
+              onToggleSave={() => toggleSaveMutation.mutate({ jobId: job.id, wasSaved: savedJobIdSet.has(job.id) })}
+            />
+          ))}
         </div>
       </div>
     </CandidateLayout>
