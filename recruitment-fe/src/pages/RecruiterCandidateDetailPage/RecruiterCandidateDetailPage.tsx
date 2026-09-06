@@ -61,9 +61,6 @@ export default function RecruiterCandidateDetailPage() {
 
   const exportPdfMutation = useMutation({
     mutationFn: () => getCandidateReportPdfUrl(applicationId!),
-    onSuccess: ({ url }) => {
-      window.open(url, '_blank', 'noopener,noreferrer')
-    },
     onError: (error) => {
       const message = isAxiosError(error)
         ? (error.response?.data as { message?: string })?.message
@@ -71,6 +68,33 @@ export default function RecruiterCandidateDetailPage() {
       setToast({ type: 'error', message: message ?? 'Không thể xuất báo cáo PDF. Vui lòng thử lại.' })
     },
   })
+
+  /**
+   * Mở sẵn tab trắng NGAY trong click handler rồi mới trỏ URL vào sau khi API trả về.
+   *
+   * Gọi window.open() sau await (cách cũ) thì trình duyệt không còn coi đó là thao tác người
+   * dùng nữa và chặn popup im lặng — nút quay xong rồi không có gì xảy ra, cũng không báo lỗi.
+   * Ở local request nhanh nên hầu như không dính, còn production chậm hơn nhiều (cold start +
+   * render PDF bằng Chromium) nên gần như chắc chắn bị chặn.
+   *
+   * Không truyền 'noopener' ở đây vì cờ đó làm window.open() trả về null, mất luôn tham chiếu
+   * tab cần dùng; bù lại set opener = null ngay sau khi điều hướng.
+   */
+  function handleExportPdf() {
+    const tab = window.open('', '_blank')
+    exportPdfMutation.mutate(undefined, {
+      onSuccess: ({ url }) => {
+        if (tab) {
+          tab.opener = null
+          tab.location.href = url
+        } else {
+          // Popup vẫn bị chặn (user tắt hẳn popup) → mở ngay tab hiện tại để không mất báo cáo
+          window.location.href = url
+        }
+      },
+      onError: () => tab?.close(),
+    })
+  }
 
   return (
     <DashboardLayout>
@@ -139,7 +163,7 @@ export default function RecruiterCandidateDetailPage() {
                   <button
                     type="button"
                     className="rcd-btn-primary rcd-btn-outline"
-                    onClick={() => exportPdfMutation.mutate()}
+                    onClick={handleExportPdf}
                     disabled={exportPdfMutation.isPending}
                   >
                     {exportPdfMutation.isPending ? (
