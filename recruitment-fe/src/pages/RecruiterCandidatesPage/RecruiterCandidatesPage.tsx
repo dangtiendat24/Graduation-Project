@@ -22,7 +22,7 @@ const LEVEL_LABEL: Record<string, string> = {
   director: 'Director',
 }
 
-type StatusFilter = 'all' | 'active' | 'closed'
+type StatusFilter = 'all' | 'active' | 'expired' | 'closed'
 
 export default function RecruiterCandidatesPage() {
   const navigate = useNavigate()
@@ -34,8 +34,11 @@ export default function RecruiterCandidatesPage() {
     queryFn: getMyJobs,
   })
 
+  // Mọi tin đã đăng đều có thể có ứng viên, kể cả tin hết hạn hoặc đã đóng — chỉ loại 'draft'.
+  // Cố ý lọc theo "không phải draft" thay vì liệt kê từng status: liệt kê whitelist thì mỗi lần
+  // thêm status mới (như 'expired') là ứng viên của tin đó lại biến mất khỏi trang này.
   const publishedJobs = useMemo(
-    () => jobs.filter((j) => j.status === 'active' || j.status === 'closed'),
+    () => jobs.filter((j) => j.status !== 'draft'),
     [jobs],
   )
 
@@ -131,6 +134,7 @@ export default function RecruiterCandidatesPage() {
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang tuyển</option>
+              <option value="expired">Hết hạn</option>
               <option value="closed">Đã đóng</option>
             </select>
           </div>
