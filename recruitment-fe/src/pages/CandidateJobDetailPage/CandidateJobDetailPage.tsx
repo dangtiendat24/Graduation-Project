@@ -5,6 +5,7 @@ import CandidateLayout from '../../layouts/CandidateLayout/CandidateLayout'
 import { getJob, type Job } from '../../api/jobs'
 import { getApplicationStatus, applyToJob, applyToJobWithProfileCv, type ApplicationStatus } from '../../api/applications'
 import { getMyProfile, formatBytes } from '../../api/profile'
+import { getSavedJobIds, saveJob, unsaveJob } from '../../api/savedJobs'
 import { isExpiredJob, isOpenForApplication } from '../../utils/jobDeadline'
 import './CandidateJobDetailPage.css'
 
@@ -69,6 +70,19 @@ export default function CandidateJobDetailPage() {
     queryKey: ['profile', 'me'],
     queryFn: getMyProfile,
     staleTime: 30_000,
+  })
+
+  const { data: savedJobIds = [] } = useQuery({
+    queryKey: ['saved-jobs', 'ids'],
+    queryFn: getSavedJobIds,
+  })
+  const isSaved = !!id && savedJobIds.includes(id)
+
+  const toggleSaveMutation = useMutation({
+    mutationFn: () => (isSaved ? unsaveJob(id!) : saveJob(id!)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['saved-jobs'] })
+    },
   })
 
   const applyMutation = useMutation({
@@ -269,8 +283,12 @@ export default function CandidateJobDetailPage() {
                   <i className="ti ti-send" /> Ứng tuyển ngay
                 </button>
               )}
-              <button className="cjd-btn-save">
-                <i className="ti ti-heart" /> Lưu tin
+              <button
+                className={`cjd-btn-save${isSaved ? ' cjd-btn-save--active' : ''}`}
+                disabled={toggleSaveMutation.isPending}
+                onClick={() => toggleSaveMutation.mutate()}
+              >
+                <i className={`ti ${isSaved ? 'ti-heart-filled' : 'ti-heart'}`} /> {isSaved ? 'Đã lưu' : 'Lưu tin'}
               </button>
             </div>
 
