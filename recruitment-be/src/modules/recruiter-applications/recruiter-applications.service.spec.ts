@@ -14,6 +14,7 @@ import { Job } from '../jobs/job.entity';
 import { MailService } from '../mail/mail.service';
 import { DashboardCacheService } from '../dashboard/dashboard-cache.service';
 import { StorageService } from '../storage/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 function createQueryBuilderMock(rawRows: unknown[], count: number) {
   const qb: Record<string, jest.Mock> = {};
@@ -76,6 +77,7 @@ describe('RecruiterApplicationsService', () => {
   };
   let dashboardCache: { invalidate: jest.Mock };
   let storageService: { getSignedUrl: jest.Mock };
+  let notificationsService: { create: jest.Mock };
   let qbMock: ReturnType<typeof createQueryBuilderMock>;
 
   const RECRUITER_ID = 'recruiter-1';
@@ -108,6 +110,7 @@ describe('RecruiterApplicationsService', () => {
         .fn()
         .mockResolvedValue('https://signed.example/audio.webm'),
     };
+    notificationsService = { create: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -129,6 +132,7 @@ describe('RecruiterApplicationsService', () => {
         { provide: MailService, useValue: mailService },
         { provide: DashboardCacheService, useValue: dashboardCache },
         { provide: StorageService, useValue: storageService },
+        { provide: NotificationsService, useValue: notificationsService },
       ],
     }).compile();
 

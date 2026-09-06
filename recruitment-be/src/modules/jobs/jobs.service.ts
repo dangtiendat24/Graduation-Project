@@ -15,6 +15,7 @@ import { Company } from '../companies/company.entity'
 import { CreateJobDto, ScoringWeightsDto } from './dto/create-job.dto'
 import { UpdateJobDto } from './dto/update-job.dto'
 import { SearchJobsDto } from './dto/search-jobs.dto'
+import { SQL_TODAY, isDeadlinePassed } from './job-deadline.util'
 
 const COMPANY_JOIN_CONDITION =
   'company.id = job.companyId OR (job.companyId IS NULL AND company.recruiterId = job.recruiterId)'
@@ -47,7 +48,42 @@ export class JobsService {
     return saved
   }
 
+  /**
+   * Chuyển các tin 'active' đã quá hạn nộp hồ sơ (deadline < hôm nay) sang 'expired'.
+   *
+   * Chạy lazy ngay trước mỗi lượt đọc thay vì cron: BE deploy trên Render có thể ngủ nên cron
+   * không đáng tin, trong khi UPDATE này dùng idx_jobs_deadline nên rất rẻ và đảm bảo bất kỳ ai
+   * đọc tin (recruiter, ứng viên, service nội bộ) cũng luôn thấy trạng thái đúng.
+   *
+   * @param scope thu hẹp phạm vi quét cho rẻ hơn: 1 recruiter, hoặc đúng 1 tin theo id
+   */
+  private async closeExpiredJobs(
+    scope: { recruiterId?: string; jobId?: string } = {},
+  ): Promise<void> {
+    const qb = this.repo
+      .createQueryBuilder()
+      .update(Job)
+      // Giữ nguyên updated_at: UpdateQueryBuilder mặc định tự set @UpdateDateColumn, mà đây là
+      // thao tác của hệ thống chứ không phải recruiter sửa tin — để nó bị đụng thì thẻ tin hiện
+      // sai ngày "Cập nhật" và tin quá hạn còn nhảy lên đầu danh sách (findByRecruiter sắp theo
+      // updatedAt DESC).
+      .set({ status: 'expired', updatedAt: () => '"updated_at"' })
+      .where('status = :status', { status: 'active' })
+      .andWhere('deadline IS NOT NULL')
+      .andWhere(`deadline < ${SQL_TODAY}`)
+
+    if (scope.recruiterId) {
+      qb.andWhere('recruiter_id = :recruiterId', { recruiterId: scope.recruiterId })
+    }
+    if (scope.jobId) {
+      qb.andWhere('id = :jobId', { jobId: scope.jobId })
+    }
+
+    await qb.execute()
+  }
+
   async findByRecruiter(recruiterId: string): Promise<Job[]> {
+    await this.closeExpiredJobs({ recruiterId })
     return this.repo.find({
       where: { recruiterId },
       order: { updatedAt: 'DESC' },
@@ -55,6 +91,7 @@ export class JobsService {
   }
 
   async findActive(): Promise<Job[]> {
+    await this.closeExpiredJobs()
     return this.repo.find({
       where: { status: 'active' },
       relations: ['company'],
@@ -63,10 +100,17 @@ export class JobsService {
   }
 
   async search(params: SearchJobsDto): Promise<Job[]> {
+    await this.closeExpiredJobs()
+
+    // Ứng viên chỉ thấy tin đang tuyển; riêng trang công ty xem thêm được tin đã quá hạn.
+    // Tin 'closed' (recruiter chủ động đóng) và 'draft' không bao giờ lộ ra phía ứng viên.
+    const visibleStatuses =
+      params.includeExpired === 'true' ? ['active', 'expired'] : ['active']
+
     const qb = this.repo
       .createQueryBuilder('job')
       .leftJoinAndMapOne('job.company', Company, 'company', COMPANY_JOIN_CONDITION)
-      .where('job.status = :status', { status: 'active' })
+      .where('job.status IN (:...visibleStatuses)', { visibleStatuses })
 
     if (params.q) {
       qb.andWhere(
@@ -87,10 +131,15 @@ export class JobsService {
       qb.andWhere('job.companyId = :companyId', { companyId: params.companyId })
     }
 
-    return qb.orderBy('job.createdAt', 'DESC').getMany()
+    // Tin còn tuyển được luôn xếp trước tin đã quá hạn, rồi mới tới tin mới nhất
+    return qb
+      .orderBy(`CASE WHEN job.status = 'active' THEN 0 ELSE 1 END`, 'ASC')
+      .addOrderBy('job.createdAt', 'DESC')
+      .getMany()
   }
 
   async findOne(id: string): Promise<Job> {
+    await this.closeExpiredJobs({ jobId: id })
     const job = await this.repo
       .createQueryBuilder('job')
       .leftJoinAndMapOne('job.company', Company, 'company', COMPANY_JOIN_CONDITION)
@@ -106,7 +155,21 @@ export class JobsService {
     if (job.recruiterId !== recruiterId) {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa tin tuyển dụng này')
     }
+
     Object.assign(job, dto)
+
+    // 'expired' luôn có nghĩa đúng bằng "đang tuyển nhưng đã quá hạn", do hệ thống suy ra chứ
+    // recruiter không tự đặt. Chuẩn hoá lại ngay sau khi gán dto để phản ánh đúng trong chính
+    // response này, thay vì đợi closeExpiredJobs() quét ở lượt đọc sau:
+    //  - gia hạn cho tin quá hạn  → mở lại tuyển
+    //  - lùi hạn về quá khứ       → hết hạn ngay
+    // 'closed' (recruiter chủ động đóng) cố ý không bị đụng tới, dù deadline có trôi qua.
+    if (job.status === 'expired' && !isDeadlinePassed(job.deadline)) {
+      job.status = 'active'
+    } else if (job.status === 'active' && isDeadlinePassed(job.deadline)) {
+      job.status = 'expired'
+    }
+
     const saved = await this.repo.save(job)
     void this.embedJob(saved)
     return saved

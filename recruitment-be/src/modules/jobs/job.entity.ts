@@ -70,8 +70,13 @@ export class Job {
   @Column({ type: 'jsonb', name: 'scoring_weights', nullable: true })
   scoringWeights: MatchingWeights | null
 
+  /**
+   * 'expired' do hệ thống tự đặt khi quá `deadline` (JobsService.closeExpiredJobs), khác với
+   * 'closed' là recruiter chủ động đóng — ứng viên vẫn xem được tin 'expired' ở trang công ty,
+   * còn tin 'closed' thì chỉ recruiter thấy.
+   */
   @Column({ type: 'varchar', length: 20, default: 'draft' })
-  status: 'draft' | 'active' | 'closed'
+  status: 'draft' | 'active' | 'closed' | 'expired'
 
   @Column({ type: 'date', nullable: true })
   deadline: string | null

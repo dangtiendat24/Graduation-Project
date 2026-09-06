@@ -6,6 +6,7 @@ import { getJob, type Job } from '../../api/jobs'
 import { getApplicationStatus, applyToJob, applyToJobWithProfileCv, type ApplicationStatus } from '../../api/applications'
 import { getMyProfile, formatBytes } from '../../api/profile'
 import { getSavedJobIds, saveJob, unsaveJob } from '../../api/savedJobs'
+import { isExpiredJob, isOpenForApplication } from '../../utils/jobDeadline'
 import './CandidateJobDetailPage.css'
 
 const WORK_MODEL_LABELS: Record<string, string> = {
@@ -153,6 +154,7 @@ export default function CandidateJobDetailPage() {
 
   const companyName = job.company?.name ?? 'Công ty chưa cập nhật'
   const initials = getInitials(companyName)
+  const jobClosed = !isOpenForApplication(job)
 
   return (
     <CandidateLayout>
@@ -268,6 +270,13 @@ export default function CandidateJobDetailPage() {
                 <button className="cjd-btn-apply cjd-btn-apply--done" disabled>
                   <i className="ti ti-circle-check" />
                   {applicationStatus.status ? STATUS_LABELS[applicationStatus.status] : 'Đã ứng tuyển'}
+                </button>
+              ) : jobClosed ? (
+                /* Tin quá hạn được BE tự đóng — chặn ngay ở nút thay vì để ứng viên chọn xong
+                   CV rồi mới nhận lỗi 409 lúc nộp. */
+                <button className="cjd-btn-apply cjd-btn-apply--done" disabled>
+                  <i className="ti ti-lock" />
+                  {isExpiredJob(job) ? 'Đã hết hạn nộp hồ sơ' : 'Tin đã đóng'}
                 </button>
               ) : (
                 <button className="cjd-btn-apply" onClick={openApplyModal}>

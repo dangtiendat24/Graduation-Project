@@ -26,6 +26,16 @@ function getInitials(name: string): string {
     .toUpperCase()
 }
 
+/**
+ * Nhãn cho tin không còn nhận hồ sơ. Trang tìm việc chỉ trả tin 'active' nên nhãn này thực tế
+ * chỉ xuất hiện ở "Việc làm đã lưu" — nơi tin ứng viên lưu từ trước có thể đã hết hạn hoặc bị
+ * recruiter đóng. 'draft' không bao giờ lộ ra phía ứng viên nên không cần nhãn.
+ */
+const CLOSED_STATUS_LABELS: Partial<Record<Job['status'], string>> = {
+  expired: 'Hết hạn',
+  closed: 'Đã đóng',
+}
+
 interface JobCardProps {
   job: Job
   isSaved: boolean
@@ -41,6 +51,7 @@ export default function JobCard({ job, isSaved, saveDisabled, onOpen, onOpenComp
   const initials = getInitials(companyName)
   const workModelLabel = job.workModel ? WORK_MODEL_LABELS[job.workModel] : null
   const levelLabel = job.level ? LEVEL_LABELS[job.level] : null
+  const closedLabel = CLOSED_STATUS_LABELS[job.status]
 
   function handleOpenCompany(e: React.MouseEvent) {
     if (!job.company?.id) return
@@ -49,7 +60,11 @@ export default function JobCard({ job, isSaved, saveDisabled, onOpen, onOpenComp
   }
 
   return (
-    <div className="jcard-card" onClick={onOpen} style={{ cursor: 'pointer' }}>
+    <div
+      className={`jcard-card${closedLabel ? ' jcard-card--closed' : ''}`}
+      onClick={onOpen}
+      style={{ cursor: 'pointer' }}
+    >
       <div
         className="jcard-company-logo"
         title={companyName}
@@ -62,7 +77,12 @@ export default function JobCard({ job, isSaved, saveDisabled, onOpen, onOpenComp
       <div className="jcard-main">
         <div className="jcard-top">
           <div>
-            <div className="jcard-title">{job.title}</div>
+            <div className="jcard-title">
+              {job.title}
+              {closedLabel && (
+                <span className={`jcard-status-tag jcard-status-tag--${job.status}`}>{closedLabel}</span>
+              )}
+            </div>
             <div
               className="jcard-company"
               onClick={handleOpenCompany}

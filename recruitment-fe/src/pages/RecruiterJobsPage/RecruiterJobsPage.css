@@ -79,8 +79,12 @@
 /* Summary stats */
 .rjl-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-4);
+}
+
+@media (max-width: 1100px) {
+  .rjl-stats { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 860px) {
@@ -97,6 +101,19 @@
   border-radius: var(--radius-lg);
   padding: var(--space-4) var(--space-5);
   text-align: center;
+  width: 100%;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rjl-stat-card:hover {
+  border-color: var(--border-emphasis);
+}
+
+.rjl-stat-card--selected {
+  border-color: var(--color-indigo);
+  box-shadow: 0 0 0 1px var(--color-indigo) inset;
 }
 .rjl-stat-val {
   font-size: 1.75rem;
@@ -108,9 +125,10 @@
   color: var(--text-muted);
   margin-top: var(--space-1);
 }
-.rjl-stat-card--active .rjl-stat-val { color: #16A34A; }
-.rjl-stat-card--draft  .rjl-stat-val { color: var(--color-amber); }
-.rjl-stat-card--closed .rjl-stat-val { color: var(--text-muted); }
+.rjl-stat-card--active  .rjl-stat-val { color: #16A34A; }
+.rjl-stat-card--draft   .rjl-stat-val { color: var(--color-amber); }
+.rjl-stat-card--expired .rjl-stat-val { color: #EA580C; }
+.rjl-stat-card--closed  .rjl-stat-val { color: var(--text-muted); }
 
 /* Loading */
 .rjl-loading {
@@ -206,6 +224,7 @@
 }
 .rjl-status--active  { background: #DCFCE7; color: #15803D; }
 .rjl-status--draft   { background: #FEF3C7; color: #92400E; }
+.rjl-status--expired { background: #FFEDD5; color: #C2410C; }
 .rjl-status--closed  { background: var(--bg-muted); color: var(--text-muted); }
 
 /* Meta row */
@@ -278,6 +297,21 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.rjl-deadline--expired {
+  color: #C2410C;
+  font-weight: 600;
+}
+
+.rjl-reopen-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 230px;
+  line-height: 1.4;
 }
 
 /* Actions */
