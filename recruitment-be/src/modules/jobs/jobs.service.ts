@@ -15,6 +15,7 @@ import { Company } from '../companies/company.entity'
 import { CreateJobDto, ScoringWeightsDto } from './dto/create-job.dto'
 import { UpdateJobDto } from './dto/update-job.dto'
 import { SearchJobsDto } from './dto/search-jobs.dto'
+import { SQL_TODAY, isDeadlinePassed } from './job-deadline.util'
 
 const COMPANY_JOIN_CONDITION =
   'company.id = job.companyId OR (job.companyId IS NULL AND company.recruiterId = job.recruiterId)'
@@ -47,7 +48,42 @@ export class JobsService {
     return saved
   }
 
+  /**
+   * Đóng các tin 'active' đã quá hạn nộp hồ sơ (deadline < hôm nay).
+   *
+   * Chạy lazy ngay trước mỗi lượt đọc thay vì cron: BE deploy trên Render có thể ngủ nên cron
+   * không đáng tin, trong khi UPDATE này dùng idx_jobs_deadline nên rất rẻ và đảm bảo bất kỳ ai
+   * đọc tin (recruiter, ứng viên, service nội bộ) cũng luôn thấy trạng thái đúng.
+   *
+   * @param scope thu hẹp phạm vi quét cho rẻ hơn: 1 recruiter, hoặc đúng 1 tin theo id
+   */
+  private async closeExpiredJobs(
+    scope: { recruiterId?: string; jobId?: string } = {},
+  ): Promise<void> {
+    const qb = this.repo
+      .createQueryBuilder()
+      .update(Job)
+      // Giữ nguyên updated_at: UpdateQueryBuilder mặc định tự set @UpdateDateColumn, mà đây là
+      // thao tác của hệ thống chứ không phải recruiter sửa tin — để nó bị đụng thì thẻ tin hiện
+      // sai ngày "Cập nhật" và tin quá hạn còn nhảy lên đầu danh sách (findByRecruiter sắp theo
+      // updatedAt DESC).
+      .set({ status: 'closed', updatedAt: () => '"updated_at"' })
+      .where('status = :status', { status: 'active' })
+      .andWhere('deadline IS NOT NULL')
+      .andWhere(`deadline < ${SQL_TODAY}`)
+
+    if (scope.recruiterId) {
+      qb.andWhere('recruiter_id = :recruiterId', { recruiterId: scope.recruiterId })
+    }
+    if (scope.jobId) {
+      qb.andWhere('id = :jobId', { jobId: scope.jobId })
+    }
+
+    await qb.execute()
+  }
+
   async findByRecruiter(recruiterId: string): Promise<Job[]> {
+    await this.closeExpiredJobs({ recruiterId })
     return this.repo.find({
       where: { recruiterId },
       order: { updatedAt: 'DESC' },
@@ -55,6 +91,7 @@ export class JobsService {
   }
 
   async findActive(): Promise<Job[]> {
+    await this.closeExpiredJobs()
     return this.repo.find({
       where: { status: 'active' },
       relations: ['company'],
@@ -63,6 +100,7 @@ export class JobsService {
   }
 
   async search(params: SearchJobsDto): Promise<Job[]> {
+    await this.closeExpiredJobs()
     const qb = this.repo
       .createQueryBuilder('job')
       .leftJoinAndMapOne('job.company', Company, 'company', COMPANY_JOIN_CONDITION)
@@ -91,6 +129,7 @@ export class JobsService {
   }
 
   async findOne(id: string): Promise<Job> {
+    await this.closeExpiredJobs({ jobId: id })
     const job = await this.repo
       .createQueryBuilder('job')
       .leftJoinAndMapOne('job.company', Company, 'company', COMPANY_JOIN_CONDITION)
@@ -106,7 +145,24 @@ export class JobsService {
     if (job.recruiterId !== recruiterId) {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa tin tuyển dụng này')
     }
+
+    // Tin đang đóng VÌ quá hạn — khác với recruiter chủ động đóng khi hạn còn hiệu lực
+    const wasClosedByDeadline = job.status === 'closed' && isDeadlinePassed(job.deadline)
+
     Object.assign(job, dto)
+
+    // Gia hạn cho tin đã quá hạn → mở lại tuyển, kể cả khi form gửi kèm status='closed'
+    // (form sửa tin luôn gửi status hiện tại nên không thể dựa vào dto.status === undefined)
+    if (wasClosedByDeadline && job.status === 'closed' && !isDeadlinePassed(job.deadline)) {
+      job.status = 'active'
+    }
+
+    // Ngược lại, lùi hạn về quá khứ thì đóng ngay trong chính response này, thay vì đợi
+    // lượt đọc sau mới bị closeExpiredJobs() quét
+    if (job.status === 'active' && isDeadlinePassed(job.deadline)) {
+      job.status = 'closed'
+    }
+
     const saved = await this.repo.save(job)
     void this.embedJob(saved)
     return saved

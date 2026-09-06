@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { getJob, updateJob } from '../../api/jobs'
+import { isDeadlinePassed, isExpiredJob } from '../../utils/jobDeadline'
 import './RecruiterJobEditPage.css'
 
 interface JobForm {
@@ -151,6 +152,23 @@ export default function RecruiterJobEditPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setForm(prev => prev ? { ...prev, [key]: e.target.value } : prev)
     }
+
+  // Tin đang đóng VÌ quá hạn — khác với tin recruiter chủ động đóng khi hạn còn hiệu lực.
+  const wasClosedByDeadline = isExpiredJob(job)
+
+  /**
+   * Gia hạn cho tin quá hạn thì BE tự mở lại tin (jobs.service.update). Đẩy luôn toggle trạng
+   * thái sang "Đang tuyển" để form không hiển thị "Đã đóng" rồi lưu xong lại ra "Đang tuyển".
+   */
+  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const deadline = e.target.value
+    setForm(prev => {
+      if (!prev) return prev
+      const reopens =
+        wasClosedByDeadline && prev.status === 'closed' && !!deadline && !isDeadlinePassed(deadline)
+      return { ...prev, deadline, status: reopens ? 'active' : prev.status }
+    })
+  }
 
   const handleTagKey =
     (list: 'requiredSkills' | 'jobPerks', value: string, clear: () => void) =>
@@ -469,8 +487,13 @@ export default function RecruiterJobEditPage() {
                     <label className="rje-label">Hạn nộp đơn</label>
                     <div className="rje-input-icon">
                       <i className="ti ti-calendar" />
-                      <input className="rje-input" type="date" value={form.deadline} onChange={setField('deadline')} />
+                      <input className="rje-input" type="date" value={form.deadline} onChange={handleDeadlineChange} />
                     </div>
+                    {wasClosedByDeadline && (
+                      <div className="rje-hint rje-hint--warn">
+                        Tin đã quá hạn nên được tự động đóng. Chọn hạn nộp mới để mở lại tuyển.
+                      </div>
+                    )}
                   </div>
                 </div>
 

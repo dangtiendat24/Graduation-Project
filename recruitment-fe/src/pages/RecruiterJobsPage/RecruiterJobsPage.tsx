@@ -3,12 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import DashboardLayout from '../../layouts/DashboardLayout/DashboardLayout'
 import { getMyJobs, closeJob, deleteJob, type Job } from '../../api/jobs'
+import { isDeadlinePassed, isExpiredJob } from '../../utils/jobDeadline'
 import './RecruiterJobsPage.css'
 
 const STATUS_LABEL: Record<Job['status'], string> = {
   draft: 'Nháp',
   active: 'Đang tuyển',
   closed: 'Đã đóng',
+}
+
+type JobFilter = 'all' | 'active' | 'draft' | 'expired' | 'closed'
+
+function matchesFilter(job: Job, filter: JobFilter): boolean {
+  switch (filter) {
+    case 'all':
+      return true
+    case 'active':
+      return job.status === 'active'
+    case 'draft':
+      return job.status === 'draft'
+    case 'expired':
+      return isExpiredJob(job)
+    case 'closed':
+      return job.status === 'closed' && !isExpiredJob(job)
+  }
 }
 
 const LEVEL_LABEL: Record<string, string> = {
@@ -30,19 +48,25 @@ function WorkModelBadge({ model }: { model: Job['workModel'] }) {
   )
 }
 
-function StatusBadge({ status }: { status: Job['status'] }) {
-  return <span className={`rjl-status rjl-status--${status}`}>{STATUS_LABEL[status]}</span>
+function StatusBadge({ job }: { job: Job }) {
+  if (isExpiredJob(job)) {
+    return <span className="rjl-status rjl-status--expired">Hết hạn</span>
+  }
+  return <span className={`rjl-status rjl-status--${job.status}`}>{STATUS_LABEL[job.status]}</span>
 }
 
 export default function RecruiterJobsPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [filter, setFilter] = useState<JobFilter>('all')
 
   const { data: jobs = [], isLoading, isError } = useQuery({
     queryKey: ['my-jobs'],
     queryFn: getMyJobs,
   })
+
+  const visibleJobs = jobs.filter(job => matchesFilter(job, filter))
 
   const closeMut = useMutation({
     mutationFn: closeJob,
@@ -74,19 +98,29 @@ export default function RecruiterJobsPage() {
           </div>
         </div>
 
-        {/* Summary cards */}
+        {/* Summary cards — bấm để lọc danh sách bên dưới */}
         {!isLoading && jobs.length > 0 && (
           <div className="rjl-stats">
-            {[
-              { label: 'Tổng tin', value: jobs.length, cls: '' },
-              { label: 'Đang tuyển', value: jobs.filter(j => j.status === 'active').length, cls: 'active' },
-              { label: 'Bản nháp', value: jobs.filter(j => j.status === 'draft').length, cls: 'draft' },
-              { label: 'Đã đóng', value: jobs.filter(j => j.status === 'closed').length, cls: 'closed' },
-            ].map(s => (
-              <div key={s.label} className={`rjl-stat-card${s.cls ? ` rjl-stat-card--${s.cls}` : ''}`}>
-                <div className="rjl-stat-val">{s.value}</div>
+            {([
+              { label: 'Tổng tin', key: 'all', cls: '' },
+              { label: 'Đang tuyển', key: 'active', cls: 'active' },
+              { label: 'Bản nháp', key: 'draft', cls: 'draft' },
+              { label: 'Hết hạn', key: 'expired', cls: 'expired' },
+              { label: 'Đã đóng', key: 'closed', cls: 'closed' },
+            ] as { label: string; key: JobFilter; cls: string }[]).map(s => (
+              <button
+                key={s.key}
+                type="button"
+                className={
+                  `rjl-stat-card${s.cls ? ` rjl-stat-card--${s.cls}` : ''}` +
+                  (filter === s.key ? ' rjl-stat-card--selected' : '')
+                }
+                aria-pressed={filter === s.key}
+                onClick={() => setFilter(s.key)}
+              >
+                <div className="rjl-stat-val">{jobs.filter(j => matchesFilter(j, s.key)).length}</div>
                 <div className="rjl-stat-lbl">{s.label}</div>
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -110,14 +144,20 @@ export default function RecruiterJobsPage() {
               <i className="ti ti-plus" /> Đăng tin tuyển dụng
             </button>
           </div>
+        ) : visibleJobs.length === 0 ? (
+          <div className="rjl-empty">
+            <i className="ti ti-filter-off rjl-empty-icon" />
+            <p className="rjl-empty-title">Không có tin nào ở mục này</p>
+            <p className="rjl-empty-sub">Chọn "Tổng tin" để xem lại toàn bộ tin tuyển dụng</p>
+          </div>
         ) : (
           <div className="rjl-list">
-            {jobs.map(job => (
+            {visibleJobs.map(job => (
               <div key={job.id} className="rjl-job-card">
                 <div className="rjl-job-main">
                   <div className="rjl-job-title-row">
                     <span className="rjl-job-title">{job.title}</span>
-                    <StatusBadge status={job.status} />
+                    <StatusBadge job={job} />
                   </div>
                   <div className="rjl-job-meta">
                     {job.location && (
@@ -158,8 +198,13 @@ export default function RecruiterJobsPage() {
                     <div className="rjl-salary">{job.salaryRange}</div>
                   )}
                   {job.deadline && (
-                    <div className="rjl-deadline">
+                    <div className={`rjl-deadline${isDeadlinePassed(job.deadline) ? ' rjl-deadline--expired' : ''}`}>
                       <i className="ti ti-calendar" /> Hạn: {new Date(job.deadline).toLocaleDateString('vi-VN')}
+                    </div>
+                  )}
+                  {isExpiredJob(job) && (
+                    <div className="rjl-reopen-hint">
+                      <i className="ti ti-info-circle" /> Sửa tin và đặt hạn nộp mới để mở lại tuyển
                     </div>
                   )}
                   <div className="rjl-updated">
