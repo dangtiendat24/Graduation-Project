@@ -31,7 +31,8 @@ export interface Job {
   minExperience: string | null
   salaryRange: string | null
   jobPerks: string[] | null
-  status: 'draft' | 'active' | 'closed'
+  /** 'expired' do hệ thống tự đặt khi quá hạn; 'closed' là recruiter chủ động đóng */
+  status: 'draft' | 'active' | 'closed' | 'expired'
   deadline: string | null
   scoringWeights: ScoringWeights | null
   createdAt: string
@@ -44,6 +45,8 @@ export interface JobSearchParams {
   workModel?: 'onsite' | 'hybrid' | 'remote'
   level?: 'intern' | 'junior' | 'middle' | 'senior' | 'lead' | 'director'
   companyId?: string
+  /** Trang công ty bật cờ này để xem thêm tin đã quá hạn; tin recruiter tự đóng vẫn luôn bị ẩn */
+  includeExpired?: boolean
 }
 
 export interface CreateJobPayload {
@@ -85,7 +88,7 @@ export async function getJob(id: string): Promise<Job> {
   return data
 }
 
-export async function updateJob(id: string, payload: Omit<Partial<CreateJobPayload>, 'status'> & { status?: 'draft' | 'active' | 'closed' }): Promise<Job> {
+export async function updateJob(id: string, payload: Omit<Partial<CreateJobPayload>, 'status'> & { status?: Job['status'] }): Promise<Job> {
   const { data } = await apiClient.patch<Job>(`/jobs/${id}`, payload)
   return data
 }

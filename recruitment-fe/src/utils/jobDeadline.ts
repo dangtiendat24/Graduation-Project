@@ -14,9 +14,14 @@ export function isDeadlinePassed(deadline: string | null): boolean {
 }
 
 /**
- * Tin quá hạn được BE tự chuyển sang 'closed'. Để tách khỏi tin recruiter chủ động đóng khi
- * hạn vẫn còn hiệu lực, FE phân loại thêm bằng chính deadline.
+ * BE tự chuyển tin quá hạn sang status riêng 'expired' (khác 'closed' là recruiter chủ động
+ * đóng), nên chỉ cần đọc status — không suy ra từ deadline nữa.
  */
-export function isExpiredJob(job: Pick<Job, 'status' | 'deadline'>): boolean {
-  return job.status === 'closed' && isDeadlinePassed(job.deadline)
+export function isExpiredJob(job: Pick<Job, 'status'>): boolean {
+  return job.status === 'expired'
+}
+
+/** Tin còn nhận hồ sơ hay không — dùng để khoá nút ứng tuyển phía ứng viên. */
+export function isOpenForApplication(job: Pick<Job, 'status' | 'deadline'>): boolean {
+  return job.status === 'active' && !isDeadlinePassed(job.deadline)
 }

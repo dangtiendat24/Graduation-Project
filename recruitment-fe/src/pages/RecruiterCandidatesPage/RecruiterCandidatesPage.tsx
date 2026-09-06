@@ -10,6 +10,7 @@ const STATUS_LABEL: Record<Job['status'], string> = {
   draft: 'Nháp',
   active: 'Đang tuyển',
   closed: 'Đã đóng',
+  expired: 'Hết hạn',
 }
 
 const LEVEL_LABEL: Record<string, string> = {

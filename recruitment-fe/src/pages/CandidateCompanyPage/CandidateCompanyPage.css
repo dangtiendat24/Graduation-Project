@@ -264,11 +264,31 @@
   box-shadow: 0 2px 8px rgba(79,70,229,.08);
 }
 
+/* Tin đã quá hạn: vẫn xem được để biết công ty từng tuyển gì, nhưng làm mờ đi cho khỏi
+   lẫn với tin còn nộp hồ sơ được */
+.ccp-job-card--expired {
+  background: var(--bg-muted);
+  opacity: 0.75;
+}
+
 .ccp-job-title {
   font-size: var(--fs-body);
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ccp-job-expired-tag {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #FFEDD5;
+  color: #C2410C;
 }
 
 .ccp-job-meta {

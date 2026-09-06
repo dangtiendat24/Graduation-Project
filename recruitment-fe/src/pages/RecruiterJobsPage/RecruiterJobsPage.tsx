@@ -10,6 +10,7 @@ const STATUS_LABEL: Record<Job['status'], string> = {
   draft: 'Nháp',
   active: 'Đang tuyển',
   closed: 'Đã đóng',
+  expired: 'Hết hạn',
 }
 
 type JobFilter = 'all' | 'active' | 'draft' | 'expired' | 'closed'
@@ -23,9 +24,9 @@ function matchesFilter(job: Job, filter: JobFilter): boolean {
     case 'draft':
       return job.status === 'draft'
     case 'expired':
-      return isExpiredJob(job)
+      return job.status === 'expired'
     case 'closed':
-      return job.status === 'closed' && !isExpiredJob(job)
+      return job.status === 'closed'
   }
 }
 
@@ -49,9 +50,6 @@ function WorkModelBadge({ model }: { model: Job['workModel'] }) {
 }
 
 function StatusBadge({ job }: { job: Job }) {
-  if (isExpiredJob(job)) {
-    return <span className="rjl-status rjl-status--expired">Hết hạn</span>
-  }
   return <span className={`rjl-status rjl-status--${job.status}`}>{STATUS_LABEL[job.status]}</span>
 }
 

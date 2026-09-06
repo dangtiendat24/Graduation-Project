@@ -100,14 +100,15 @@ export class ApplicationsService {
     if (!job) throw new NotFoundException('Không tìm thấy tin tuyển dụng');
 
     // Chặn nộp vào tin không còn nhận hồ sơ. Trang tìm việc chỉ hiển thị tin 'active' nhưng
-    // ứng viên vẫn có thể vào bằng link trực tiếp hoặc tab mở sẵn từ trước khi tin bị đóng.
+    // ứng viên vẫn có thể vào bằng link trực tiếp, từ trang công ty (có cả tin quá hạn), hoặc
+    // từ tab mở sẵn trước khi tin bị đóng.
+    if (job.status === 'expired' || isDeadlinePassed(job.deadline)) {
+      throw new ConflictException('Tin tuyển dụng này đã quá hạn nộp hồ sơ');
+    }
     if (job.status !== 'active') {
       throw new ConflictException(
         'Tin tuyển dụng này đã đóng, không còn nhận hồ sơ ứng tuyển',
       );
-    }
-    if (isDeadlinePassed(job.deadline)) {
-      throw new ConflictException('Tin tuyển dụng này đã quá hạn nộp hồ sơ');
     }
 
     const existing = await this.repo.findOne({
