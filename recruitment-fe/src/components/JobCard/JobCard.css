@@ -38,6 +38,16 @@
   margin-bottom: 0;
 }
 
+/* Tin đã hết hạn / bị đóng (chỉ gặp ở "Việc làm đã lưu"): làm mờ để không lẫn với tin còn
+   nộp hồ sơ được, nhưng vẫn bấm xem và bỏ lưu bình thường */
+.jcard-card--closed {
+  background: var(--bg-muted);
+}
+
+.jcard-card--closed .jcard-salary {
+  color: var(--text-muted);
+}
+
 .jcard-company-logo {
   width: 48px;
   height: 48px;
@@ -68,6 +78,31 @@
   font-size: var(--fs-input);
   font-weight: var(--fw-bold);
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.jcard-status-tag {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+/* Cùng bảng màu với badge trạng thái bên trang recruiter cho nhất quán */
+.jcard-status-tag--expired {
+  background: #FFEDD5;
+  color: #C2410C;
+}
+
+/* Nền surface chứ không phải bg-muted: card đã mờ sẵn nên nhãn cùng màu nền sẽ bị chìm */
+.jcard-status-tag--closed {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
 }
 
 .jcard-company {
