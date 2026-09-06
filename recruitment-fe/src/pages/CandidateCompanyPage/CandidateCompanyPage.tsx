@@ -115,6 +115,11 @@ export default function CandidateCompanyPage() {
     <CandidateLayout>
       <div className="ccp-wrapper">
 
+        {/* Back link */}
+        <button className="ccp-back" onClick={() => navigate(-1)}>
+          <i className="ti ti-arrow-left" /> Quay lại
+        </button>
+
         {/* Cover */}
         <div className="ccp-cover">
           {company.coverUrl

@@ -95,6 +95,7 @@ export default function CandidateLayout({ children }: Props) {
 
           <div className="csl-nav-label">Ứng tuyển</div>
           <NavItem to="/candidate/jobs"         icon="ti-briefcase"        label="Việc làm" />
+          <NavItem to="/candidate/saved-jobs"   icon="ti-heart"            label="Việc làm đã lưu" />
           <NavItem to="/candidate/applications" icon="ti-send"             label="Đơn đã nộp" />
           <NavItem to="/candidate/interview"    icon="ti-message-chatbot"  label="Phỏng vấn AI" />
           <NavItem to="/candidate/schedule"     icon="ti-calendar"         label="Lịch phỏng vấn" />
