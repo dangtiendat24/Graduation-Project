@@ -200,14 +200,16 @@ export class MatchingProcessor extends WorkerHost {
     passed: boolean,
   ): Promise<void> {
     try {
+      // Hồ sơ pass thì phỏng vấn AI được mở ngay bên dưới, nên chuông dẫn thẳng vào đó thay vì
+      // trang "Đơn đã nộp" — tránh để ứng viên tưởng phải chờ recruiter mời phỏng vấn.
       await this.notificationsService.create(
         application.candidateId,
         'matching_complete',
-        'Hồ sơ đã được chấm điểm',
+        passed ? 'Hồ sơ đã qua vòng sơ loại' : 'Hồ sơ đã được chấm điểm',
         passed
-          ? `Hồ sơ của bạn cho vị trí ${application.job.title} đã qua vòng sơ loại`
+          ? `Hồ sơ của bạn cho vị trí ${application.job.title} đã qua vòng sơ loại — vào làm phỏng vấn AI ngay`
           : `Hồ sơ của bạn cho vị trí ${application.job.title} chưa phù hợp lần này`,
-        '/candidate/applications',
+        passed ? '/candidate/interview' : '/candidate/applications',
       );
 
       await this.mailService.sendCandidateCvScoredEmail(

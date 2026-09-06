@@ -284,7 +284,9 @@ export class MailService implements OnModuleInit {
     }
     await this.sendEmail(
       to,
-      `[RecruitAI] Đã có kết quả đánh giá hồ sơ — vị trí ${jobTitle}`,
+      passed
+        ? `[RecruitAI] Hồ sơ đã qua vòng sơ loại — mời bạn vào phỏng vấn AI (${jobTitle})`
+        : `[RecruitAI] Đã có kết quả đánh giá hồ sơ — vị trí ${jobTitle}`,
       buildCandidateCvScoredEmailHtml(fullName, jobTitle, passed, this.frontendUrl),
     );
   }
@@ -622,10 +624,31 @@ function buildCandidateCvScoredEmailHtml(
   frontendUrl: string,
 ): string {
   const bodyText = passed
-    ? `AI vừa hoàn tất đánh giá mức độ phù hợp giữa hồ sơ của bạn và vị trí <strong>${jobTitle}</strong>.
-       Hồ sơ của bạn đã qua vòng sơ loại — nhà tuyển dụng sẽ xem xét và có thể mời bạn tham gia phỏng vấn AI hoặc phỏng vấn trực tiếp trong thời gian tới.`
+    ? `Chúc mừng! Hồ sơ của bạn cho vị trí <strong>${jobTitle}</strong> đã <strong>qua vòng sơ loại</strong>.
+       Buổi phỏng vấn AI của bạn đã được mở sẵn — bạn có thể vào làm ngay, không cần chờ nhà tuyển dụng mời.`
     : `AI vừa hoàn tất đánh giá mức độ phù hợp giữa hồ sơ của bạn và vị trí <strong>${jobTitle}</strong>.
        Rất tiếc, hồ sơ của bạn chưa phù hợp với yêu cầu của vị trí này ở thời điểm hiện tại. Cảm ơn bạn đã dành thời gian ứng tuyển.`;
+
+  // Chỉ hồ sơ pass mới có bước tiếp theo để hướng dẫn; hồ sơ trượt thì chỉ xem lại đơn.
+  const nextStepBlock = passed
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:#F5F3FF;border-left:3px solid #4338CA;border-radius:6px;">
+              <tr><td style="padding:14px 18px;">
+                <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#0F172A;">Các bước tiếp theo</p>
+                <p style="margin:0 0 6px;font-size:14px;color:#475569;line-height:1.6;">
+                  <strong>1.</strong> Hoàn thành bài phỏng vấn AI cho vị trí này.
+                </p>
+                <p style="margin:0;font-size:14px;color:#475569;line-height:1.6;">
+                  <strong>2.</strong> Nhà tuyển dụng xét cả điểm hồ sơ lẫn điểm phỏng vấn AI để mời bạn phỏng vấn trực tiếp — hoàn thành phỏng vấn AI càng sớm, cơ hội của bạn càng cao.
+                </p>
+              </td></tr>
+            </table>`
+    : '';
+
+  const ctaHref = passed
+    ? `${frontendUrl}/candidate/interview`
+    : `${frontendUrl}/candidate/applications`;
+  const ctaLabel = passed ? 'Vào phỏng vấn AI →' : 'Xem đơn ứng tuyển →';
+
   return `<!DOCTYPE html>
 <html lang="vi">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kết quả đánh giá hồ sơ</title></head>
@@ -651,10 +674,12 @@ function buildCandidateCvScoredEmailHtml(
               ${bodyText}
             </p>
 
+            ${nextStepBlock}
+
             <table cellpadding="0" cellspacing="0"><tr><td>
-              <a href="${frontendUrl}/candidate/applications"
+              <a href="${ctaHref}"
                 style="display:inline-block;background:#4338CA;color:#FFFFFF;font-size:15px;font-weight:600;padding:13px 32px;border-radius:8px;text-decoration:none;letter-spacing:.02em;">
-                Xem đơn ứng tuyển →
+                ${ctaLabel}
               </a>
             </td></tr></table>
           </td>
