@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,6 +22,8 @@ const SIGNED_URL_EXPIRES_IN = 300;
 
 @Injectable()
 export class ReportsService {
+  private readonly logger = new Logger(ReportsService.name);
+
   constructor(
     @InjectRepository(Application)
     private readonly appRepo: Repository<Application>,
@@ -190,7 +193,18 @@ export class ReportsService {
   private async renderPdf(html: string): Promise<Buffer> {
     const browser = await puppeteer.launch({
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        // Docker cấp /dev/shm mặc định chỉ 64MB, Chromium dùng hết là tab render chết giữa chừng
+        // ("Target closed"/"Protocol error") → xuất PDF hỏng chỉ trên container, còn chạy native
+        // ở local thì /dev/shm lớn nên không bao giờ tái hiện được. Cờ này ép Chromium dùng
+        // /tmp thay cho /dev/shm.
+        '--disable-dev-shm-usage',
+        // Free tier RAM thấp, bỏ bớt thứ không cần cho việc render PDF tĩnh
+        '--disable-gpu',
+        '--disable-extensions',
+      ],
     });
     try {
       const page = await browser.newPage();
@@ -201,6 +215,14 @@ export class ReportsService {
         margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' },
       });
       return Buffer.from(pdf);
+    } catch (err) {
+      // Lỗi Puppeteer mặc định chỉ hiện ở response 500 chung chung, rất khó lần trên production
+      // (không tái hiện được ở local) — log lại nguyên văn để còn đọc được trong log Render.
+      this.logger.error(
+        `Render PDF báo cáo thất bại: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
     } finally {
       await browser.close();
     }
