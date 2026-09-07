@@ -193,18 +193,10 @@ export class ReportsService {
   private async renderPdf(html: string): Promise<Buffer> {
     const browser = await puppeteer.launch({
       executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        // Docker cấp /dev/shm mặc định chỉ 64MB, Chromium dùng hết là tab render chết giữa chừng
-        // ("Target closed"/"Protocol error") → xuất PDF hỏng chỉ trên container, còn chạy native
-        // ở local thì /dev/shm lớn nên không bao giờ tái hiện được. Cờ này ép Chromium dùng
-        // /tmp thay cho /dev/shm.
-        '--disable-dev-shm-usage',
-        // Free tier RAM thấp, bỏ bớt thứ không cần cho việc render PDF tĩnh
-        '--disable-gpu',
-        '--disable-extensions',
-      ],
+      // CHỈ giữ đúng 2 cờ đã chạy được trên production. Đã thử thêm --disable-dev-shm-usage /
+      // --disable-gpu / --disable-extensions (commit 764e423) và xuất báo cáo hỏng ngay sau đó,
+      // nên không thêm cờ nào nữa nếu chưa đọc được log lỗi thật từ production.
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     try {
       const page = await browser.newPage();
