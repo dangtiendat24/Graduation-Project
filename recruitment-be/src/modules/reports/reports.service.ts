@@ -200,7 +200,15 @@ export class ReportsService {
     });
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
+      // KHÔNG dùng waitUntil: 'networkidle0'. HTML báo cáo tự chứa hoàn toàn (CSS inline, biểu đồ
+      // là SVG inline, font hệ thống) nên không phát sinh request mạng nào — Chromium do đó không
+      // bao giờ bắn sự kiện CDP "networkIdle" cho khung này, LifecycleWatcher chờ một sự kiện
+      // không bao giờ tới rồi ném TimeoutError khi hết giờ. Đây ĐÚNG là lỗi 500 trên production
+      // (log Render: "Navigation timeout of 30000 ms exceeded", stack dừng ở CdpFrame.setContent).
+      // 'load' an toàn vì puppeteer đọc nó từ Set _lifecycleEvents đã tích luỹ, nên dù sự kiện đã
+      // bắn xong trước khi watcher kịp lắng nghe (setContent tạo watcher SAU khi set nội dung) thì
+      // vẫn nhận ra ngay lập tức.
+      await page.setContent(html, { waitUntil: 'load', timeout: 15000 });
       const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
