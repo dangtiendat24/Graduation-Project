@@ -177,6 +177,12 @@
   color: var(--status-matched);
 }
 
+/* Cùng bảng màu cam với badge "Hết hạn" ở trang Tin tuyển dụng cho nhất quán */
+.rcp-status--expired {
+  background: #FFEDD5;
+  color: #C2410C;
+}
+
 .rcp-status--closed {
   background: var(--status-pending-bg);
   color: var(--status-pending);
