@@ -15,6 +15,24 @@ from .graph import REQUIRED_CATEGORIES, _build_llm, _format_parsed_data
 # lệnh gọi riêng phải lặp lại CV/JD/lịch sử 2 lần.
 # =============================================================
 
+# Ràng buộc dùng chung cho MỌI câu hỏi của luồng voice (cả câu mở đầu lẫn các câu sau) — tách
+# riêng để hai prompt không bị lệch nhau khi sửa. Chỉ nói "buổi phỏng vấn bằng giọng nói" là chưa
+# đủ: LLM vẫn đều đặn sinh ra câu kiểu "hãy cho ví dụ code ngắn gọn", trong khi ứng viên chỉ trả
+# lời bằng miệng nên không thể code được.
+VOICE_QUESTION_CONSTRAINTS = (
+    "RÀNG BUỘC BẮT BUỘC KHI SOẠN CÂU HỎI (buổi phỏng vấn bằng GIỌNG NÓI):\n"
+    "- Ứng viên trả lời hoàn toàn bằng miệng, không gõ phím, không có màn hình soạn thảo. TUYỆT ĐỐI "
+    "KHÔNG yêu cầu viết code, đọc code, viết câu lệnh SQL/CLI, vẽ sơ đồ, hay bất cứ việc gì phải gõ "
+    "ra hoặc nhìn mới làm được.\n"
+    "- SAI: 'Hãy cho ví dụ code ngắn gọn', 'Viết giúp mình đoạn SQL...', 'Vẽ sơ đồ kiến trúc...'\n"
+    "- ĐÚNG: 'Hãy mô tả bằng lời các bước chính bạn sẽ làm...', 'Bạn xử lý tình huống đó thế nào và "
+    "vì sao chọn cách đó?', 'Bạn giải thích cơ chế đó hoạt động ra sao?'\n"
+    "- Ứng viên chỉ có tối đa 2 phút nói cho mỗi câu, nên chỉ hỏi ĐÚNG 1 ý chính, không gộp nhiều "
+    "câu hỏi con vào cùng một lượt.\n"
+    "- Diễn đạt như lời nói tự nhiên, không dùng gạch đầu dòng hay ký hiệu đặc biệt, vì nội dung này "
+    "sẽ được đọc thành giọng nói cho ứng viên nghe."
+)
+
 FIRST_QUESTION_SYSTEM_PROMPT = (
     "Bạn là chuyên gia phỏng vấn kỹ thuật (technical interviewer) giàu kinh nghiệm, đang bắt đầu "
     "một buổi phỏng vấn bằng giọng nói. Dựa vào CV ứng viên (đã trích xuất) và mô tả công việc (JD) "
@@ -29,7 +47,8 @@ FIRST_QUESTION_SYSTEM_PROMPT = (
     "KHÔNG chung chung kiểu hỏi ai cũng được.\n"
     "3. Vì là câu mở đầu, ưu tiên difficulty 'easy' hoặc 'medium', category 'technical' hoặc 'behavioral' "
     "để ứng viên làm quen, tránh bắt đầu bằng câu quá khó hoặc quá hóc búa.\n"
-    "4. Không hỏi kiểu 'giới thiệu bản thân' chung chung — vẫn phải gắn với 1 chi tiết cụ thể trong CV/JD."
+    "4. Không hỏi kiểu 'giới thiệu bản thân' chung chung — vẫn phải gắn với 1 chi tiết cụ thể trong CV/JD.\n\n"
+    + VOICE_QUESTION_CONSTRAINTS
 )
 
 TURN_SYSTEM_PROMPT = (
@@ -53,7 +72,8 @@ TURN_SYSTEM_PROMPT = (
     "   - Tổng điểm > 75: câu tiếp theo khó hơn 1 bậc so với câu vừa hỏi (không vượt quá 'hard')\n"
     "   - Tổng điểm < 50: câu tiếp theo dễ hơn 1 bậc so với câu vừa hỏi (không thấp hơn 'easy')\n"
     "   - Còn lại: giữ nguyên độ khó\n"
-    "   Không lặp lại ý đã hỏi ở các câu trước."
+    "   Không lặp lại ý đã hỏi ở các câu trước.\n\n"
+    + VOICE_QUESTION_CONSTRAINTS
 )
 
 
