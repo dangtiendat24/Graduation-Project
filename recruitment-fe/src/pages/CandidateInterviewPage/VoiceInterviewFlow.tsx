@@ -12,6 +12,7 @@ import {
   Check,
   User,
   PhoneOff,
+  ArrowRight,
 } from 'lucide-react'
 import {
   startVoiceInterview,
@@ -89,6 +90,9 @@ export default function VoiceInterviewFlow({
   const [aiSpeaking, setAiSpeaking] = useState(false)
   const [showEndConfirm, setShowEndConfirm] = useState(false)
   const [micStartError, setMicStartError] = useState<string | null>(null)
+  // AI đọc xong phần nhận xét chưa. Trước đây nghe xong là tự nhảy sang câu kế tiếp ngay, ứng
+  // viên không kịp đọc lại nhận xét — giờ chỉ mở nút để họ tự bấm khi đã xem xong.
+  const [feedbackAudioEnded, setFeedbackAudioEnded] = useState(false)
 
   const questionAudioEndedAtRef = useRef<number | null>(null)
   const trackingRef = useRef(false)
@@ -183,6 +187,7 @@ export default function VoiceInterviewFlow({
     setShowEndConfirm(false)
     setCurrentQuestion(question)
     setFeedback(null)
+    setFeedbackAudioEnded(false)
     setScreen('question')
   }
 
@@ -219,6 +224,7 @@ export default function VoiceInterviewFlow({
     try {
       const result = await submitMutation.mutateAsync(payload)
       setFeedback(result)
+      setFeedbackAudioEnded(false)
       setScreen('feedback')
     } catch {
       retryRef.current = () => void submitPayload(payload)
@@ -278,7 +284,16 @@ export default function VoiceInterviewFlow({
     onCompleted()
   }
 
-  function handleFeedbackEnded() {
+  /**
+   * AI đọc xong nhận xét → chỉ mở nút chuyển câu, KHÔNG tự đi tiếp. Ứng viên cần thời gian đọc
+   * lại nhận xét và câu trả lời của mình trước khi sang câu mới.
+   */
+  function handleFeedbackAudioEnded() {
+    setFeedbackAudioEnded(true)
+  }
+
+  /** Ứng viên tự bấm để sang câu kế tiếp (hoặc kết thúc nếu vừa nghe nhận xét câu cuối). */
+  function handleGoToNextQuestion() {
     if (!feedback || feedback.isComplete || !feedback.nextQuestion) {
       setScreen('completed')
       onCompleted()
@@ -466,8 +481,11 @@ export default function VoiceInterviewFlow({
                     key={`fb-${feedback.feedbackAudioBase64.slice(0, 16)}`}
                     audioBase64={feedback.feedbackAudioBase64}
                     text={feedback.score.comment}
-                    onEnded={handleFeedbackEnded}
+                    onEnded={handleFeedbackAudioEnded}
                     onPlayStateChange={setAiSpeaking}
+                    // Audio hỏng/bị chặn thì onEnded không bao giờ bắn — vẫn phải mở nút, nếu
+                    // không ứng viên kẹt vĩnh viễn ở màn nhận xét, không có cách nào đi tiếp.
+                    onUnavailable={handleFeedbackAudioEnded}
                   />
                 </>
               )}
@@ -523,10 +541,31 @@ export default function VoiceInterviewFlow({
                     </>
                   )}
 
-                  {screen === 'feedback' && (
-                    <span className="vi-control-label">
-                      {feedback?.isComplete ? 'Đây là câu cuối cùng...' : 'Chuyển câu tiếp theo sau khi nghe xong...'}
-                    </span>
+                  {screen === 'feedback' && !feedbackAudioEnded && (
+                    <span className="vi-control-label">AI đang nhận xét câu trả lời...</span>
+                  )}
+
+                  {screen === 'feedback' && feedbackAudioEnded && (
+                    <>
+                      <button className="vi-next-btn" onClick={handleGoToNextQuestion}>
+                        {feedback?.isComplete ? (
+                          <>
+                            <CheckCircle2 size={17} />
+                            Hoàn thành phỏng vấn
+                          </>
+                        ) : (
+                          <>
+                            Câu tiếp theo
+                            <ArrowRight size={17} />
+                          </>
+                        )}
+                      </button>
+                      <span className="vi-control-label">
+                        {feedback?.isComplete
+                          ? 'Đây là câu cuối cùng — xem lại nhận xét rồi bấm để kết thúc'
+                          : 'Xem lại nhận xét xong thì bấm để sang câu kế tiếp'}
+                      </span>
+                    </>
                   )}
                 </div>
 
@@ -709,16 +748,26 @@ function AudioCaptionPlayer({
   text,
   onEnded,
   onPlayStateChange,
+  onUnavailable,
 }: {
   audioBase64: string
   text: string
   onEnded: () => void
   onPlayStateChange: (playing: boolean) => void
+  /** Audio bị chặn autoplay hoặc lỗi hẳn — onEnded sẽ không bao giờ bắn, caller cần biết để mở lối đi tiếp. */
+  onUnavailable?: () => void
 }) {
   const [revealed, setRevealed] = useState(0)
   const [playbackBlocked, setPlaybackBlocked] = useState(false)
   const [playbackErrorDetail, setPlaybackErrorDetail] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
+  // Giữ callback trong ref để effect phát audio vẫn chỉ phụ thuộc [url]. Caller truyền vào một
+  // function declaration mới sau mỗi lần render, đưa thẳng vào deps sẽ khiến audio bị phát lại
+  // từ đầu liên tục.
+  const onUnavailableRef = useRef(onUnavailable)
+  useEffect(() => {
+    onUnavailableRef.current = onUnavailable
+  })
   // Cố ý KHÔNG revokeObjectURL: dưới React 18 StrictMode (dev), effect cleanup chạy ngay sau
   // effect đầu tiên (setup → cleanup → setup lại) để phát hiện bug — nếu revoke ở đây, URL bị
   // hỏng trước khi thẻ <audio> kịp đọc, gây lỗi "NotSupportedError: no supported sources" một
@@ -740,8 +789,9 @@ function AudioCaptionPlayer({
       const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
       setPlaybackErrorDetail(detail)
       console.error('[voice-interview] audio.play() failed', err)
+      onUnavailableRef.current?.()
     })
-     
+
   }, [url])
 
   // Đồng bộ hiện chữ theo tốc độ nói bằng requestAnimationFrame thay vì sự kiện "timeupdate" của
@@ -767,6 +817,7 @@ function AudioCaptionPlayer({
     const detail = mediaError ? `MediaError code=${mediaError.code} ${mediaError.message}` : 'unknown media error'
     setPlaybackErrorDetail(detail)
     console.error('[voice-interview] audio element error', mediaError)
+    onUnavailableRef.current?.()
   }
 
   function handleManualPlay() {

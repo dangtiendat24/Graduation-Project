@@ -369,6 +369,28 @@
   .vi-record-btn.recording { animation: none; }
 }
 
+/* Nút chuyển câu — chỉ hiện sau khi AI đọc xong nhận xét, dạng viên thuốc (không tròn như nút
+   ghi âm) để ứng viên phân biệt ngay đây là bước đi tiếp, không phải nút thu âm */
+.vi-next-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-indigo);
+  color: #fff;
+  font-family: var(--font-family);
+  font-size: var(--fs-body);
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.vi-next-btn:hover { background: var(--color-indigo-hover); }
+.vi-next-btn:active { transform: scale(0.97); }
+
 /* ===================== ROADMAP (sidebar phải) ===================== */
 .vi-roadmap {
   width: 240px;
