@@ -351,6 +351,17 @@ export default function VoiceInterviewFlow({
 
   const candidateSpeaking = screen === 'recording' && !mic.isMuted && mic.level > 0.08
 
+  /**
+   * Màn nhận xét giờ dừng vô thời hạn (ứng viên tự bấm chuyển câu) nên cũng cần lối kết thúc sớm,
+   * thay vì bắt bấm "Câu tiếp theo" rồi mới kết thúc được.
+   *
+   * Trừ đúng lúc vừa nghe nhận xét câu CUỐI: BE đã completeSession() ngay trong request nộp câu
+   * đó, nên gọi endInterview lúc này sẽ bị trả về 400 ("đã ở trạng thái completed"). Vả lại lúc
+   * đó cũng chẳng còn câu nào để bỏ dở — đã có sẵn nút "Hoàn thành phỏng vấn".
+   */
+  const canEndInterview =
+    END_ALLOWED_SCREENS.includes(screen) || (screen === 'feedback' && !feedback?.isComplete)
+
   const completedCount = currentQuestion
     ? screen === 'submitting' || screen === 'feedback'
       ? currentQuestion.questionIndex
@@ -391,7 +402,7 @@ export default function VoiceInterviewFlow({
                 </span>
               )}
 
-              {END_ALLOWED_SCREENS.includes(screen) && !showEndConfirm && (
+              {canEndInterview && !showEndConfirm && (
                 <button className="vi-end-btn" onClick={() => setShowEndConfirm(true)}>
                   <PhoneOff size={13} />
                   Kết thúc phỏng vấn
