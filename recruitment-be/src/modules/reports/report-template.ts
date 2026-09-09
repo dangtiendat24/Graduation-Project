@@ -49,6 +49,11 @@ function formatDate(date: Date): string {
   return new Date(date).toLocaleString('vi-VN', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    // BẮT BUỘC chỉ định timeZone. Không có nó thì toLocaleString lấy múi giờ của TIẾN TRÌNH
+    // Node — container production chạy UTC nên báo cáo in sai 7 tiếng, trong khi máy dev ở
+    // UTC+7 lại in đúng nên không bao giờ phát hiện được ở local. Node 22 có ICU đầy đủ nên
+    // tự giải được tên múi giờ, không cần cài tzdata vào image Alpine.
+    timeZone: 'Asia/Ho_Chi_Minh',
   });
 }
 
@@ -211,7 +216,7 @@ export function buildReportHtml(data: ReportData): string {
             <h1>${escapeHtml(application.candidate.fullName)}</h1>
             <p class="subtitle">${escapeHtml(job.title)}${company ? ` — ${escapeHtml(company.name)}` : ''}</p>
           </div>
-          <div class="subtitle">Xuất báo cáo: ${formatDate(new Date())}</div>
+          <div class="subtitle">Xuất báo cáo: ${formatDate(new Date())} (giờ VN)</div>
         </div>
 
         <h2>Điểm phù hợp tổng thể</h2>
